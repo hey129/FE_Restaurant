@@ -1,98 +1,133 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo, useState } from "react";
+import {
+  FlatList,
+  GestureResponderEvent,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import CartModal from "../../components/cart/cart";
+import Menu from "../screen/menu";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
-export default function HomeScreen() {
+// ------------------ Header Component ------------------
+const HeaderComponent = React.memo(function Header({
+  searchText,
+  onChange,
+  onOpenCart,
+}: {
+  searchText: string;
+  onChange: (t: string) => void;
+  onOpenCart: (e?: GestureResponderEvent) => void;
+}) {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.headerContainer}>
+      <View style={styles.topRow}>
+        <View style={styles.searchBox}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Bạn muốn ăn gì hôm nay?"
+            value={searchText}
+            onChangeText={onChange}
+            placeholderTextColor="#999"
+            returnKeyType="search"
+          />
+          <Image
+            source={{ uri: "https://cdn-icons-png.flaticon.com/512/622/622669.png" }}
+            style={styles.searchIcon}
+          />
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <TouchableOpacity onPress={onOpenCart}>
+          <Image
+            source={{ uri: "https://cdn-icons-png.flaticon.com/512/34/34568.png" }}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => alert("Account pressed!")}>
+          <Image
+            source={{ uri: "https://cdn-icons-png.flaticon.com/512/1077/1077114.png" }}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.greeting}>Thèm món gì - Đặt ngay món đó!</Text>
+    </View>
+  );
+});
+
+// ------------------ HomePage ------------------
+export default function HomePage({ navigation }: any) {
+  const [cartVisible, setCartVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
+
+  const dummyData = useMemo(() => [{}], []);
+
+  const onChange = useCallback((t: string) => setSearchText(t), []);
+  const openCart = useCallback(() => setCartVisible(true), []);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <HeaderComponent searchText={searchText} onChange={onChange} onOpenCart={openCart} />
+
+      <View style={styles.contentWrapper}>
+        <FlatList
+          data={dummyData}
+          keyExtractor={(_, i) => i.toString()}
+          renderItem={() => null}
+          ListFooterComponent={<Menu searchText={searchText} />}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 30 }}
+        />
+      </View>
+
+      <CartModal visible={cartVisible} onClose={() => setCartVisible(false)} />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: { flex: 1, backgroundColor: "#F5CB58" },
+
+  headerContainer: {
+    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: "#F5CB58",
   },
-  stepContainer: {
-    gap: 8,
+  topRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  searchBox: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 30,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 10,
+  },
+  searchInput: { flex: 1, fontSize: 14, padding: 0 },
+  searchIcon: { width: 20, height: 20, marginLeft: 8 },
+  icon: { width: 28, height: 28, marginLeft: 8 },
+  greeting: {
+    color: "#F8F8F8",
+    fontSize: 28,
+    fontWeight: "bold",
     marginBottom: 8,
+    marginTop: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    overflow: "hidden",
   },
 });
