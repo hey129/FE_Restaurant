@@ -5,8 +5,14 @@ import { supabase } from "./supabase";
 export async function getProducts(filters = {}) {
   let query = supabase
     .from("product")
-    .select("product_id, product_name, image, price, rating, category_id")
+    .select(
+      "product_id, product_name, image, price,description, rating, category_id"
+    )
     .order("product_id", { ascending: true });
+
+  if (filters.id !== undefined && filters.id !== null) {
+    query = query.eq("product_id", filters.id).single();
+  }
 
   // Apply category filter when it's explicitly provided (allow 0 or string "0")
   if (

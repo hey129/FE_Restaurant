@@ -1,5 +1,14 @@
-function Registry() {
-  return <h1>Registry</h1>;
-}
+import Registry from "~/Layout/Components/Registry";
+import classNames from "classnames/bind";
+import styles from "./Registry.module.scss";
 
-export default Registry;
+const cx = classNames.bind(styles);
+export default function RegistryPage() {
+  return (
+    <div className={cx("container")}>
+      <div className={cx("Registry")}>
+        <Registry />
+      </div>
+    </div>
+  );
+}

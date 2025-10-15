@@ -1,39 +1,77 @@
 import classNames from "classnames/bind";
+import { Link, useNavigate } from "react-router-dom";
 import styles from "./Header.module.scss";
 import { FaPizzaSlice } from "react-icons/fa";
 import Button from "~/Layout/Components/Button";
+import { useAuth } from "~/Api"; // 1. Import hook useAuth
 
 const cx = classNames.bind(styles);
-const currentUser = true;
+
 function Header() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout(); // Gọi hàm logout từ context
+      navigate("/menu"); // Chuyển hướng về trang menu sau khi logout thành công
+    } catch (error) {
+      console.error("Failed to log out:", error);
+    }
+  };
+
+  const handleLogin = () => {
+    navigate("/login");
+  };
+
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
+  const handleRegistry = () => {
+    navigate("/registry");
+  };
+
   return (
     <header className={cx("header")}>
       <div className={cx("container")}>
-        {/* NAVBAR */}
         <nav className={cx("nav")}>
           {/* Logo */}
           <div className={cx("logo")}>
-            <a href="#" title="Home">
+            <Link to="/" title="Home">
               <FaPizzaSlice />
               PIZZA
-            </a>
+            </Link>
           </div>
 
           {/* Links desktop */}
           <div className={cx("nav-links")}>
-            <a href="#">MENU</a>
-            <a href="#">CART</a>
+            <Link to="/menu">MENU</Link>
+            <Link to="/cart">CART</Link>
           </div>
+
+          {/* Actions */}
           <div className={cx("actions")}>
-            {currentUser ? (
+            {/* 3. Dùng `isAuthenticated` để kiểm tra thay vì `currentUser` */}
+            {isAuthenticated ? (
               <div className={cx("currentusers")}>
-                <Button className={cx("btn-account")}>username</Button>
-                <Button className={cx("btn-logout")}>LOGOUT</Button>
+                <Button className={cx("btn-account")} onClick={handleProfile}>
+                  {user && user.customer_name}
+                </Button>
+                {/* 5. Gắn hàm logout vào nút */}
+                <Button onClick={handleLogout} className={cx("btn-logout")}>
+                  LOGOUT
+                </Button>
               </div>
             ) : (
+              // Phần này không thay đổi
               <>
-                <Button className={cx("btn-login")}>LOGIN</Button>
-                <Button className={cx("btn-registry")}>REGISTRY</Button>
+                <Button className={cx("btn-login")} onClick={handleLogin}>
+                  LOGIN
+                </Button>
+                <Button className={cx("btn-registry")} onClick={handleRegistry}>
+                  REGISTRY
+                </Button>
               </>
             )}
           </div>

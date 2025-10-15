@@ -1,5 +1,6 @@
 // Menu.jsx
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Menu.module.scss";
 import Image from "~/Layout/Components/Image";
@@ -25,7 +26,8 @@ function Star({ filled }) {
 }
 
 function MenuCard({ product }) {
-  const { img, title, price, rating = 0 } = product;
+  const navigate = useNavigate();
+  const { id, img, title, price, rating = 0 } = product;
 
   const vnd = useMemo(
     () =>
@@ -37,20 +39,34 @@ function MenuCard({ product }) {
     [price]
   );
 
+  const handleCardClick = (e) => {
+    // Prevent navigation if clicking the add-to-cart button
+    if (e.target.closest(`.${cx("btn-addtocart")}`)) {
+      e.stopPropagation();
+      return;
+    }
+    navigate(`/product/${id}`);
+  };
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+    console.log("ADD_TO_CART", { product });
+    alert("Đã thêm vào giỏ hàng!");
+  };
+
   return (
-    <div className={cx("card", "group")}>
+    <div
+      className={cx("card", "group")}
+      onClick={handleCardClick}
+      style={{ cursor: "pointer" }}
+    >
       <div className={cx("imgWrap")}>
         <Image src={img} alt={title} className={cx("img")} />
       </div>
 
       <div className={cx("metaRow")}>
         <div>
-          <h3 className={cx("title")}>
-            <a href="#">
-              {title}
-              <span className={cx("absInset")} aria-hidden="true" />
-            </a>
-          </h3>
+          <h3 className={cx("title")}>{title}</h3>
           <div className={cx("stars")}>
             {[0, 1, 2, 3, 4].map((i) => (
               <Star key={i} filled={i < rating} />
@@ -63,7 +79,9 @@ function MenuCard({ product }) {
             <p>{vnd}</p>
           </div>
           <div className={cx("addtocart")}>
-            <button className={cx("btn-addtocart")}>+</button>
+            <button className={cx("btn-addtocart")} onClick={handleAddToCart}>
+              +
+            </button>
           </div>
         </div>
       </div>
