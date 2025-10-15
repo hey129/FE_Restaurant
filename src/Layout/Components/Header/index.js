@@ -14,7 +14,7 @@ function Header() {
   const handleLogout = async () => {
     try {
       await logout(); // Gọi hàm logout từ context
-      navigate("/menu"); // Chuyển hướng về trang menu sau khi logout thành công
+      window.location.href = "/";
     } catch (error) {
       console.error("Failed to log out:", error);
     }
@@ -46,7 +46,7 @@ function Header() {
 
           {/* Links desktop */}
           <div className={cx("nav-links")}>
-            <Link to="/menu">MENU</Link>
+            <Link to="/">MENU</Link>
             <Link to="/cart">CART</Link>
           </div>
 

@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Registry.module.scss";
-import { registerCustomer } from "~/Api";
+import { useCustomer } from "~/Api";
 import Button from "~/Layout/Components/Button";
 
 const cx = classNames.bind(styles);
 
 export default function Registry() {
+  const { registerCustomer } = useCustomer();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: "",

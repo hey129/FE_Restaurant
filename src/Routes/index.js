@@ -5,8 +5,9 @@ import RestaurantHome from "~/Pages/Restaurant";
 import AdminHome from "~/Pages/Admin";
 import Registry from "~/Pages/Customer/Registry";
 import Login from "~/Pages/Customer/Login";
-import ProductDetail from "~/Pages/Customer/ProductDetail"; // ⬅️ thêm import
+import ProductDetail from "~/Pages/Customer/ProductDetail";
 import DefaultLayout from "~/Layout/DefaultLayout";
+import Cart from "~/Layout/Components/Cart";
 
 const publicRoutes = [
   {
@@ -14,11 +15,7 @@ const publicRoutes = [
     component: Menu,
     layout: DefaultLayout,
   },
-  {
-    path: "/menu",
-    component: Menu,
-    layout: DefaultLayout,
-  },
+
   {
     path: "/product/:id",
     component: ProductDetail,
@@ -37,6 +34,11 @@ const publicRoutes = [
   {
     path: "/login",
     component: Login,
+    layout: DefaultLayout,
+  },
+  {
+    path: "/cart",
+    component: Cart,
     layout: DefaultLayout,
   },
 ];

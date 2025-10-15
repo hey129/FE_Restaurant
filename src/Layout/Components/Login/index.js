@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Login.module.scss";
 import Button from "~/Layout/Components/Button";
@@ -8,8 +8,10 @@ import { useAuth } from "~/Api";
 const cx = classNames.bind(styles);
 
 export default function Login() {
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const { login } = useAuth(); // 2. Lấy hàm login từ context
+  const location = useLocation();
+  const next = new URLSearchParams(location.search).get("next") || "/"; // 2. Lấy hàm login từ context
 
   const [form, setForm] = useState({
     email: "",
@@ -31,7 +33,6 @@ export default function Login() {
     e.preventDefault();
     setMsg({ type: "", text: "" });
 
-    // --- Validation cho từng trường ---
     const newErrors = {};
 
     if (!form.email) {
@@ -52,11 +53,9 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      // 3. Gọi hàm login từ context (sẽ kiểm tra so với data server)
       await login({ email: form.email, password: form.password });
-
-      // Chuyển hướng về trang chủ sau khi đăng nhập thành công
-      setTimeout(() => navigate("/"), 1500);
+      // Quay lại trang trước nếu có `next`, mặc định về home
+      navigate(next || "/");
     } catch (err) {
       console.error("Login error:", err);
       // Nếu lỗi từ server (ví dụ: sai email/password so với data), hiển thị thông báo cụ thể

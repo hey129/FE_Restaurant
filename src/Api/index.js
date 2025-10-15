@@ -1,13 +1,5 @@
 export { getCategories as category } from "./Category";
-export { useAuth, AuthProvider } from "./Auth";
-
 export { getProducts as product } from "./Product";
-export {
-  registerCustomer,
-  loginCustomer,
-  logoutCustomer,
-  getCurrentUser,
-  getCustomerProfile,
-  updateCustomerProfile,
-  getCustomers,
-} from "./Customer";
+export { AuthProvider, useAuth } from "./Auth";
+export { CustomerProvider, useCustomer } from "./Customer";
+export { CartProvider, useCart, AUTH_REQUIRED } from "./Cart";

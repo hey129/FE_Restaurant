@@ -1,13 +1,14 @@
-// Menu.jsx
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Menu.module.scss";
 import Image from "~/Layout/Components/Image";
-
-// ✅ fetchProducts là hàm API bạn export ra từ ~/Api
-//    (đang import với alias product -> fetchProducts)
-import { product as fetchProducts } from "~/Api";
+import {
+  product as fetchProducts,
+  useCart,
+  useAuth,
+  AUTH_REQUIRED,
+} from "~/Api";
 
 const cx = classNames.bind(styles);
 
@@ -26,7 +27,11 @@ function Star({ filled }) {
 }
 
 function MenuCard({ product }) {
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+
   const navigate = useNavigate();
+  const location = useLocation();
   const { id, img, title, price, rating = 0 } = product;
 
   const vnd = useMemo(
@@ -40,7 +45,6 @@ function MenuCard({ product }) {
   );
 
   const handleCardClick = (e) => {
-    // Prevent navigation if clicking the add-to-cart button
     if (e.target.closest(`.${cx("btn-addtocart")}`)) {
       e.stopPropagation();
       return;
@@ -48,10 +52,29 @@ function MenuCard({ product }) {
     navigate(`/product/${id}`);
   };
 
-  const handleAddToCart = (e) => {
-    e.stopPropagation();
-    console.log("ADD_TO_CART", { product });
-    alert("Đã thêm vào giỏ hàng!");
+  const handleAddToCart = async () => {
+    console.log("=== Menu handleAddToCart ===");
+    console.log("isAuthenticated:", isAuthenticated);
+    console.log("product:", product);
+
+    try {
+      if (!isAuthenticated) {
+        console.log("Not authenticated, navigating to login");
+        // chuyển tới login và giữ lại trang cũ để quay về
+        navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+        return;
+      }
+      console.log("Calling addToCart...");
+      await addToCart(product, 1);
+      console.log("addToCart completed successfully");
+    } catch (e) {
+      console.error("Error in handleAddToCart:", e);
+      if (e?.message === AUTH_REQUIRED) {
+        navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+      } else {
+        console.error(e);
+      }
+    }
   };
 
   return (

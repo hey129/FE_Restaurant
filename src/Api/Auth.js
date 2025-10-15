@@ -1,13 +1,10 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import {
-  loginCustomer as apiLogin,
-  getCurrentUser,
-  logoutCustomer as apiLogout,
-} from "./Customer";
+import { useCustomer } from "./Customer";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const { loginCustomer, logoutCustomer, getCurrentUser } = useCustomer();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,17 +16,18 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
     checkUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Hàm login sẽ gọi API, sau đó cập nhật state user toàn cục
   const login = async ({ email, password }) => {
-    const data = await apiLogin({ email, password });
+    const data = await loginCustomer({ email, password });
     setUser(data.profile);
     return data;
   };
 
   const logout = async () => {
-    await apiLogout();
+    await logoutCustomer();
     setUser(null);
   };
 

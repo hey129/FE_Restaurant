@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./ProductDetail.module.scss";
 import Image from "~/Layout/Components/Image";
 import Button from "~/Layout/Components/Button";
-import { product as fetchProducts } from "~/Api";
+import {
+  product as fetchProducts,
+  useCart,
+  AUTH_REQUIRED,
+  useAuth,
+} from "~/Api";
 
 const cx = classNames.bind(styles);
 
 export default function ProductDetail({ productId: propId, initialProduct }) {
   const { id: routeId } = useParams();
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const id = propId ?? routeId; // ✅ Ưu tiên prop, fallback dùng URL param
 
   const [product, setProduct] = useState(initialProduct || null);
@@ -87,10 +97,33 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
     setQty((q) => Math.max(1, q - 1));
   }
 
-  function handleAddToCart() {
-    console.log("ADD_TO_CART", { product, qty });
-    alert("Đã thêm vào giỏ hàng!");
-  }
+  const handleAddToCart = async () => {
+    try {
+      if (!isAuthenticated) {
+        const next = location.pathname + location.search + location.hash;
+        navigate(`/login?next=${encodeURIComponent(next)}`);
+        return;
+      }
+      await addToCart(
+        {
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          image: product.images?.[activeIdx] || product.images?.[0] || "",
+          category: product.category,
+        },
+        qty
+      );
+    } catch (e) {
+      if (e?.message === AUTH_REQUIRED) {
+        const next = location.pathname + location.search + location.hash;
+        navigate(`/login?next=${encodeURIComponent(next)}`);
+      } else {
+        console.error(e);
+        // hiện toast nếu muốn
+      }
+    }
+  };
 
   if (loading) {
     return (
