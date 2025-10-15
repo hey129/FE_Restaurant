@@ -1,24 +1,45 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Slot } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { CartProvider } from "./context/_cartContext";
+import { OnboardingSimple } from "./feed/_onboarding";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+const ONBOARDING_KEY = "hasSeenOnboarding";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, []);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const hasSeenOnboarding = await AsyncStorage.getItem(ONBOARDING_KEY);
+      setShowOnboarding(hasSeenOnboarding !== "true");
+    } catch (error) {
+      console.log("Error checking onboarding status:", error);
+      setShowOnboarding(true);
+    }
+  };
+
+  const handleFinishOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+      setShowOnboarding(false);
+    } catch (error) {
+      console.log("Error saving onboarding status:", error);
+      setShowOnboarding(false);
+    }
+  };
+
+  if (showOnboarding) {
+    return <OnboardingSimple onFinish={handleFinishOnboarding} />;
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <CartProvider>
+      <Slot />
+    </CartProvider>
   );
 }

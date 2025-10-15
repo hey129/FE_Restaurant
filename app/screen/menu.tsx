@@ -1,92 +1,56 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
-import { BestSellerItem, CategoryItem, MenuListItem, RecommendItem } from "../../components/menu/menu";
+import React, { useState } from "react";
 import {
-  BestSeller,
-  Category,
-  getBestSellers,
-  getCategories,
-  getMenuItems,
-  getRecommends,
-  MenuItem,
-  Recommend,
-} from "../../services/menuService";
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { BestSellerItem, CategoryItem, MenuListItem, RecommendItem } from "../../components/menu/menu";
+import { COLORS, PAGINATION } from "../../constants/app";
+import { useDebounce } from "../../hooks/use-debounce";
+import { useFilteredItems } from "../../hooks/use-filtered-items";
+import { useMenuData } from "../../hooks/use-menu-data";
+import { usePagination } from "../../hooks/use-pagination";
 
 type MenuProps = { searchText: string };
-const PAGE_SIZE = 15;
 
 export default function Menu({ searchText }: MenuProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [bestSellers, setBestSellers] = useState<BestSeller[]>([]);
-  const [recommends, setRecommends] = useState<Recommend[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<MenuItem[]>([]);
-  const [visibleItems, setVisibleItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  
+  const { categories, bestSellers, recommends, menuItems, loading, error, retry } = useMenuData();
+  
+  const debouncedSearch = useDebounce(searchText);
+  
+  const filteredItems = useFilteredItems(menuItems, {
+    searchText: debouncedSearch,
+    categoryId: selectedCategoryId,
+  });
+  
+  const { visibleItems, loadMore, loadingMore } = usePagination(filteredItems);
 
-  // ------------------ Fetch data ------------------
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const [cats, best, recs, menu] = await Promise.all([
-          getCategories(),
-          getBestSellers(),
-          getRecommends(),
-          getMenuItems(),
-        ]);
-        setCategories(cats);
-        setBestSellers(best);
-        setRecommends(recs);
-        setMenuItems(menu);
-        setFilteredItems(menu);
-        setVisibleItems(menu.slice(0, PAGE_SIZE));
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  // ------------------search------------------
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const filtered = searchText
-        ? menuItems.filter(item =>
-            item.name.toLowerCase().includes(searchText.toLowerCase())
-          )
-        : menuItems;
-
-      setFilteredItems(filtered);
-      setVisibleItems(filtered.slice(0, PAGE_SIZE));
-      setPage(1);
-    }, 200);
-
-    return () => clearTimeout(timeout);
-  }, [searchText, menuItems]);
-
-  // ------------------ Load ------------------
-  const loadMore = () => {
-    if (loadingMore) return;
-    if (visibleItems.length >= filteredItems.length) return;
-
-    setLoadingMore(true);
-    const nextPage = page + 1;
-    const start = page * PAGE_SIZE;
-    const end = nextPage * PAGE_SIZE;
-
-    setVisibleItems(prev => [...prev, ...filteredItems.slice(start, end)]);
-    setPage(nextPage);
-    setLoadingMore(false);
+  const handleCategoryPress = (catId: number) => {
+    setSelectedCategoryId(prev => (prev === catId ? null : catId));
   };
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#F5CB58" />
-        <Text style={{ marginTop: 10 }}>Đang tải dữ liệu...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.accent} />
+        <Text style={styles.loadingText}>Đang tải...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Đã xảy ra lỗi</Text>
+        <Text style={styles.errorMessage}>{error.message}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={retry}>
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -110,51 +74,122 @@ export default function Menu({ searchText }: MenuProps) {
   );
 
   return (
-    <FlatList
-      ListHeaderComponent={
-        <>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={categories}
-            keyExtractor={(_, i) => i.toString()}
-            renderItem={({ item }) => <CategoryItem item={item} />}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20 }}
-          />
+    <View style={{ flex: 1 }}>
+      <FlatList
+        ListHeaderComponent={
+          <>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={categories}
+              keyExtractor={(_, i) => i.toString()}
+              renderItem={({ item }) => (
+                <CategoryItem
+                  item={item}
+                  selected={selectedCategoryId === item.id}
+                  onPress={() => handleCategoryPress(item.id)}
+                />
+              )}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20 }}
+            />
 
-          {renderHorizontalSection("Best Seller", bestSellers, ({ item }) => <BestSellerItem item={item} />)}
+            {selectedCategoryId == null && (
+              <>
+                {renderHorizontalSection("Bán chạy", bestSellers, ({ item }) => (
+                  <BestSellerItem item={item} />
+                ))}
 
-          {renderHorizontalSection("Recommend", recommends, ({ item }) => <RecommendItem item={item} />)}
+                {renderHorizontalSection("Đề xuất", recommends, ({ item }) => (
+                  <RecommendItem item={item} />
+                ))}
+              </>
+            )}
 
-          <Text style={styles.sectionTitle}>Menu</Text>
-        </>
-      }
-      data={visibleItems}
-      keyExtractor={(_, i) => i.toString()}
-      renderItem={({ item }) => <MenuListItem item={item} />}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.4}
-      ListFooterComponent={() => {
-        if (loadingMore) return <ActivityIndicator style={{ marginVertical: 10 }} />;
-        if (visibleItems.length >= filteredItems.length)
-          return (
-            <View style={{ paddingVertical: 16, alignItems: "center" }}>
-              <Text style={{ color: "#676767" }}>Không còn sản phẩm</Text>
-            </View>
-          );
-        return null;
-      }}
-      ListEmptyComponent={() => (
-        <View style={{ padding: 20, alignItems: "center" }}>
-          <Text style={{ color: "#676767" }}>Không tìm thấy sản phẩm nào</Text>
-        </View>
-      )}
-      contentContainerStyle={{ paddingBottom: 30 }}
-    />
+            <Text style={styles.sectionTitle}>Thực đơn</Text>
+          </>
+        }
+        data={visibleItems}
+        keyExtractor={(_, i) => i.toString()}
+        renderItem={({ item }) => <MenuListItem item={item} />}
+        onEndReached={loadMore}
+        onEndReachedThreshold={PAGINATION.END_REACHED_THRESHOLD}
+        ListFooterComponent={() => {
+          if (loadingMore) return <ActivityIndicator style={styles.loader} />;
+          if (visibleItems.length >= filteredItems.length)
+            return (
+              <View style={styles.footerText}>
+                <Text style={styles.footerTextContent}>Không còn sản phẩm</Text>
+              </View>
+            );
+          return null;
+        }}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Không tìm thấy kết quả</Text>
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: { fontSize: 20, fontWeight: "bold", marginLeft: 20, marginVertical: 12 },
-  loading: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: COLORS.white },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginLeft: 20,
+    marginVertical: 12,
+    color: COLORS.text.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.text.secondary,
+  },
+  
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: COLORS.background,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.text.primary,
+    marginBottom: 12,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.accent,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+  },
+  retryButtonText: {
+    color: COLORS.white,
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  
+  loader: { marginVertical: 10 },
+  footerText: { paddingVertical: 16, alignItems: "center" },
+  footerTextContent: { color: COLORS.text.secondary },
+  emptyContainer: { padding: 20, alignItems: "center" },
+  emptyText: { color: COLORS.text.secondary },
+  listContent: { paddingBottom: 30 },
 });
