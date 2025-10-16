@@ -72,16 +72,14 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <AuthHeader title="Đăng nhập" />
 
-      {/* Content */}
       <View style={styles.content}>
         <View style={styles.welcomeBox}>
           <Text style={styles.welcomeTitle}>Welcome</Text>
         </View>
 
-        {/* Form */}
         <View style={styles.form}>
           <AuthInput
-            label="Email hoặc Số điện thoại"
+            label="Email"
             placeholder="example@example.com"
             value={email}
             onChangeText={setEmail}
@@ -109,7 +107,6 @@ export default function LoginScreen() {
 
           <Text style={styles.orText}>hoặc</Text>
 
-          {/* Social buttons */}
           <View style={styles.socialButtons}>
             <TouchableOpacity style={styles.socialButton}>
               <Text style={styles.socialIcon}>G</Text>
