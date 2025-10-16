@@ -1,4 +1,3 @@
-// ========== TYPES ==========
 export interface ValidationErrors {
   name: string;
   phone: string;
@@ -11,7 +10,6 @@ export interface ShippingAddress {
   address: string;
 }
 
-// ========== VALIDATION RULES ==========
 /**
  * Validate name (not empty)
  */
