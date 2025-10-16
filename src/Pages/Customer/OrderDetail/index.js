@@ -1,5 +1,16 @@
-function OrderDetail() {
-  return <h1>OrderDetail</h1>;
-}
+import Return from "~/Layout/Components/Button/Return";
+import OrderDetail from "~/Layout/Components/OrderDetail";
+import classNames from "classnames/bind";
+import styles from "./OrderDetail.module.scss";
 
-export default OrderDetail;
+const cx = classNames.bind(styles);
+export default function OrderDetailPage() {
+  return (
+    <div className={cx("container")}>
+      <div className={cx("OrderDetail")}>
+        <OrderDetail />
+      </div>
+      <Return />
+    </div>
+  );
+}

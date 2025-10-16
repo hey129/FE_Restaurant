@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useCustomer } from "./Customer";
+import { supabase } from "./supabase"; // Import supabase client
+
+export const AUTH_REQUIRED = "AUTH_REQUIRED";
 
 const AuthContext = createContext();
 
@@ -31,11 +34,20 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const changePassword = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) throw error;
+    return data;
+  };
+
   const value = {
     user,
     isAuthenticated: !!user, // true nếu user tồn tại, ngược lại là false
     login,
     logout,
+    changePassword,
     loading,
   };
 

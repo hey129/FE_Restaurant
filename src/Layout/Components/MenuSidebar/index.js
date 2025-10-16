@@ -1,5 +1,5 @@
 // Sidebar.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import classNames from "classnames/bind";
 import styles from "./Sidebar.module.scss";
 import { category as fetchCategories } from "~/Api"; // nhớ export named: export const category = createClient(...)

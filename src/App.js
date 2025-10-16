@@ -29,7 +29,19 @@ function App() {
                           <Page />
                         </Layout>
                       }
-                    />
+                    >
+                      {route.children &&
+                        route.children.map((childRoute, childIndex) => {
+                          const ChildPage = childRoute.component;
+                          return (
+                            <Route
+                              key={childIndex}
+                              path={childRoute.path}
+                              element={<ChildPage />}
+                            />
+                          );
+                        })}
+                    </Route>
                   );
                 })}
               </Routes>

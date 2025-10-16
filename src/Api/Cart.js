@@ -59,19 +59,62 @@ export function CartProvider({ children }) {
         console.error("Load cart error:", error);
         setItems([]);
       } else {
-        setItems(
-          (data || []).map((d) => ({
-            id: d.product_id, // Map product_id thành id
-            quantity: d.quantity,
-            price: Number(d.price) || 0,
-            added_at: d.added_at,
-            name: d.product?.product_name || "Sản phẩm",
-            image:
-              d.product?.image || "https://placehold.co/100x100?text=No+Image",
-            category: d.product?.category_id ?? null,
-            product_price_now: Number(d.product?.price ?? 0), // optional: nếu cần hiển thị/so sánh
-          }))
-        );
+        // Consolidate duplicate products by summing quantities
+        const productMap = new Map();
+        const duplicateCartIds = []; // Track cart_ids of duplicates to remove
+
+        (data || []).forEach((d) => {
+          const productId = d.product_id;
+          if (productMap.has(productId)) {
+            // If product already exists, add to quantity and mark for removal
+            const existing = productMap.get(productId);
+            existing.quantity = Math.min(99, existing.quantity + d.quantity);
+            duplicateCartIds.push(d.cart_id); // Mark this duplicate for removal
+          } else {
+            // New product, add to map
+            productMap.set(productId, {
+              id: productId,
+              cart_id: d.cart_id, // Store cart_id for updates
+              quantity: d.quantity,
+              price: Number(d.price) || 0,
+              added_at: d.added_at,
+              name: d.product?.product_name || "Sản phẩm",
+              image:
+                d.product?.image ||
+                "https://placehold.co/100x100?text=No+Image",
+              category: d.product?.category_id ?? null,
+              product_price_now: Number(d.product?.price ?? 0),
+            });
+          }
+        });
+
+        // If we found duplicates, clean them up in the database
+        if (duplicateCartIds.length > 0) {
+          const consolidatedItems = Array.from(productMap.values());
+
+          // Update quantities for kept items
+          for (const item of consolidatedItems) {
+            await supabase
+              .from("cart")
+              .update({
+                quantity: item.quantity,
+                added_at: new Date().toISOString(),
+              })
+              .eq("cart_id", item.cart_id);
+          }
+
+          // Soft delete duplicate items
+          await supabase
+            .from("cart")
+            .update({ status: "removed" })
+            .in("cart_id", duplicateCartIds);
+
+          console.log(
+            `Consolidated ${duplicateCartIds.length} duplicate cart items`
+          );
+        }
+
+        setItems(Array.from(productMap.values()));
       }
       setLoading(false);
     })();
@@ -92,6 +135,9 @@ export function CartProvider({ children }) {
       const normalized = {
         id: product.id, // phải là integer vì FK product_id integer
         price: Number(product.price) || 0,
+        name: product.name || product.product_name || "Sản phẩm",
+        image: product.image || "https://placehold.co/100x100?text=No+Image",
+        category: product.category ?? product.category_id ?? null,
       };
 
       // Tính nextQty dựa trên state hiện tại (optimistic)
@@ -108,51 +154,83 @@ export function CartProvider({ children }) {
         }
         return [
           ...prev,
-          { id: normalized.id, price: normalized.price, quantity: nextQty },
+          {
+            id: normalized.id,
+            price: normalized.price,
+            quantity: nextQty,
+            name: normalized.name,
+            image: normalized.image,
+            category: normalized.category,
+            product_price_now: normalized.price,
+            added_at: new Date().toISOString(),
+          },
         ];
       });
 
       // === DB: SELECT → UPDATE hoặc INSERT (không dùng upsert) ===
-      // 1) Tìm dòng active hiện có
-      const { data: existing, error: selErr } = await supabase
+      // 1) Tìm tất cả dòng active hiện có cho product này
+      const { data: existingItems, error: selErr } = await supabase
         .from("cart")
         .select("cart_id, quantity")
         .eq("customer_id", customerId)
         .eq("product_id", normalized.id)
-        .eq("status", "active")
-        .maybeSingle();
+        .eq("status", "active");
 
-      if (selErr && selErr.code !== "PGRST116") {
-        // PGRST116 = no rows (trong 1 số phiên bản), bỏ qua
+      if (selErr) {
         console.error("Select cart error:", selErr);
       }
 
-      if (existing?.cart_id) {
-        // 2a) Update cộng dồn
-        const { error: updErr } = await supabase
-          .from("cart")
-          .update({
-            quantity: Math.min(99, (existing.quantity || 0) + qty),
-            added_at: new Date().toISOString(), // như 'updated_at'
-          })
-          .eq("cart_id", existing.cart_id);
-        if (updErr) {
-          console.error("Update cart error:", updErr);
-          // rollback nhẹ: reload lại giỏ từ server
-          const { data: reload } = await supabase
+      if (existingItems && existingItems.length > 0) {
+        // 2a) Có item(s) tồn tại
+        if (existingItems.length === 1) {
+          // Trường hợp bình thường: chỉ có 1 item, update nó
+          const existing = existingItems[0];
+          const { error: updErr } = await supabase
             .from("cart")
-            .select("product_id, quantity, price, added_at")
-            .eq("customer_id", customerId)
-            .eq("status", "active");
-          setItems(
-            (reload || []).map((d) => ({
-              id: d.product_id,
-              quantity: d.quantity,
-              price: Number(d.price) || 0,
-              added_at: d.added_at,
-            }))
+            .update({
+              quantity: Math.min(99, (existing.quantity || 0) + qty),
+              added_at: new Date().toISOString(),
+            })
+            .eq("cart_id", existing.cart_id);
+          if (updErr) {
+            console.error("Update cart error:", updErr);
+            throw updErr;
+          }
+        } else {
+          // Trường hợp có duplicate: consolidate tất cả thành 1
+          const totalQty = existingItems.reduce(
+            (sum, item) => sum + item.quantity,
+            0
           );
-          throw updErr;
+          const newQty = Math.min(99, totalQty + qty);
+
+          // Giữ lại item đầu tiên, update quantity
+          const keepItem = existingItems[0];
+          const { error: updErr } = await supabase
+            .from("cart")
+            .update({
+              quantity: newQty,
+              added_at: new Date().toISOString(),
+            })
+            .eq("cart_id", keepItem.cart_id);
+
+          if (updErr) {
+            console.error("Update cart error:", updErr);
+            throw updErr;
+          }
+
+          // Xóa (soft delete) các items còn lại
+          const removeIds = existingItems.slice(1).map((item) => item.cart_id);
+          if (removeIds.length > 0) {
+            const { error: delErr } = await supabase
+              .from("cart")
+              .update({ status: "removed" })
+              .in("cart_id", removeIds);
+
+            if (delErr) {
+              console.error("Remove duplicate cart items error:", delErr);
+            }
+          }
         }
       } else {
         // 2b) Insert mới
@@ -194,15 +272,35 @@ export function CartProvider({ children }) {
       setItems((prev) =>
         prev.map((x) => (x.id === productId ? { ...x, quantity: clamped } : x))
       );
-      const { error } = await supabase
+
+      // Find all active cart items for this product
+      const { data: existingItems } = await supabase
         .from("cart")
-        .update({ quantity: clamped, added_at: new Date().toISOString() })
+        .select("cart_id")
         .eq("customer_id", customerId)
         .eq("product_id", productId)
         .eq("status", "active");
-      if (error) {
-        console.error("updateQuantity error:", error);
-        throw error;
+
+      if (existingItems && existingItems.length > 0) {
+        // Update first item with new quantity
+        const { error: updErr } = await supabase
+          .from("cart")
+          .update({ quantity: clamped, added_at: new Date().toISOString() })
+          .eq("cart_id", existingItems[0].cart_id);
+
+        if (updErr) {
+          console.error("updateQuantity error:", updErr);
+          throw updErr;
+        }
+
+        // Remove any duplicates
+        if (existingItems.length > 1) {
+          const removeIds = existingItems.slice(1).map((item) => item.cart_id);
+          await supabase
+            .from("cart")
+            .update({ status: "removed" })
+            .in("cart_id", removeIds);
+        }
       }
     },
     [customerId]
@@ -234,6 +332,65 @@ export function CartProvider({ children }) {
     if (error) console.error("clearCart error:", error);
   }, [customerId]);
 
+  // Cleanup function to consolidate duplicate entries in database
+  const consolidateDuplicates = useCallback(async () => {
+    if (!customerId) return;
+
+    try {
+      // Get all active cart items
+      const { data: allItems } = await supabase
+        .from("cart")
+        .select("cart_id, product_id, quantity")
+        .eq("customer_id", customerId)
+        .eq("status", "active")
+        .order("added_at", { ascending: true }); // Keep oldest first
+
+      if (!allItems || allItems.length === 0) return;
+
+      // Group by product_id
+      const productGroups = new Map();
+      allItems.forEach((item) => {
+        if (!productGroups.has(item.product_id)) {
+          productGroups.set(item.product_id, []);
+        }
+        productGroups.get(item.product_id).push(item);
+      });
+
+      // Process each group
+      for (const [, items] of productGroups) {
+        if (items.length > 1) {
+          // Has duplicates
+          const totalQty = Math.min(
+            99,
+            items.reduce((sum, item) => sum + item.quantity, 0)
+          );
+          const keepItem = items[0]; // Keep first (oldest) item
+          const removeItems = items.slice(1);
+
+          // Update the kept item with consolidated quantity
+          await supabase
+            .from("cart")
+            .update({
+              quantity: totalQty,
+              added_at: new Date().toISOString(),
+            })
+            .eq("cart_id", keepItem.cart_id);
+
+          // Soft delete duplicates
+          const removeIds = removeItems.map((item) => item.cart_id);
+          await supabase
+            .from("cart")
+            .update({ status: "removed" })
+            .in("cart_id", removeIds);
+        }
+      }
+
+      console.log("Cart duplicates consolidated successfully");
+    } catch (error) {
+      console.error("Error consolidating duplicates:", error);
+    }
+  }, [customerId]);
+
   const value = {
     loading,
     items,
@@ -242,6 +399,7 @@ export function CartProvider({ children }) {
     updateQuantity,
     removeFromCart,
     clearCart,
+    consolidateDuplicates, // Expose for manual cleanup if needed
   };
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

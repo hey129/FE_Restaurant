@@ -1,13 +1,18 @@
 // src/routes/index.js
 import Menu from "~/Pages/Customer/Menu";
-import CustomerProfile from "~/Pages/Customer/Profile";
+import ProfilePage from "~/Pages/Customer/Profile";
+import CustomerProfile from "~/Layout/Components/CustomerProfile";
+import Order from "~/Layout/Components/Order";
 import RestaurantHome from "~/Pages/Restaurant";
 import AdminHome from "~/Pages/Admin";
 import Registry from "~/Pages/Customer/Registry";
 import Login from "~/Pages/Customer/Login";
 import ProductDetail from "~/Pages/Customer/ProductDetail";
+import OrderDetail from "~/Pages/Customer/OrderDetail";
 import DefaultLayout from "~/Layout/DefaultLayout";
 import Cart from "~/Layout/Components/Cart";
+import CreateOrder from "~/Pages/Customer/CreateOrder";
+import PaymentSuccess from "~/Pages/Customer/PaymentSuccess";
 
 const publicRoutes = [
   {
@@ -21,11 +26,31 @@ const publicRoutes = [
     component: ProductDetail,
     layout: DefaultLayout,
   },
+
   {
-    path: "/profile",
-    component: CustomerProfile,
+    path: "/order/:id",
+    component: OrderDetail,
     layout: DefaultLayout,
   },
+
+  {
+    path: "/profile",
+    component: ProfilePage,
+    children: [
+      {
+        index: true,
+        path: "customerprofile",
+        component: CustomerProfile,
+      },
+
+      {
+        path: "order",
+        component: Order,
+      },
+    ],
+    layout: DefaultLayout, // Layout chung của toàn trang nếu có
+  },
+
   {
     path: "/registry",
     component: Registry,
@@ -39,6 +64,12 @@ const publicRoutes = [
   {
     path: "/cart",
     component: Cart,
+    layout: DefaultLayout,
+  },
+  { path: "/createorder", component: CreateOrder, layout: DefaultLayout },
+  {
+    path: "/payment/success",
+    component: PaymentSuccess,
     layout: DefaultLayout,
   },
 ];

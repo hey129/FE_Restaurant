@@ -5,7 +5,7 @@ function Return() {
 
   return (
     <button onClick={() => navigate(-1)} style={{ marginBottom: "10px" }}>
-      ← Quay lại
+      ← Return
     </button>
   );
 }

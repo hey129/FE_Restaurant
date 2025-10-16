@@ -9,6 +9,7 @@ import {
   useAuth,
   AUTH_REQUIRED,
 } from "~/Api";
+import toast from "react-hot-toast";
 
 const cx = classNames.bind(styles);
 
@@ -32,6 +33,7 @@ function MenuCard({ product }) {
 
   const navigate = useNavigate();
   const location = useLocation();
+
   const { id, img, title, price, rating = 0 } = product;
 
   const vnd = useMemo(
@@ -53,26 +55,30 @@ function MenuCard({ product }) {
   };
 
   const handleAddToCart = async () => {
-    console.log("=== Menu handleAddToCart ===");
-    console.log("isAuthenticated:", isAuthenticated);
-    console.log("product:", product);
-
     try {
       if (!isAuthenticated) {
-        console.log("Not authenticated, navigating to login");
-        // chuyển tới login và giữ lại trang cũ để quay về
-        navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+        const next = location.pathname + location.search + location.hash;
+        navigate(`/login?next=${encodeURIComponent(next)}`);
         return;
       }
-      console.log("Calling addToCart...");
-      await addToCart(product, 1);
-      console.log("addToCart completed successfully");
+      await addToCart(
+        {
+          id: product.id,
+          name: product.title,
+          price: product.price,
+          image: product.img || "",
+          category: product.category || null,
+        },
+        1
+      );
+      toast.success("Đã thêm sản phẩm vào giỏ hàng!");
     } catch (e) {
-      console.error("Error in handleAddToCart:", e);
       if (e?.message === AUTH_REQUIRED) {
-        navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+        const next = location.pathname + location.search + location.hash;
+        navigate(`/login?next=${encodeURIComponent(next)}`);
       } else {
         console.error(e);
+        // hiện toast nếu muốn
       }
     }
   };
@@ -137,6 +143,7 @@ export default function Menu({ filters }) {
           img: r.img ?? r.image_url ?? r.image ?? "",
           price: Number(r.price) || 0,
           rating: Math.max(0, Math.min(5, Number(r.rating) || 0)),
+          category: r.category ?? r.category_id ?? null,
         }));
 
         if (!cancelled) setProducts(normalized);

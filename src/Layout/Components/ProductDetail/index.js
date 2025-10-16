@@ -10,6 +10,7 @@ import {
   AUTH_REQUIRED,
   useAuth,
 } from "~/Api";
+import toast from "react-hot-toast";
 
 const cx = classNames.bind(styles);
 
@@ -107,13 +108,14 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
       await addToCart(
         {
           id: product.id,
-          title: product.title,
+          name: product.title,
           price: product.price,
           image: product.images?.[activeIdx] || product.images?.[0] || "",
           category: product.category,
         },
         qty
       );
+      toast.success("Đã thêm sản phẩm vào giỏ hàng!");
     } catch (e) {
       if (e?.message === AUTH_REQUIRED) {
         const next = location.pathname + location.search + location.hash;

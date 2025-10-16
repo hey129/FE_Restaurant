@@ -1,47 +1,47 @@
 // src/Pages/Cart/Cart.jsx
-import React, { useMemo, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useMemo } from "react";
 import classNames from "classnames/bind";
+import { useNavigate } from "react-router-dom";
 import styles from "./Cart.module.scss";
 import Return from "../Button/Return";
-import Button from "../Button";
 import { useCart, useAuth } from "~/Api";
+import Button from "../Button";
 
 const cx = classNames.bind(styles);
 
 function Cart() {
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const { items, updateQuantity, removeFromCart, subtotal } = useCart();
-  const [shippingCost, setShippingCost] = useState(5.0);
 
-  const totalPrice = useMemo(
-    () => subtotal + shippingCost,
-    [subtotal, shippingCost]
-  );
+  const vnd = (n) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(Math.round(Number(n) || 0));
+
+  const totalPrice = useMemo(() => subtotal, [subtotal]);
 
   const handleQuantityChange = (id, delta) => {
     const current = items.find((x) => x.id === id)?.quantity || 1;
     updateQuantity(id, current + delta);
   };
 
+  const handlePlaceOrder = () => {
+    if (items.length === 0) {
+      return; // Don't navigate if cart is empty
+    }
+    navigate("/createorder");
+  };
+
   if (!isAuthenticated) {
-    const next = location.pathname + location.search + location.hash;
     return (
       <div className={cx("page-container")}>
         <div className={cx("cart-layout")}>
           <div className={cx("cart-items")}>
             <h1 className={cx("title")}>Bạn chưa đăng nhập</h1>
             <p>Vui lòng đăng nhập để xem giỏ hàng của bạn.</p>
-            <Button
-              className={cx("register-btn")}
-              onClick={() =>
-                navigate(`/login?next=${encodeURIComponent(next)}`)
-              }
-            >
-              Đăng nhập
-            </Button>
             <Return />
           </div>
         </div>
@@ -84,7 +84,7 @@ function Cart() {
                 </button>
               </div>
               <span className={cx("item-price")}>
-                € {item.price.toFixed(2)}
+                {vnd(item.price * item.quantity)}
               </span>
               <button
                 onClick={() => removeFromCart(item.id)}
@@ -94,47 +94,27 @@ function Cart() {
               </button>
             </div>
           ))}
-          <Return />
-        </div>
 
-        {/* RIGHT: SUMMARY */}
-        <div className={cx("summary")}>
-          <h2 className={cx("title")}>Summary</h2>
-          <div className={cx("summary-row")}>
-            <span>ITEMS {items.length}</span>
-            <span>€ {subtotal.toFixed(2)}</span>
+          <div className={cx("summary-actions")}>
+            {/* Phần bên trái: Nút Return */}
+            <div className={cx("actions-left")}>
+              <Return />
+            </div>
+
+            {/* Phần bên phải: Gồm tổng giá và nút Place Order */}
+            <div className={cx("actions-right")}>
+              <div className={cx("summary-row", "total")}>
+                <span>TOTAL PRICE : {vnd(totalPrice.toFixed(2))}</span>
+              </div>
+              <Button
+                className={cx("register-btn")}
+                onClick={handlePlaceOrder}
+                disabled={items.length === 0}
+              >
+                Place Order
+              </Button>
+            </div>
           </div>
-
-          <div className={cx("summary-group")}>
-            <label htmlFor="shipping">SHIPPING</label>
-            <select
-              id="shipping"
-              className={cx("input-field")}
-              value={shippingCost}
-              onChange={(e) => setShippingCost(Number(e.target.value))}
-            >
-              <option value={5.0}>Standard-Delivery - €5.00</option>
-              <option value={10.0}>Express-Delivery - €10.00</option>
-            </select>
-          </div>
-
-          <div className={cx("summary-group")}>
-            <label htmlFor="give-code">GIVE CODE</label>
-            <input
-              type="text"
-              id="give-code"
-              className={cx("input-field")}
-              placeholder="Enter your code"
-            />
-          </div>
-
-          <hr className={cx("divider-bold")} />
-          <div className={cx("summary-row", "total")}>
-            <span>TOTAL PRICE</span>
-            <span>€ {totalPrice.toFixed(2)}</span>
-          </div>
-
-          <button className={cx("register-btn")}>REGISTER</button>
         </div>
       </div>
     </div>

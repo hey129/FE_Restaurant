@@ -1,0 +1,15 @@
+// ~/Pages/Customer/ProfileLayout.module.scss
+.wrapper {
+  padding: 20px 0;
+}
+
+.container {
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.content {
+  flex-grow: 1; /* Chiếm hết phần không gian còn lại */
+}

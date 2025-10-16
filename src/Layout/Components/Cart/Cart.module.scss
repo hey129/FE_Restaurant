@@ -8,7 +8,7 @@
 
 .cart-layout {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+
   gap: 2rem;
   max-width: 1200px;
   margin: 0 auto;
@@ -148,11 +148,30 @@
 /* --- Cột bên phải: Tóm tắt đơn hàng --- */
 .summary {
   background-color: #f3f4f6;
-  padding: 2rem;
+  padding: 2rem 2rem;
   border-radius: 8px;
   height: fit-content; // Chỉ cao bằng nội dung
 }
+.summary-actions {
+  display: flex; /* Kích hoạt Flexbox */
+  justify-content: space-between; /* Đẩy 2 phần tử con ra 2 phía */
+  align-items: flex-end; /* Căn các item theo phía dưới cho đẹp */
+  margin-top: 20px; /* Thêm chút khoảng cách với danh sách sản phẩm */
+}
 
+.actions-right {
+  /* Căn chỉnh nội dung bên trong khối này sang phải */
+  display: flex;
+  flex-direction: column; /* Xếp chồng tổng giá và nút bấm */
+  align-items: flex-end; /* Căn mọi thứ sang phải */
+  gap: 10px; /* Tạo khoảng cách giữa tổng giá và nút bấm */
+}
+
+// Giữ lại style cho total price nếu cần
+.total {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
 .summary-row {
   display: flex;
   justify-content: space-between;
@@ -189,4 +208,25 @@
   border: none;
   border-top: 2px solid #d1d5db;
   margin: 1.5rem 0;
+}
+
+.order-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+}
+
+.actions-left button {
+  margin: 0;
 }

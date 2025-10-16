@@ -1,4 +1,4 @@
-// ~/Api/index.js
+// ~/Api/Product/index.js
 import { supabase } from "./supabase";
 
 // Export với tên 'product' như bạn đang import
