@@ -1,9 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import AuthButton from "../../components/auth/authButton";
-import AuthHeader from "../../components/auth/authHeader";
-import AuthInput from "../../components/auth/authInput";
+import { AuthButton, AuthHeader, AuthInput } from "../../components/auth";
 import { COLORS } from "../../constants/app";
 import { supabase } from "../../services/supabaseClient";
 

@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { BestSellerItem, CategoryItem, MenuListItem, RecommendItem } from "../../components/menu/menu";
+import { CategoryItem, MenuListItem } from "../../components/menu/menu";
 import { COLORS, PAGINATION } from "../../constants/app";
 import { useDebounce } from "../../hooks/use-debounce";
 import { useFilteredItems } from "../../hooks/use-filtered-items";
@@ -19,7 +19,7 @@ type MenuProps = { searchText: string };
 export default function Menu({ searchText }: MenuProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   
-  const { categories, bestSellers, recommends, menuItems, loading, error, retry } = useMenuData();
+  const { categories, menuItems, loading, error, retry } = useMenuData();
   
   const debouncedSearch = useDebounce(searchText);
   
@@ -55,24 +55,6 @@ export default function Menu({ searchText }: MenuProps) {
     );
   }
 
-  const renderHorizontalSection = <T,>(
-    title: string,
-    data: T[],
-    renderItem: ({ item }: { item: T }) => React.ReactElement | null
-  ) => (
-    <>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={data}
-        keyExtractor={(_, i) => i.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: 20 }}
-      />
-    </>
-  );
-
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -92,18 +74,6 @@ export default function Menu({ searchText }: MenuProps) {
               )}
               contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20 }}
             />
-
-            {selectedCategoryId == null && (
-              <>
-                {renderHorizontalSection("Bán chạy", bestSellers, ({ item }) => (
-                  <BestSellerItem item={item} />
-                ))}
-
-                {renderHorizontalSection("Đề xuất", recommends, ({ item }) => (
-                  <RecommendItem item={item} />
-                ))}
-              </>
-            )}
 
             <Text style={styles.sectionTitle}>Thực đơn</Text>
           </>

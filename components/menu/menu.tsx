@@ -1,9 +1,8 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Dimensions, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { BestSeller, Category, MenuItem, Recommend } from "../../services/menuService";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Category, MenuItem } from "../../services/menuService";
 
-const { width } = Dimensions.get("window");
 const CATEGORY_SIZE = 60;
 
 export const CategoryItem = ({
@@ -22,39 +21,6 @@ export const CategoryItem = ({
     <Text style={[styles.categoryText, selected ? styles.categoryTextSelected : undefined]}>{item.name}</Text>
   </TouchableOpacity>
 );
-
-export const BestSellerItem = ({ item }: { item: BestSeller }) => {
-  const cardWidth = width * 0.35;
-  const cardHeight = cardWidth * 0.75;
-  return (
-    <View style={styles.cardWrapper}>
-      <Image source={{ uri: item.img }} style={{ width: cardWidth, height: cardHeight, borderRadius: 15 }} />
-      <View style={styles.priceTag}>
-        <Text style={styles.priceText}>${item.price.toFixed(2)}</Text>
-      </View>
-    </View>
-  );
-};
-
-export const RecommendItem = ({ item }: { item: Recommend }) => {
-  const cardWidth = width * 0.4;
-  return (
-    <View style={styles.cardWrapper}>
-      <ImageBackground
-        source={{ uri: item.img }}
-        style={{ width: cardWidth, height: cardWidth }}
-        imageStyle={{ borderRadius: 20 }}
-      >
-        <View style={[styles.ratingBox, { position: "absolute", top: 8, left: 8 }]}>
-          <Text style={styles.ratingText}>⭐ {item.rating.toFixed(1)}</Text>
-        </View>
-      </ImageBackground>
-      <View style={styles.priceTag}>
-        <Text style={styles.priceText}>${item.price.toFixed(2)}</Text>
-      </View>
-    </View>
-  );
-};
 
 // MenuItem
 export const MenuListItem = ({ item }: { item: MenuItem }) => {
@@ -90,11 +56,6 @@ const styles = StyleSheet.create({
   categoryText: { color: "#391713", fontSize: 12, marginTop: 6, textAlign: "center" },
   categoryTextSelected: { color: "#fff" }, 
 
-  cardWrapper: { marginRight: 12, position: "relative" },
-  priceTag: { position: "absolute", bottom: 8, right: -2, backgroundColor: "#E95322", borderTopLeftRadius: 30, borderBottomLeftRadius: 30, paddingHorizontal: 6, paddingVertical: 2 },
-  priceText: { color: "#fff", fontSize: 14 },
-  ratingBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 20, paddingHorizontal: 6, paddingVertical: 2 },
-  ratingText: { fontSize: 14, marginRight: 4, color: "#391713" },
   ratingTextWhite: { fontSize: 14, color: "#fff", fontWeight: "700" },
   ratingListItem: { backgroundColor: "#E95322", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
 

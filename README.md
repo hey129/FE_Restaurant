@@ -1,41 +1,106 @@
-# Welcome to your Expo app 👋
+# 🍔 FoodFast - Food Delivery App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A complete food delivery application built with React Native, Expo, and Supabase.
 
-## Get started
+## ✨ Features
 
-1. Install dependencies
+- 🔐 User Authentication (Login, Signup, Password Reset)
+- 🛒 Shopping Cart with real-time updates
+- 📱 Browse menu by categories
+- 🔍 Search products
+- 💳 MoMo Payment Gateway integration
+- 📦 Order history with filters
+- 📍 Multiple delivery addresses
+- 👤 Profile management
+- ⏰ Future-only time picker for delivery
 
+## 🛠️ Tech Stack
+
+- React Native 0.81.4 + Expo SDK 54
+- TypeScript 5.9.2
+- Supabase (PostgreSQL + Auth)
+- MoMo Payment Gateway (Sandbox)
+- Expo Router
+
+## 📦 Installation
+
+## 📦 Installation
+
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. Start the app
+2. **Setup Supabase**
+   - Create project at [supabase.com](https://supabase.com)
+   - Run these SQL files in order:
+     1. `fastfood.sql` - Create tables and sample data
+     2. `update_customer_table.sql` - Update customer schema
+     3. `create_addresses_table.sql` - Create addresses table
+   - Create `.env` file with your credentials
 
+3. **Start the app**
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+## 📱 App Structure
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+```
+app/
+├── (tabs)/          # Home & Explore
+├── feed/            # Auth screens (Login, Signup, Profile)
+├── screen/          # Menu, Checkout, Payment
+└── context/         # Cart state management
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+services/
+├── supabaseClient.ts
+├── orderService.ts
+├── paymentService.ts   # MoMo integration
+└── menuService.ts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🔐 Database Setup
 
-## Learn more
+After creating Supabase project, run these SQL scripts in order:
+
+1. **fastfood.sql** - Base schema (category, product, customer, orders, etc.)
+2. **update_customer_table.sql** - Add phone_number, email, date_of_birth fields
+3. **create_addresses_table.sql** - Multiple delivery addresses support
+
+## 💳 MoMo Payment (Sandbox)
+
+- Stores amounts in **USD** in database
+- Auto-converts to **VND** for MoMo API (rate: 23,000)
+- Uses HMAC-SHA256 signature via crypto-js
+- Test on mobile (web has CORS issues)
+
+## 🎨 Design
+
+- Orange theme (#FF6B35)
+- Light yellow inputs (#FFE5B4)
+- Rounded buttons with shadows
+- Bottom sheet modals
+
+## 📄 Environment Variables
+
+Create `.env`:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## 👨‍💻 Author
+
+**Ngct253** - [GitHub](https://github.com/Ngct253)
+
+## 📝 License
+
+MIT License
+
+---
+
+## Learn more about Expo
 
 To learn more about developing your project with Expo, look at the following resources:
 

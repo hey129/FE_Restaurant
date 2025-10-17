@@ -1,33 +1,24 @@
 import { useEffect, useState } from "react";
 import {
-    BestSeller,
-    Category,
-    MenuItem,
-    Recommend,
-    getBestSellers,
-    getCategories,
-    getMenuItems,
-    getRecommends,
+  Category,
+  MenuItem,
+  getCategories,
+  getMenuItems,
 } from "../services/menuService";
-import { AppError } from "../utils/errorHandler";
 
 type MenuData = {
   categories: Category[];
-  bestSellers: BestSeller[];
-  recommends: Recommend[];
   menuItems: MenuItem[];
   loading: boolean;
-  error: AppError | null;
+  error: Error | null;
   retry: () => void;
 };
 
 export const useMenuData = (): MenuData => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [bestSellers, setBestSellers] = useState<BestSeller[]>([]);
-  const [recommends, setRecommends] = useState<Recommend[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<AppError | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
@@ -38,22 +29,18 @@ export const useMenuData = (): MenuData => {
         setLoading(true);
         setError(null);
 
-        const [cats, best, recs, menu] = await Promise.all([
+        const [cats, menu] = await Promise.all([
           getCategories(),
-          getBestSellers(),
-          getRecommends(),
           getMenuItems(),
         ]);
 
         if (!mounted) return;
 
         setCategories(cats);
-        setBestSellers(best);
-        setRecommends(recs);
         setMenuItems(menu);
       } catch (err) {
         if (!mounted) return;
-        setError(err as AppError);
+        setError(err as Error);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -70,8 +57,6 @@ export const useMenuData = (): MenuData => {
 
   return {
     categories,
-    bestSellers,
-    recommends,
     menuItems,
     loading,
     error,

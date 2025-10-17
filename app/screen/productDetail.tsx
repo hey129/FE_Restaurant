@@ -1,4 +1,3 @@
-import { AntDesign } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -90,10 +89,10 @@ export default function ProductDetail() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <AntDesign name="arrow-left" size={24} color="#391713" />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <View style={{ marginLeft: 12 }}>
+        <View style={{ marginLeft: 12, flex: 1 }}>
           <Text style={styles.title}>{item.name}</Text>
           <View style={styles.ratingWrapper}>
             <Text style={styles.ratingText}>⭐ {item.rating ?? "4.5"} / 5</Text>
@@ -101,12 +100,10 @@ export default function ProductDetail() {
         </View>
       </View>
 
-      {/* Content */}
       <View style={styles.content}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
           <Image source={{ uri: item.img }} style={styles.productImage} />
 
-          {/* Price & Quantity */}
           <View style={styles.rowWrapper}>
             <View style={styles.row}>
               <Text style={styles.price}>{formattedPrice}</Text>
@@ -127,14 +124,12 @@ export default function ProductDetail() {
         </ScrollView>
       </View>
 
-      {/* Add to Cart */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.cartBtn} onPress={handleAddToCart}>
           <Text style={styles.cartText}>Thêm vào giỏ hàng</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Toast */}
       {toastMsg ? (
         <Animated.View
           style={[
@@ -166,9 +161,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingLeft: SPACING.headerLeft,
+    paddingRight: SPACING.headerLeft,
     paddingTop: SPACING.headerTop,
     paddingBottom: 20,
     backgroundColor: BG_LIGHT,
+  },
+  backButton: {
+    padding: 8,
+  },
+  backIcon: {
+    fontSize: 28,
+    color: "#000",
+    fontWeight: "400",
   },
   title: { fontSize: 22, fontWeight: "700", color: "#391713" },
 
