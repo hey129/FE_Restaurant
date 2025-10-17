@@ -1,4 +1,4 @@
-import Registry from "~/Layout/Components/Registry";
+import Registry from "~/Layout/Components/Customer/Registry";
 import classNames from "classnames/bind";
 import styles from "./Registry.module.scss";
 

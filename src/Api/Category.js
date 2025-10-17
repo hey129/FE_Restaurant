@@ -18,3 +18,17 @@ export async function getCategories() {
 
   return data;
 }
+
+/**
+ * Get all categories with full info (for Admin)
+ * @returns {Promise<Array>}
+ */
+export async function getAllCategories() {
+  const { data, error } = await supabase
+    .from("category")
+    .select("category_id, name, icon_url, status, created_at")
+    .order("category_id", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}

@@ -1,16 +1,16 @@
 // src/routes/index.js
 import Menu from "~/Pages/Customer/Menu";
 import ProfilePage from "~/Pages/Customer/Profile";
-import CustomerProfile from "~/Layout/Components/CustomerProfile";
-import Order from "~/Layout/Components/Order";
+import CustomerProfile from "~/Pages/Customer/CustomerProfile";
+import AllOrders from "~/Pages/Customer/AllOrders";
 import RestaurantHome from "~/Pages/Restaurant";
 import AdminHome from "~/Pages/Admin";
 import Registry from "~/Pages/Customer/Registry";
 import Login from "~/Pages/Customer/Login";
 import ProductDetail from "~/Pages/Customer/ProductDetail";
 import OrderDetail from "~/Pages/Customer/OrderDetail";
-import DefaultLayout from "~/Layout/DefaultLayout";
-import Cart from "~/Layout/Components/Cart";
+import DefaultLayout from "~/Layout/Components/Customer/DefaultLayout";
+import Cart from "~/Pages/Customer/Cart";
 import CreateOrder from "~/Pages/Customer/CreateOrder";
 import PaymentSuccess from "~/Pages/Customer/PaymentSuccess";
 
@@ -45,7 +45,7 @@ const publicRoutes = [
 
       {
         path: "order",
-        component: Order,
+        component: AllOrders,
       },
     ],
     layout: DefaultLayout, // Layout chung của toàn trang nếu có
@@ -75,8 +75,8 @@ const publicRoutes = [
 ];
 
 const privateRoutes = [
-  { path: "/restaurant", component: RestaurantHome },
-  { path: "/admin", component: AdminHome },
+  { path: "/restaurant", component: RestaurantHome, layout: null },
+  { path: "/admin", component: AdminHome, layout: null },
 ];
 
 export { publicRoutes, privateRoutes };

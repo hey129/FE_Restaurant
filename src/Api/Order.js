@@ -18,7 +18,6 @@ export async function createOrder({
   shipping,
   deliveryAddress,
   note,
-  paymentMethod = "cod",
 }) {
   if (!customerId) throw new Error("NO_CUSTOMER");
   if (!items?.length) throw new Error("EMPTY_CART");
@@ -186,4 +185,134 @@ export async function getOrderDetail({ orderId }) {
     ...order,
     items: formattedItems,
   };
+}
+
+/**
+ * Update order status
+ * @param {Object} params
+ * @param {number} params.orderId - Order ID
+ * @param {string} params.orderStatus - New order status
+ * @param {string} params.paymentStatus - New payment status (optional)
+ * @returns {Promise<Object>}
+ */
+export async function updateOrderStatus({
+  orderId,
+  orderStatus,
+  paymentStatus,
+}) {
+  if (!orderId) throw new Error("NO_ORDER_ID");
+  if (!orderStatus) throw new Error("NO_ORDER_STATUS");
+
+  const updateData = {
+    order_status: orderStatus,
+  };
+
+  if (paymentStatus) {
+    updateData.payment_status = paymentStatus;
+  }
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update(updateData)
+    .eq("order_id", orderId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Cancel order and optionally refund payment
+ * @param {Object} params
+ * @param {number} params.orderId - Order ID
+ * @param {boolean} params.refund - Whether to refund the payment
+ * @returns {Promise<Object>}
+ */
+export async function cancelOrder({ orderId, refund = false }) {
+  return updateOrderStatus({
+    orderId,
+    orderStatus: "cancelled",
+    paymentStatus: refund ? "refund" : undefined,
+  });
+}
+
+/**
+ * Complete order
+ * @param {Object} params
+ * @param {number} params.orderId - Order ID
+ * @returns {Promise<Object>}
+ */
+export async function completeOrder({ orderId }) {
+  return updateOrderStatus({
+    orderId,
+    orderStatus: "completed",
+    paymentStatus: "paid",
+  });
+}
+
+/**
+ * Get all orders with customer info (Admin/Restaurant view)
+ * @param {Object} params
+ * @param {string} [params.status] - Optional status filter ('all' for no filter)
+ * @returns {Promise<Array>}
+ */
+export async function getAllOrders({ status = "all" } = {}) {
+  let query = supabase
+    .from("orders")
+    .select(
+      `
+      order_id,
+      customer_id,
+      order_date,
+      delivery_address,
+      total_amount,
+      order_status,
+      payment_status,
+      note,
+      customer:customer_id (
+        customer_name,
+        phone
+      )
+    `
+    )
+    .order("order_date", { ascending: false });
+
+  // Apply filter if not 'all'
+  if (status && status !== "all") {
+    query = query.eq("order_status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get order items/details for a specific order
+ * @param {Object} params
+ * @param {number} params.orderId - Order ID
+ * @returns {Promise<Array>}
+ */
+export async function getOrderItems({ orderId }) {
+  if (!orderId) throw new Error("NO_ORDER_ID");
+
+  const { data, error } = await supabase
+    .from("order_detail")
+    .select(
+      `
+      order_detail_id,
+      product_id,
+      quantity,
+      price,
+      product:product_id (
+        product_name,
+        image
+      )
+    `
+    )
+    .eq("order_id", orderId);
+
+  if (error) throw error;
+  return data || [];
 }

@@ -1,5 +1,4 @@
-import Return from "~/Layout/Components/Button/Return";
-import ProductDetail from "~/Layout/Components/ProductDetail";
+import ProductDetail from "~/Layout/Components/Customer/ProductDetail";
 import classNames from "classnames/bind";
 import styles from "./ProductDetail.module.scss";
 
@@ -10,7 +9,6 @@ export default function ProductDetailPage() {
       <div className={cx("ProductDetail")}>
         <ProductDetail />
       </div>
-      <Return />
     </div>
   );
 }

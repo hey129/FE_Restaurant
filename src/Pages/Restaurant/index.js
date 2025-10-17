@@ -1,5 +1,11 @@
-function Home() {
-  return <h1>RESTAURANT HOME</h1>;
+import OrderList from "~/Layout/Components/Restaurant/OrderList";
+
+function Restaurant() {
+  return (
+    <div>
+      <OrderList />
+    </div>
+  );
 }
 
-export default Home;
+export default Restaurant;

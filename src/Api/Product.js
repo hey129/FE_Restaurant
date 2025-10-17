@@ -33,3 +33,32 @@ export async function getProducts(filters = {}) {
   if (error) throw error;
   return data || [];
 }
+
+/**
+ * Get all products with category info (for Admin)
+ * @returns {Promise<Array>}
+ */
+export async function getAllProducts() {
+  const { data, error } = await supabase
+    .from("product")
+    .select(
+      `
+      product_id,
+      product_name,
+      image,
+      price,
+      description,
+      rating,
+      status,
+      category_id,
+      category:category_id (
+        category_id,
+        name
+      )
+    `
+    )
+    .order("product_id", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}

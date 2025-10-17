@@ -1,7 +1,6 @@
-import Return from "~/Layout/Components/Button/Return";
-import Cart from "~/Layout/Components/Cart";
+import Cart from "~/Layout/Components/Customer/Cart";
 import classNames from "classnames/bind";
-import styles from "./ProductDetail.module.scss";
+import styles from "./Cart.module.scss";
 
 const cx = classNames.bind(styles);
 export default function CartPage() {
@@ -10,7 +9,6 @@ export default function CartPage() {
       <div className={cx("Cart")}>
         <Cart />
       </div>
-      <Return />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // ~/Pages/Customer/ProfileLayout.jsx
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import CustomerProfileSidebar from "~/Layout/Components/CustomerProfileSidebar";
+import CustomerProfileSidebar from "~/Layout/Components/Customer/CustomerProfileSidebar";
 import classNames from "classnames/bind";
 import styles from "./Profile.module.scss";
 import { useEffect } from "react";

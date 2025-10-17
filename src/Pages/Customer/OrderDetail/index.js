@@ -1,5 +1,5 @@
 import Return from "~/Layout/Components/Button/Return";
-import OrderDetail from "~/Layout/Components/OrderDetail";
+import OrderDetail from "~/Layout/Components/Customer/OrderDetail";
 import classNames from "classnames/bind";
 import styles from "./OrderDetail.module.scss";
 

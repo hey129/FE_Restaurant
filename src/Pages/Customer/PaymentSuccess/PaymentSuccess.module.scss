@@ -1,19 +1,9 @@
-.section {
-  min-height: 100vh;
-  padding: 80px 20px 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
 .container {
-  max-width: 600px;
-  margin: 0 auto;
+  width: 100%;
 }
 
-.card {
-  background: white;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+.PaymentSuccess {
+  width: 100%;
 }
 
 .status {

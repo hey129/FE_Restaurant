@@ -1,6 +1,6 @@
 // src/Pages/Customer/CreateOrder/index.js
 import Return from "~/Layout/Components/Button/Return";
-import OrderCreate from "~/Layout/Components/CreateOrder";
+import OrderCreate from "~/Layout/Components/Customer/CreateOrder";
 import classNames from "classnames/bind";
 import styles from "./CreateOrder.module.scss";
 

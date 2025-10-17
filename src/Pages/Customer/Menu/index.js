@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import classNames from "classnames/bind";
 import styles from "./Menu.module.scss";
-import Sidebar from "~/Layout/Components/MenuSidebar";
-import Menu from "~/Layout/Components/Menu";
+import Sidebar from "~/Layout/Components/Customer/MenuSidebar";
+import Menu from "~/Layout/Components/Customer/Menu";
 import ScrollToTopButton from "~/Layout/Components/Button/ScrollToTop";
 
 const cx = classNames.bind(styles);

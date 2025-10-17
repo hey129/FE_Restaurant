@@ -1,5 +1,7 @@
-function Home() {
-  return <h1>ADMIN HOME</h1>;
+import AdminDashboard from "~/Layout/Components/Admin/AdminDashboard";
+
+function Admin() {
+  return <AdminDashboard />;
 }
 
-export default Home;
+export default Admin;

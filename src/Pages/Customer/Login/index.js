@@ -1,4 +1,4 @@
-import Login from "~/Layout/Components/Login";
+import Login from "~/Layout/Components/Customer/Login";
 import classNames from "classnames/bind";
 import styles from "./Login.module.scss";
 
