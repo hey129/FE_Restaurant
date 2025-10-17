@@ -43,6 +43,7 @@ function AdminDashboard() {
   const [categories, setCategories] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [paymentFilter, setPaymentFilter] = useState("all"); // Payment method filter
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalCategories: 0,
@@ -51,6 +52,8 @@ function AdminDashboard() {
     totalRevenue: 0,
     pendingOrders: 0,
     completedOrders: 0,
+    momoOrders: 0, // Add MoMo stats
+    codOrders: 0, // Add COD stats
   });
 
   // Expanded order state
@@ -121,13 +124,19 @@ function AdminDashboard() {
   const calculateStats = (ordersData) => {
     const totalOrders = ordersData.length;
     const pendingOrders = ordersData.filter(
-      (o) => o.order_status === "pending"
+      (o) => o.order_status === "Chờ xử lý"
     ).length;
     const completedOrders = ordersData.filter(
-      (o) => o.order_status === "completed"
+      (o) => o.order_status === "Hoàn thành"
+    ).length;
+    const momoOrders = ordersData.filter(
+      (o) => o.payment?.[0]?.method?.toLowerCase() === "momo"
+    ).length;
+    const codOrders = ordersData.filter(
+      (o) => o.payment?.[0]?.method?.toLowerCase() === "cod"
     ).length;
     const totalRevenue = ordersData
-      .filter((o) => o.order_status === "completed")
+      .filter((o) => o.order_status === "Hoàn thành")
       .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
 
     setStats({
@@ -138,6 +147,8 @@ function AdminDashboard() {
       totalRevenue,
       pendingOrders,
       completedOrders,
+      momoOrders,
+      codOrders,
     });
   };
 
@@ -305,6 +316,22 @@ function AdminDashboard() {
                   <p className={cx("stat-number")}>
                     {formatVND(stats.totalRevenue)}
                   </p>
+                </div>
+              </div>
+
+              <div className={cx("stat-card", "pink")}>
+                <div className={cx("stat-icon")}>💳</div>
+                <div className={cx("stat-info")}>
+                  <h3>MoMo</h3>
+                  <p className={cx("stat-number")}>{stats.momoOrders}</p>
+                </div>
+              </div>
+
+              <div className={cx("stat-card", "indigo")}>
+                <div className={cx("stat-icon")}>💵</div>
+                <div className={cx("stat-info")}>
+                  <h3>COD</h3>
+                  <p className={cx("stat-number")}>{stats.codOrders}</p>
                 </div>
               </div>
             </div>
@@ -482,106 +509,153 @@ function AdminDashboard() {
         {/* Orders Tab */}
         {activeTab === "orders" && (
           <div className={cx("orders-section")}>
-            <h2 className={cx("section-title")}>Danh sách đơn hàng</h2>
+            <div className={cx("section-header")}>
+              <h2 className={cx("section-title")}>Danh sách đơn hàng</h2>
+              <div className={cx("payment-filters")}>
+                <button
+                  className={cx("filter-btn", {
+                    active: paymentFilter === "all",
+                  })}
+                  onClick={() => setPaymentFilter("all")}
+                >
+                  Tất cả ({orders.length})
+                </button>
+                <button
+                  className={cx("filter-btn", {
+                    active: paymentFilter === "momo",
+                  })}
+                  onClick={() => setPaymentFilter("momo")}
+                >
+                  💳 MoMo ({stats.momoOrders})
+                </button>
+                <button
+                  className={cx("filter-btn", {
+                    active: paymentFilter === "cod",
+                  })}
+                  onClick={() => setPaymentFilter("cod")}
+                >
+                  💵 COD ({stats.codOrders})
+                </button>
+              </div>
+            </div>
             <div className={cx("orders-list")}>
-              {orders.map((order) => (
-                <div key={order.order_id} className={cx("order-card")}>
-                  <div
-                    className={cx("order-header")}
-                    onClick={() => toggleOrderExpansion(order.order_id)}
-                  >
-                    <div className={cx("order-info")}>
-                      <div className={cx("order-id")}>
-                        Đơn hàng #{order.order_id}
-                      </div>
-                      <div className={cx("order-date")}>
-                        {formatDate(order.order_date)}
-                      </div>
-                      <div className={cx("order-customer")}>
-                        <strong>
-                          {order.customer?.customer_name || "Khách hàng"}
-                        </strong>
-                        <span>{order.customer?.phone || ""}</span>
-                      </div>
-                    </div>
-
-                    <div className={cx("order-meta")}>
-                      <div className={cx("badges")}>
-                        <span
-                          className={cx(
-                            "badge",
-                            getStatusBadge(order.order_status).class
-                          )}
-                        >
-                          {getStatusBadge(order.order_status).text}
-                        </span>
-                        <span
-                          className={cx(
-                            "badge",
-                            getPaymentBadge(order.payment_status).class
-                          )}
-                        >
-                          {getPaymentBadge(order.payment_status).text}
-                        </span>
-                      </div>
-                      <div className={cx("order-total")}>
-                        {formatVND(order.total_amount)}
-                      </div>
-                    </div>
-
-                    <div className={cx("expand-icon")}>
-                      {expandedOrder === order.order_id ? "▼" : "▶"}
-                    </div>
-                  </div>
-
-                  {expandedOrder === order.order_id && (
-                    <div className={cx("order-details")}>
-                      <div className={cx("detail-section")}>
-                        <h4>Địa chỉ giao hàng</h4>
-                        <p>{order.delivery_address || "Chưa có địa chỉ"}</p>
-                      </div>
-
-                      {order.note && (
-                        <div className={cx("detail-section")}>
-                          <h4>Ghi chú</h4>
-                          <p>{order.note}</p>
+              {orders
+                .filter(
+                  (order) =>
+                    paymentFilter === "all" ||
+                    order.payment?.[0]?.method?.toLowerCase() === paymentFilter
+                )
+                .map((order) => (
+                  <div key={order.order_id} className={cx("order-card")}>
+                    <div
+                      className={cx("order-header")}
+                      onClick={() => toggleOrderExpansion(order.order_id)}
+                    >
+                      <div className={cx("order-info")}>
+                        <div className={cx("order-id")}>
+                          Đơn hàng #{order.order_id}
                         </div>
-                      )}
+                        <div className={cx("order-date")}>
+                          {formatDate(order.order_date)}
+                        </div>
+                        <div className={cx("order-customer")}>
+                          <strong>
+                            {order.customer?.customer_name || "Khách hàng"}
+                          </strong>
+                          <span>{order.customer?.phone || ""}</span>
+                        </div>
+                      </div>
 
-                      {order.items && order.items.length > 0 && (
+                      <div className={cx("order-meta")}>
+                        <div className={cx("payment-method-badge")}>
+                          {order.payment?.[0]?.method?.toLowerCase() ===
+                          "momo" ? (
+                            <span className={cx("badge", "momo")}>💳 MoMo</span>
+                          ) : order.payment?.[0]?.method?.toLowerCase() ===
+                            "cod" ? (
+                            <span className={cx("badge", "cod")}>💵 COD</span>
+                          ) : (
+                            <span className={cx("badge", "unknown")}>
+                              {order.payment?.[0]?.method || "N/A"}
+                            </span>
+                          )}
+                        </div>
+                        <div className={cx("badges")}>
+                          <span
+                            className={cx(
+                              "badge",
+                              getStatusBadge(order.order_status).class
+                            )}
+                          >
+                            {getStatusBadge(order.order_status).text}
+                          </span>
+                          <span
+                            className={cx(
+                              "badge",
+                              getPaymentBadge(order.payment_status).class
+                            )}
+                          >
+                            {getPaymentBadge(order.payment_status).text}
+                          </span>
+                        </div>
+                        <div className={cx("order-total")}>
+                          {formatVND(order.total_amount)}
+                        </div>
+                      </div>
+
+                      <div className={cx("expand-icon")}>
+                        {expandedOrder === order.order_id ? "▼" : "▶"}
+                      </div>
+                    </div>
+
+                    {expandedOrder === order.order_id && (
+                      <div className={cx("order-details")}>
                         <div className={cx("detail-section")}>
-                          <h4>Chi tiết sản phẩm</h4>
-                          <div className={cx("items-list")}>
-                            {order.items.map((item) => (
-                              <div
-                                key={item.order_detail_id}
-                                className={cx("item")}
-                              >
-                                <img
-                                  src={item.product?.image}
-                                  alt={item.product?.product_name}
-                                  className={cx("item-image")}
-                                />
-                                <div className={cx("item-info")}>
-                                  <p className={cx("item-name")}>
-                                    {item.product?.product_name}
-                                  </p>
-                                  <p className={cx("item-quantity")}>
-                                    Số lượng: {item.quantity}
-                                  </p>
-                                </div>
-                                <div className={cx("item-price")}>
-                                  {formatVND(item.price * item.quantity)}
-                                </div>
-                              </div>
-                            ))}
+                          <h4>Địa chỉ giao hàng</h4>
+                          <p>{order.delivery_address || "Chưa có địa chỉ"}</p>
+                        </div>
+
+                        {order.note && (
+                          <div className={cx("detail-section")}>
+                            <h4>Ghi chú</h4>
+                            <p>{order.note}</p>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+                        )}
+
+                        {order.items && order.items.length > 0 && (
+                          <div className={cx("detail-section")}>
+                            <h4>Chi tiết sản phẩm</h4>
+                            <div className={cx("items-list")}>
+                              {order.items.map((item) => (
+                                <div
+                                  key={item.order_detail_id}
+                                  className={cx("item")}
+                                >
+                                  <img
+                                    src={item.product?.image}
+                                    alt={item.product?.product_name}
+                                    className={cx("item-image")}
+                                  />
+                                  <div className={cx("item-info")}>
+                                    <p className={cx("item-name")}>
+                                      {item.product?.product_name}
+                                    </p>
+                                    <p className={cx("item-quantity")}>
+                                      Số lượng: {item.quantity}
+                                    </p>
+                                  </div>
+                                  <div className={cx("item-price")}>
+                                    {formatVND(item.price * item.quantity)}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         )}

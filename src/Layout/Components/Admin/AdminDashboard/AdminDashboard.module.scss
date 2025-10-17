@@ -463,6 +463,60 @@
   width: 100%;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.payment-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+}
+
+.filter-btn {
+  padding: 0.625rem 1.25rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  &.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-color: #2563eb;
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    flex: 1;
+    min-width: 100px;
+  }
+}
+
 .orders-list {
   display: flex;
   flex-direction: column;
@@ -540,6 +594,42 @@
   @media (max-width: 768px) {
     align-items: flex-start;
     width: 100%;
+  }
+}
+
+.order-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+.payment-method-badge {
+  display: flex;
+  gap: 0.5rem;
+
+  .badge {
+    &.momo {
+      background: linear-gradient(135deg, #a22e7e 0%, #d42f7b 100%);
+      color: white;
+      font-weight: 600;
+    }
+
+    &.cod {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      font-weight: 600;
+    }
+
+    &.unknown {
+      background: #9ca3af;
+      color: white;
+    }
   }
 }
 

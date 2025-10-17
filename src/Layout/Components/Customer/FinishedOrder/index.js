@@ -71,7 +71,7 @@ function FinishedOrder() {
         // Get orders with status: delivered, cancelled
         const data = await getOrders({
           customerId: user.customer_id,
-          statuses: ["delivered", "cancelled"],
+          statuses: ["Đã giao", "Đã hủy"],
         });
 
         if (!active) return;
@@ -170,12 +170,24 @@ function FinishedOrder() {
                     <span
                       className={cx(
                         "value",
-                        order.payment_status === "paid" ? "paid" : "unpaid"
+                        order.payment_status === "Đã thanh toán"
+                          ? "paid"
+                          : "unpaid"
                       )}
                     >
-                      {order.payment_status === "paid"
+                      {order.payment_status === "Đã thanh toán"
                         ? "Đã thanh toán"
                         : "Chưa thanh toán"}
+                    </span>
+                  </div>
+                  <div className={cx("info-row")}>
+                    <span className={cx("label")}>Phương thức:</span>
+                    <span className={cx("value", "payment-method")}>
+                      {order.payment?.[0]?.method?.toLowerCase() === "momo"
+                        ? "💳 MoMo"
+                        : order.payment?.[0]?.method?.toLowerCase() === "cod"
+                        ? "💵 COD"
+                        : order.payment?.[0]?.method || "N/A"}
                     </span>
                   </div>
                 </div>

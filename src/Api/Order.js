@@ -18,6 +18,7 @@ export async function createOrder({
   shipping,
   deliveryAddress,
   note,
+  paymentMethod = "MoMo", // Default to COD
 }) {
   if (!customerId) throw new Error("NO_CUSTOMER");
   if (!items?.length) throw new Error("EMPTY_CART");
@@ -35,12 +36,21 @@ export async function createOrder({
       customer_id: customerId,
       delivery_address: deliveryAddress || null,
       total_amount: total,
-      order_status: "pending",
-      payment_status: "unpaid",
+      order_status: "Chờ xử lý",
+      payment_status: "Chưa thanh toán",
       note: note || null,
     })
     .select("order_id")
     .single();
+
+  console.log(
+    customerId,
+    items,
+    shipping,
+    deliveryAddress,
+    note,
+    paymentMethod
+  );
 
   if (orderErr) throw orderErr;
   const orderId = orderRow.order_id;
@@ -63,13 +73,26 @@ export async function createOrder({
     throw detailErr;
   }
 
-  // 3) (tuỳ chọn) tạo bản ghi payment ở trạng thái chờ
-  // const { error: payErr } = await supabase.from("payment").insert({
-  //   order_id: orderId,
-  //   amount: total,
-  //   method: paymentMethod,
-  //   note: "Khởi tạo thanh toán",
-  // });
+  // 3) Create payment record with method (use upsert to avoid duplicates)
+  const { error: payErr } = await supabase.from("payment").upsert(
+    {
+      order_id: orderId,
+      amount: total,
+      method: paymentMethod.toLowerCase(), // Store payment method in payment table (lowercase for consistency)
+      note:
+        paymentMethod === "MoMo"
+          ? "Chờ thanh toán MoMo"
+          : "Khởi tạo thanh toán",
+    },
+    {
+      onConflict: "order_id", // Update if order_id already exists
+    }
+  );
+
+  if (payErr) {
+    console.error("⚠️ Payment record creation failed:", payErr);
+    // Don't throw error here, order is already created
+  }
 
   // 4) Đánh dấu cart của user là 'ordered' (soft clear)
   await supabase
@@ -102,7 +125,8 @@ export async function getOrders({ customerId, statuses }) {
       total_amount,
       order_status,
       payment_status,
-      note
+      note,
+      payment:payment!payment_order_id_fkey(method)
     `
     )
     .eq("customer_id", customerId)
@@ -139,7 +163,8 @@ export async function getOrderDetail({ orderId }) {
       total_amount,
       order_status,
       payment_status,
-      note
+      note,
+      payment:payment!payment_order_id_fkey(method)
     `
     )
     .eq("order_id", orderId)
@@ -223,17 +248,16 @@ export async function updateOrderStatus({
 }
 
 /**
- * Cancel order and optionally refund payment
+ * Cancel order and refund payment
  * @param {Object} params
  * @param {number} params.orderId - Order ID
- * @param {boolean} params.refund - Whether to refund the payment
  * @returns {Promise<Object>}
  */
-export async function cancelOrder({ orderId, refund = false }) {
+export async function cancelOrder({ orderId }) {
   return updateOrderStatus({
     orderId,
-    orderStatus: "cancelled",
-    paymentStatus: refund ? "refund" : undefined,
+    orderStatus: "Hủy",
+    paymentStatus: "Hoàn tiền", // ✅ Always set to Refund when cancelling
   });
 }
 
@@ -246,8 +270,8 @@ export async function cancelOrder({ orderId, refund = false }) {
 export async function completeOrder({ orderId }) {
   return updateOrderStatus({
     orderId,
-    orderStatus: "completed",
-    paymentStatus: "paid",
+    orderStatus: "Hoàn thành",
+    paymentStatus: "Đã thanh toán",
   });
 }
 
@@ -273,7 +297,8 @@ export async function getAllOrders({ status = "all" } = {}) {
       customer:customer_id (
         customer_name,
         phone
-      )
+      ),
+      payment:payment!payment_order_id_fkey(method)
     `
     )
     .order("order_date", { ascending: false });
@@ -315,4 +340,51 @@ export async function getOrderItems({ orderId }) {
 
   if (error) throw error;
   return data || [];
+}
+
+/**
+ * Get payment details for an order
+ * @param {Object} params
+ * @param {number} params.orderId - Order ID
+ * @returns {Promise<Object>}
+ */
+export async function getOrderPayment({ orderId }) {
+  if (!orderId) throw new Error("NO_ORDER_ID");
+
+  const { data, error } = await supabase
+    .from("payment")
+    .select("*")
+    .eq("order_id", orderId)
+    .order("payment_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error && error.code !== "PGRST116") {
+    // PGRST116 = no rows returned
+    throw error;
+  }
+
+  return data || null;
+}
+
+/**
+ * Update payment status
+ * @param {Object} params
+ * @param {number} params.orderId - Order ID
+ * @param {string} params.paymentStatus - New payment status
+ * @returns {Promise<Object>}
+ */
+export async function updatePaymentStatus({ orderId, paymentStatus }) {
+  if (!orderId) throw new Error("NO_ORDER_ID");
+  if (!paymentStatus) throw new Error("NO_PAYMENT_STATUS");
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ payment_status: paymentStatus })
+    .eq("order_id", orderId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }

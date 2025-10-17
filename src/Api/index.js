@@ -11,4 +11,11 @@ export {
   updateOrderStatus,
   getAllOrders,
   getOrderItems,
+  getOrderPayment,
+  updatePaymentStatus,
 } from "./Order";
+export {
+  createMomoPayment,
+  queryMomoPaymentStatus,
+  getPaymentByOrderId,
+} from "./Payment";

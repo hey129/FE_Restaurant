@@ -98,13 +98,13 @@ function OrderList() {
       };
 
       // If cancelling and payment was made, set payment status to refund
-      if (newStatus === "cancelled" && refundPayment) {
+      if (newStatus === "Hủy" && refundPayment) {
         updateParams.paymentStatus = "refund";
       }
 
       // If completing, ensure payment is marked as paid
-      if (newStatus === "completed") {
-        updateParams.paymentStatus = "paid";
+      if (newStatus === "Hoàn thành") {
+        updateParams.paymentStatus = "Đã thanh toán";
       }
 
       const data = await updateOrderStatus(updateParams);
@@ -142,7 +142,7 @@ function OrderList() {
         `Tổng tiền: ${formatVND(order.total_amount)}\n` +
         `Trạng thái thanh toán: ${order.payment_status || "N/A"}\n\n` +
         `${
-          order.payment_status === "paid"
+          order.payment_status === "Đã thanh toán"
             ? "⚠️ Đơn hàng đã thanh toán sẽ được đánh dấu hoàn tiền."
             : ""
         }`
@@ -151,8 +151,8 @@ function OrderList() {
     if (!confirmCancel) return;
 
     // If payment was made (paid status), refund it
-    const needsRefund = order.payment_status === "paid";
-    await updateOrderStatusLocal(order.order_id, "cancelled", needsRefund);
+    const needsRefund = order.payment_status === "Đã thanh toán";
+    await updateOrderStatusLocal(order.order_id, "Hủy", needsRefund);
   };
 
   // Handle complete order
@@ -165,7 +165,7 @@ function OrderList() {
 
     if (!confirmComplete) return;
 
-    await updateOrderStatusLocal(order.order_id, "completed");
+    await updateOrderStatusLocal(order.order_id, "Hoàn thành");
   };
 
   // Get status badge class
@@ -199,10 +199,10 @@ function OrderList() {
 
   const getPaymentStatusText = (status) => {
     const textMap = {
-      paid: "Đã thanh toán",
-      unpaid: "Chưa thanh toán",
-      pending: "Đang xử lý",
-      refund: "Hoàn tiền",
+      "Đã thanh toán": "Đã thanh toán",
+      "Chưa thanh toán": "Chưa thanh toán",
+      "Chờ xử lý": "Đang xử lý",
+      "Hoàn tiền": "Hoàn tiền",
     };
     return textMap[status] || status;
   };
@@ -242,20 +242,20 @@ function OrderList() {
           Tất cả
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "pending" })}
-          onClick={() => setFilter("pending")}
+          className={cx("filter-btn", { active: filter === "Chờ xử lý" })}
+          onClick={() => setFilter("Chờ xử lý")}
         >
           Chờ xử lý
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "completed" })}
-          onClick={() => setFilter("completed")}
+          className={cx("filter-btn", { active: filter === "Hoàn thành" })}
+          onClick={() => setFilter("Hoàn thành")}
         >
           Hoàn thành
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "cancelled" })}
-          onClick={() => setFilter("cancelled")}
+          className={cx("filter-btn", { active: filter === "Hủy" })}
+          onClick={() => setFilter("Hủy")}
         >
           Đã hủy
         </button>
@@ -388,7 +388,7 @@ function OrderList() {
 
                   {/* Actions */}
                   <div className={cx("order-actions")}>
-                    {order.order_status === "pending" && (
+                    {order.order_status === "Chờ xử lý" && (
                       <>
                         <button
                           className={cx("btn", "btn-success")}
@@ -409,10 +409,10 @@ function OrderList() {
                       </>
                     )}
 
-                    {(order.order_status === "completed" ||
-                      order.order_status === "cancelled") && (
+                    {(order.order_status === "Hoàn thành" ||
+                      order.order_status === "Hủy") && (
                       <div className={cx("status-message")}>
-                        {order.order_status === "completed"
+                        {order.order_status === "Hoàn thành"
                           ? "✅ Đơn hàng đã hoàn thành"
                           : "❌ Đơn hàng đã bị hủy"}
                       </div>

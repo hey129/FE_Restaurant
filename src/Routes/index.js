@@ -1,4 +1,3 @@
-// src/routes/index.js
 import Menu from "~/Pages/Customer/Menu";
 import ProfilePage from "~/Pages/Customer/Profile";
 import CustomerProfile from "~/Pages/Customer/CustomerProfile";
@@ -13,6 +12,7 @@ import DefaultLayout from "~/Layout/Components/Customer/DefaultLayout";
 import Cart from "~/Pages/Customer/Cart";
 import CreateOrder from "~/Pages/Customer/CreateOrder";
 import PaymentSuccess from "~/Pages/Customer/PaymentSuccess";
+import PaymentReturn from "~/Layout/Components/Customer/PaymentReturn";
 
 const publicRoutes = [
   {
@@ -70,6 +70,11 @@ const publicRoutes = [
   {
     path: "/payment/success",
     component: PaymentSuccess,
+    layout: DefaultLayout,
+  },
+  {
+    path: "/payment/return",
+    component: PaymentReturn,
     layout: DefaultLayout,
   },
 ];

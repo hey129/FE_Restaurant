@@ -1,9 +1,8 @@
-// src/Pages/Customer/CreateOrder.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./CreateOrder.module.scss";
-import { useAuth, useCart, createOrder } from "~/Api";
+import { useAuth, useCart, createOrder, createMomoPayment } from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
 
 const cx = classNames.bind(styles);
@@ -31,7 +30,7 @@ export default function CreateOrder() {
     address: "",
     otherAddress: "",
     note: "",
-    paymentMethod: "cod",
+    paymentMethod: "MoMo",
   });
 
   // Redirect to login if not authenticated
@@ -45,7 +44,7 @@ export default function CreateOrder() {
   // Redirect if cart is empty
   useEffect(() => {
     if (isAuthenticated && items.length === 0) {
-      toast.error("Giỏ hàng trống");
+      toast.error("Giỏ hàng trống", { duration: 2000 });
       navigate("/cart");
     }
   }, [isAuthenticated, items.length, navigate]);
@@ -81,49 +80,91 @@ export default function CreateOrder() {
     }
 
     if (!items.length) {
-      toast.error("Giỏ hàng trống");
+      toast.error("Giỏ hàng trống", { duration: 2000 });
       return;
     }
 
     if (!profile?.customer_id) {
-      toast.error("Không tìm thấy thông tin người dùng");
+      toast.error("Không tìm thấy thông tin người dùng", { duration: 2000 });
       return;
     }
 
     const deliveryAddress = useOtherAddress ? form.otherAddress : form.address;
 
     if (!deliveryAddress?.trim()) {
-      toast.error("Vui lòng nhập địa chỉ giao hàng");
+      toast.error("Vui lòng nhập địa chỉ giao hàng", { duration: 2000 });
       return;
     }
 
     try {
       setSubmitting(true);
-      console.log("🚀 Creating order with items:", items.length);
+      toast.loading("Đang xử lý đơn hàng...");
 
-      // Create order in database with pending payment status
-      const { orderId } = await createOrder({
-        customerId: profile.customer_id,
-        items,
-        shipping: ship,
-        deliveryAddress,
-        note: form.note,
-        paymentMethod: form.paymentMethod,
-      });
+      // Handle MoMo payment
+      if (form.paymentMethod === "MoMo") {
+        try {
+          // Step 1: Create order first
+          console.log("🚀 Creating order...");
+          const { orderId } = await createOrder({
+            customerId: profile.customer_id,
+            items,
+            shipping: ship,
+            deliveryAddress,
+            note: form.note,
+            paymentMethod: form.paymentMethod,
+          });
 
-      console.log("✅ Order created successfully:", orderId);
+          console.log("✅ Order created:", orderId);
 
-      // Clear cart and navigate
-      await clearCart();
-      toast.success(`Đặt hàng thành công! Mã đơn hàng: #${orderId}`);
+          // Step 2: Create MoMo payment
+          toast.dismiss();
+          toast.loading("Đang kết nối với MoMo...");
 
-      // Navigate to order processing page
-      setTimeout(() => {
-        navigate("/profile/onprocessorder");
-      }, 1500);
+          const paymentResponse = await createMomoPayment({
+            orderId,
+            amount: total,
+            orderInfo: `Thanh toán đơn hàng #${orderId}`,
+          });
+
+          console.log("💳 MoMo response:", paymentResponse);
+
+          // Step 3: Verify MoMo payment URL
+          if (!paymentResponse.success || !paymentResponse.payUrl) {
+            throw new Error(
+              paymentResponse.message ||
+                "Không thể kết nối với MoMo. Vui lòng thử lại sau."
+            );
+          }
+
+          // Step 4: Clear cart and redirect
+          console.log("✅ MoMo ready, clearing cart...");
+          await clearCart();
+
+          toast.dismiss();
+          toast.success("Chuyển đến trang thanh toán MoMo...");
+
+          // Redirect to MoMo payment page
+          setTimeout(() => {
+            window.location.href = paymentResponse.payUrl;
+          }, 500);
+        } catch (paymentError) {
+          console.error("❌ Payment error:", paymentError);
+          toast.dismiss();
+          toast.error(
+            paymentError.message ||
+              "Không thể kết nối với MoMo. Đơn hàng của bạn đã được tạo nhưng chưa thanh toán. Vui lòng liên hệ hỗ trợ."
+          );
+          setSubmitting(false);
+        }
+      } else {
+        toast.dismiss();
+        toast.error("Phương thức thanh toán không hợp lệ");
+        setSubmitting(false);
+      }
     } catch (err) {
-      console.error("❌ Create order error:", err);
-      toast.error(err.message || "Tạo đơn hàng thất bại");
+      console.error("❌ Order creation error:", err);
+      toast.dismiss();
+      toast.error(err.message || "Tạo đơn hàng thất bại. Vui lòng thử lại.");
       setSubmitting(false);
     }
   };
@@ -157,7 +198,6 @@ export default function CreateOrder() {
                   />
                 </div>
               </div>
-
               <div className={cx("formGroup")}>
                 <label>Địa chỉ mặc định</label>
                 <input
@@ -167,7 +207,6 @@ export default function CreateOrder() {
                   placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
                 />
               </div>
-
               <div className={cx("formCheck")}>
                 <input
                   id="useOther"
@@ -177,7 +216,6 @@ export default function CreateOrder() {
                 />
                 <label htmlFor="useOther">Giao đến địa chỉ khác</label>
               </div>
-
               {useOtherAddress && (
                 <div className={cx("formGroup")}>
                   <label>Địa chỉ giao khác</label>
@@ -190,7 +228,6 @@ export default function CreateOrder() {
                   />
                 </div>
               )}
-
               <div className={cx("row2")}>
                 <div className={cx("formGroup")}>
                   <label>Phương thức thanh toán</label>
@@ -199,7 +236,7 @@ export default function CreateOrder() {
                     value={form.paymentMethod}
                     onChange={handleChange}
                   >
-                    <option value="cod">Thanh toán khi nhận hàng (COD)</option>
+                    <option value="MoMo">💳 MoMo</option>
                   </select>
                 </div>
 
@@ -218,7 +255,6 @@ export default function CreateOrder() {
                   </select>
                 </div>
               </div>
-
               <div className={cx("formGroup")}>
                 <label>Ghi chú</label>
                 <textarea
@@ -228,7 +264,6 @@ export default function CreateOrder() {
                   rows={3}
                 />
               </div>
-
               <button
                 className={cx("btnPrimary")}
                 type="submit"

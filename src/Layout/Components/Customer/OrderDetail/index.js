@@ -121,7 +121,7 @@ function OrderDetail() {
       toast.success("Đơn hàng đã được hủy thành công");
 
       // Update local state
-      setOrder((prev) => ({ ...prev, order_status: "cancelled" }));
+      setOrder((prev) => ({ ...prev, order_status: "Đã hủy" }));
     } catch (err) {
       console.error("Cancel order error:", err);
       toast.error(err.message || "Không thể hủy đơn hàng");
@@ -132,7 +132,8 @@ function OrderDetail() {
 
   // Check if order can be cancelled (pending, processing, or shipping status)
   const canCancelOrder =
-    order && ["pending", "processing", "shipping"].includes(order.order_status);
+    order &&
+    ["Chờ xử lý", "Đang xử lý", "Đang giao"].includes(order.order_status);
 
   if (loading) {
     return (
@@ -192,12 +193,22 @@ function OrderDetail() {
               <span
                 className={cx(
                   "value",
-                  order.payment_status === "paid" ? "paid" : "unpaid"
+                  order.payment_status === "Đã thanh toán" ? "paid" : "unpaid"
                 )}
               >
-                {order.payment_status === "paid"
+                {order.payment_status === "Đã thanh toán"
                   ? "Đã thanh toán"
                   : "Chưa thanh toán"}
+              </span>
+            </div>
+            <div className={cx("info-row")}>
+              <span className={cx("label")}>Phương thức thanh toán:</span>
+              <span className={cx("value")}>
+                {order.payment?.[0]?.method?.toLowerCase() === "momo"
+                  ? "💳 MoMo"
+                  : order.payment?.[0]?.method?.toLowerCase() === "cod"
+                  ? "💵 Thanh toán khi nhận hàng (COD)"
+                  : order.payment?.[0]?.method || "Chưa xác định"}
               </span>
             </div>
 
