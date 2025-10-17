@@ -7,22 +7,6 @@ export type Category = {
   img: string;
 };
 
-export type BestSeller = {
-  id: number;
-  name: string;
-  price: number;
-  img: string;
-  rating: number;
-};
-
-export type Recommend = {
-  id: number;
-  name: string;
-  price: number;
-  img: string;
-  rating: number;
-};
-
 export type MenuItem = {
   id: number;
   name: string;
@@ -63,51 +47,6 @@ export const getCategories = async (): Promise<Category[]> => {
     name: item.name,
     img: item.icon_url,
   }));
-};
-
-export const getBestSellers = async (): Promise<BestSeller[]> => {
-  return [
-    {
-      id: 1,
-      name: "Burger Deluxe",
-      price: 103.0,
-      img: "https://images.unsplash.com/photo-1613564834361-9436948817d1?auto=format&fit=crop&q=80&w=743",
-      rating: 4.8,
-    },
-    {
-      id: 2,
-      name: "Pizza Special",
-      price: 50.0,
-      img: "https://images.unsplash.com/photo-1564436872-f6d81182df12?auto=format&fit=crop&q=80&w=687",
-      rating: 4.9,
-    },
-    {
-      id: 3,
-      name: "Salad Fresh",
-      price: 8.2,
-      img: "https://images.unsplash.com/photo-1497636577773-f1231844b336?auto=format&fit=crop&q=80&w=687",
-      rating: 4.7,
-    },
-  ];
-};
-
-export const getRecommends = async (): Promise<Recommend[]> => {
-  return [
-    {
-      id: 1,
-      name: "Pasta Carbonara",
-      price: 10.0,
-      rating: 5.0,
-      img: "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?auto=format&fit=crop&q=80&w=1115",
-    },
-    {
-      id: 2,
-      name: "Grilled Chicken",
-      price: 25.0,
-      rating: 5.0,
-      img: "https://plus.unsplash.com/premium_photo-1669742928112-19364a33b530?auto=format&fit=crop&q=80&w=687",
-    },
-  ];
 };
 
 export const getMenuItems = async (): Promise<MenuItem[]> => {

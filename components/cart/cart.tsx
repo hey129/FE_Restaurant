@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -40,6 +41,7 @@ function useSlideInModal(width: number, duration = 300) {
 
 
 export default function CartModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const router = useRouter();
   const { cart, changeQuantity, removeFromCart } = useCart();
   const { width } = Dimensions.get("window");
   const { translateX, open, close } = useSlideInModal(width);
@@ -55,8 +57,10 @@ export default function CartModal({ visible, onClose }: { visible: boolean; onCl
   };
 
   const handleCheckout = () => {
-    // TODO: Navigate to checkout screen
-    alert("Checkout feature coming soon!");
+    close(() => {
+      onClose();
+      router.push("/screen/checkout");
+    });
   };
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);

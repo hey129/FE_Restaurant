@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AccountModal from "../../components/account/accountModal";
 import CartModal from "../../components/cart/cart";
 import { COLORS, PAGINATION } from "../../constants/app";
 import Menu from "../screen/menu";
@@ -69,6 +70,7 @@ const HeaderComponent = React.memo(function Header({
 // ------------------ HomePage ------------------
 export default function HomePage({ navigation }: any) {
   const [cartVisible, setCartVisible] = useState(false);
+  const [accountVisible, setAccountVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -77,9 +79,7 @@ export default function HomePage({ navigation }: any) {
 
   const onChange = useCallback((t: string) => setSearchText(t), []);
   const openCart = useCallback(() => setCartVisible(true), []);
-  const openAccount = useCallback(() => {
-    alert("Account feature coming soon!");
-  }, []);
+  const openAccount = useCallback(() => setAccountVisible(true), []);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
@@ -121,6 +121,7 @@ export default function HomePage({ navigation }: any) {
       )}
 
       <CartModal visible={cartVisible} onClose={() => setCartVisible(false)} />
+      <AccountModal visible={accountVisible} onClose={() => setAccountVisible(false)} />
     </SafeAreaView>
   );
 }

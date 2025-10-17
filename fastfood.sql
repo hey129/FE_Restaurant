@@ -40,26 +40,7 @@ create table if not exists customer (
   created_at timestamptz default now()
 );
 
--- 4) staff
-create table if not exists staff (
-  staff_id serial primary key,
-  staff_name text not null,
-  password text not null, -- có thể mã hoá bcrypt nếu dùng riêng
-  phone text,
-  address text,
-  email text unique,
-  role text, -- 'cook', 'delivery', 'manager'
-  status boolean default true,
-  created_at timestamptz default now()
-);
 
--- 5) admin
-create table if not exists admin (
-  admin_id serial primary key,
-  email text not null unique,
-  password text not null,
-  created_at timestamptz default now()
-);
 
 -- 6) cart
 create table if not exists cart (

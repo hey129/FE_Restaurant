@@ -10,9 +10,6 @@ export interface ShippingAddress {
   address: string;
 }
 
-/**
- * Validate name (not empty)
- */
 export function validateName(name: string): string {
   if (!name.trim()) {
     return 'Vui lòng nhập họ và tên';
@@ -20,9 +17,7 @@ export function validateName(name: string): string {
   return '';
 }
 
-/**
- * Validate phone number (10 digits)
- */
+
 export function validatePhone(phone: string): string {
   if (!phone.trim()) {
     return 'Vui lòng nhập số điện thoại';
@@ -36,9 +31,7 @@ export function validatePhone(phone: string): string {
   return '';
 }
 
-/**
- * Validate address (not empty)
- */
+
 export function validateAddress(address: string): string {
   if (!address.trim()) {
     return 'Vui lòng nhập địa chỉ chi tiết';
@@ -46,9 +39,7 @@ export function validateAddress(address: string): string {
   return '';
 }
 
-/**
- * Validate complete shipping address
- */
+
 export function validateShippingAddress(
   address: ShippingAddress
 ): { isValid: boolean; errors: ValidationErrors } {
@@ -63,9 +54,7 @@ export function validateShippingAddress(
   return { isValid, errors };
 }
 
-/**
- * Format phone number for display (optional)
- */
+
 export function formatPhoneNumber(phone: string): string {
   const cleaned = phone.replace(/\D/g, '');
   const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
