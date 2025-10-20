@@ -95,7 +95,6 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
         </TouchableWithoutFeedback>
 
         <Animated.View style={[styles.container, { width: width * 0.75, transform: [{ translateX }] }]}>
-          {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Tài khoản</Text>
             <TouchableOpacity onPress={() => close(onClose)} style={styles.closeBtn}>
@@ -103,7 +102,6 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Menu List */}
           <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
             {menuItems.map((item, index) => (
               <TouchableOpacity

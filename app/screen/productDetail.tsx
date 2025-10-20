@@ -14,7 +14,6 @@ import {
 import { getMenuItems, MenuItem } from "../../services/menuService";
 import { CartItem, useCart } from "../context/_cartContext";
 
-// ------------------ Constants ------------------
 const { width } = Dimensions.get("window");
 const ACCENT = "#E95322";
 const BG_LIGHT = "#F5CB58";
@@ -22,7 +21,6 @@ const MIN_QTY = 1;
 const TOAST_DURATION = 1500;
 const SPACING = { headerTop: 60, headerLeft: 30, footerBottom: 30 };
 
-// ------------------ Custom Hook: Toast ------------------
 function useToast() {
   const [msg, setMsg] = useState("");
   const opacity = useState(new Animated.Value(0))[0];
@@ -47,13 +45,11 @@ function useToast() {
   return { msg, opacity, showToast };
 }
 
-// ------------------ Service ------------------
 async function fetchItemById(id: string) {
   const all = await getMenuItems();
   return all.find((i) => String(i.id) === id) ?? null;
 }
 
-// ------------------ Component ------------------
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -70,7 +66,7 @@ export default function ProductDetail() {
 
   if (!item) return <Text style={{ padding: 20 }}>Đang tải...</Text>;
 
-  const formattedPrice = `$${item.price.toFixed(2)}`;
+  const formattedPrice = `${item.price.toFixed(3)} VND`;
 
   const handleAddToCart = () => {
     const payload: CartItem = {
@@ -87,7 +83,6 @@ export default function ProductDetail() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backIcon}>←</Text>

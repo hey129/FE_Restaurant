@@ -17,7 +17,6 @@ import CartModal from "../../components/cart/cart";
 import { COLORS, PAGINATION } from "../../constants/app";
 import Menu from "../screen/menu";
 
-// ------------------ Header Component ------------------
 const HeaderComponent = React.memo(function Header({
   searchText,
   onChange,
