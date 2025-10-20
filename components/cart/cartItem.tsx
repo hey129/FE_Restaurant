@@ -9,7 +9,7 @@ type CartItemProps = {
   item: CartItemType;
   onQuantityChange?: (delta: number) => void;
   onRemove?: () => void;
-  readOnly?: boolean; // For OrderHistory/OrderDetail (no edit allowed)
+  readOnly?: boolean; 
 };
 
 
@@ -35,7 +35,7 @@ export function CartItem({
           <Text style={styles.itemName}>{item.name}</Text>
           
           <View style={styles.priceQtyRow}>
-            <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.itemPrice}>{item.price.toFixed(3)} VND</Text>
             
             {!readOnly && (
               <View style={styles.qtyRow}>

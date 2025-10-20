@@ -156,13 +156,12 @@ export default function SignUpScreen() {
 
           <Text style={styles.orText}>hoặc </Text>
 
-          {/* Social buttons */}
           <View style={styles.socialButtons}>
             <TouchableOpacity style={styles.socialButton}>
               <Text style={styles.socialIcon}>G</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialButton}>
-              <Text style={styles.socialIcon}>f</Text>
+              <Text style={styles.socialIcon}>F</Text>
             </TouchableOpacity>
           </View>
 

@@ -1,4 +1,3 @@
-import { SUPABASE_TABLES } from "../constants/endpoints";
 import { supabase } from "./supabaseClient";
 
 export type Category = {
@@ -35,10 +34,9 @@ const fetchFromSupabase = async <T,>(
   return data as T[];
 };
 
-// API functions
 export const getCategories = async (): Promise<Category[]> => {
   const data = await fetchFromSupabase<any>(
-    SUPABASE_TABLES.CATEGORIES,
+    "category",
     "category_id, name, icon_url"
   );
 
@@ -51,7 +49,7 @@ export const getCategories = async (): Promise<Category[]> => {
 
 export const getMenuItems = async (): Promise<MenuItem[]> => {
   const data = await fetchFromSupabase<any>(
-    SUPABASE_TABLES.PRODUCTS,
+    "product",
     "product_id, product_name, price, image, rating, description, category_id"
   );
 

@@ -1,6 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://isewpmysxqbrcrnvvxdf.supabase.co"; 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzZXdwbXlzeHFicmNybnZ2eGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMTI0ODEsImV4cCI6MjA3NTg4ODQ4MX0.oRhuoaAMYiNgt27rcuuJRUIoYHbaV8xWwzN-3b1K3e8"; 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error(
+    "Missing Supabase environment variables " +
+    "Please check .env file has EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY"
+  );
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);

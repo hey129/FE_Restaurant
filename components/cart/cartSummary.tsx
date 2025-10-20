@@ -5,7 +5,7 @@ import { COLORS as APP_COLORS, PRICING } from "../../constants/app";
 
 type CartSummaryProps = {
   subtotal: number;
-  showDelivery?: boolean; // Checkout has delivery, OrderHistory doesn't
+  showDelivery?: boolean; 
   showCheckoutButton?: boolean; 
   onCheckout?: () => void;
 };
@@ -49,19 +49,19 @@ export function CartSummary({
 
   return (
     <View style={styles.container}>
-      <SummaryRow label="Tạm tính" value={`$${subtotal.toFixed(2)}`} />
+      <SummaryRow label="Tạm tính" value={`${subtotal.toFixed(3)}`} />
       
-      <SummaryRow label="Thuế & phí" value={`$${PRICING.TAX.toFixed(2)}`} />
+      <SummaryRow label="Thuế & phí" value={`${PRICING.TAX.toFixed(3)}`} />
       
       {showDelivery && (
-        <SummaryRow label="Phí giao hàng" value={`$${delivery.toFixed(2)}`} />
+        <SummaryRow label="Phí giao hàng" value={`${delivery.toFixed(3)}`} />
       )}
 
       <View style={styles.totalDivider} />
       
       <SummaryRow 
         label="Tổng cộng" 
-        value={`$${total.toFixed(2)}`} 
+        value={`${total.toFixed(3)} VND`} 
         bold 
       />
 

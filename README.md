@@ -1,102 +1,190 @@
-# 🍔 FoodFast - Food Delivery App
+# Welcome to your Expo app 👋
 
-A complete food delivery application built with React Native, Expo, and Supabase.
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## ✨ Features
+## Get started
 
-- 🔐 User Authentication (Login, Signup, Password Reset)
-- 🛒 Shopping Cart with real-time updates
-- 📱 Browse menu by categories
-- 🔍 Search products
-- 💳 MoMo Payment Gateway integration
-- 📦 Order history with filters
-- 📍 Multiple delivery addresses
-- 👤 Profile management
-- ⏰ Future-only time picker for delivery
+1. Install dependencies
 
-## 🛠️ Tech Stack
-
-- React Native 0.81.4 + Expo SDK 54
-- TypeScript 5.9.2
-- Supabase (PostgreSQL + Auth)
-- MoMo Payment Gateway (Sandbox)
-- Expo Router
-
-## 📦 Installation
-
-## 📦 Installation
-
-1. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Setup Supabase**
-   - Create project at [supabase.com](https://supabase.com)
-   - Run these SQL files in order:
-     1. `fastfood.sql` - Create tables and sample data
-     2. `update_customer_table.sql` - Update customer schema
-     3. `create_addresses_table.sql` - Create addresses table
-   - Create `.env` file with your credentials
+2. Start the app
 
-3. **Start the app**
+   ```bash
+   npx expo start
+   ```
+
+In the output, you'll find options to open the app in a
+
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Get a fresh project
+
+When you're ready, run:
+
+```bash
+npm run reset-project
+```
+
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+
+---
+
+# FoodFast - Food Delivery App
+
+A food delivery application built with React Native, Expo, and Supabase.
+
+## Installation
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/Ngct253/FoodDeliveryApp.git
+   cd FoodDeliveryApp
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Setup Supabase
+   - Create a project at [supabase.com](https://supabase.com)
+   - Run SQL file: `fastfood.sql` in Supabase SQL Editor
+   - Copy `.env.example` to `.env` and update with your Supabase credentials:
+     ```bash
+     cp .env.example .env
+     ```
+     Then edit [.env](http://_vscodecontentref_/0):
+     ```env
+     EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
+     EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+     ```
+
+4. Start the app
    ```bash
    npm start
    ```
 
-## 📱 App Structure
+## Project Structure
 
 ```
 app/
-├── (tabs)/          # Home & Explore
-├── feed/            # Auth screens (Login, Signup, Profile)
-├── screen/          # Menu, Checkout, Payment
-└── context/         # Cart state management
+├── (tabs)/              # Main tabs
+│   ├── index.tsx        # Home tab
+│   ├── orders.tsx       # Orders tab
+│   ├── profile.tsx      # Profile tab
+│   └── _layout.tsx      # Tab navigation layout
+├── feed/                # Authentication screens
+│   ├── _welcome.tsx     # Welcome screen
+│   ├── _login.tsx       # Login screen
+│   ├── _signup.tsx      # Signup screen
+│   └── _onboarding.tsx  # Onboarding screen
+├── screen/              # Other screens
+│   ├── menu.tsx         # Menu screen
+│   ├── productDetail.tsx # Product detail
+│   ├── checkout.tsx     # Checkout screen
+│   ├── payment.tsx      # Payment screen
+│   ├── editProfile.tsx  # Edit profile
+│   └── changePassword.tsx # Change password
+├── context/
+│   └── _cartContext.tsx # Cart state management
+├── modal.tsx            # Modal example (theme support)
+└── _layout.tsx          # Root layout
+
+components/
+├── auth/                # Authentication UI
+│   ├── authButton.tsx
+│   ├── authHeader.tsx
+│   ├── authInput.tsx
+│   └── index.ts
+├── cart/                # Cart components
+│   ├── cart.tsx
+│   ├── cartItem.tsx
+│   ├── cartSummary.tsx
+│   ├── emptyCart.tsx
+│   └── index.ts
+├── checkout/            # Checkout components
+│   ├── addressForm.tsx
+│   ├── deliveryTimePicker.tsx
+│   ├── orderSummary.tsx
+│   └── index.ts
+├── menu/
+│   └── menu.tsx         # Menu list component
+├── orders/              # Order components
+│   ├── orderCard.tsx
+│   ├── orderTabs.tsx
+│   ├── emptyOrders.tsx
+│   └── index.ts
+├── profile/             # Profile components
+│   ├── profileHeader.tsx
+│   ├── profileField.tsx
+│   ├── profileButton.tsx
+│   ├── profileInput.tsx
+│   └── index.ts
+├── account/
+│   └── accountModal.tsx # Account settings modal
+├── themed-text.tsx      # Theme-aware text component
+└── themed-view.tsx      # Theme-aware view component
 
 services/
-├── supabaseClient.ts
-├── orderService.ts
-├── paymentService.ts   # MoMo integration
-└── menuService.ts
+├── supabaseClient.ts    # Supabase configuration
+├── menuService.ts       # Menu data fetching
+├── orderService.ts      # Order CRUD operations
+└── paymentService.ts    # MoMo payment integration
+
+hooks/
+├── use-debounce.ts      # Debounce hook
+├── use-filtered-items.ts # Filter items hook
+├── use-menu-data.ts     # Menu data fetching hook
+├── use-pagination.ts    # Pagination hook
+├── use-color-scheme.ts  # Color scheme hook
+└── use-theme-color.ts   # Theme color hook
+
+constants/
+├── app.ts               # App constants (COLORS)
+├── endpoints.ts         # API endpoints
+├── sharedStyles.ts      # Shared styles
+└── theme.ts             # Theme colors (light/dark)
+
+utils/
+└── validation.ts        # Form validation utilities
 ```
 
-## 🔐 Database Setup
+## Database Schema
 
-After creating Supabase project, run these SQL scripts in order:
+Run `fastfood.sql` in Supabase SQL Editor. This creates:
 
-1. **fastfood.sql** - Base schema (category, product, customer, orders, etc.)
-2. **update_customer_table.sql** - Add phone_number, email, date_of_birth fields
-3. **create_addresses_table.sql** - Multiple delivery addresses support
+- `category` - Product categories
+- `product` - Menu items
+- `customer` - User profiles
+- `orders` - Order information
+- `order_detail` - Order items
+- `payment` - Payment records
+- `cart` - Shopping cart
 
-## 💳 MoMo Payment (Sandbox)
+## MoMo Payment Integration
 
-- Stores amounts in **USD** in database
-- Auto-converts to **VND** for MoMo API (rate: 23,000)
-- Uses HMAC-SHA256 signature via crypto-js
-- Test on mobile (web has CORS issues)
+Payment gateway using MoMo Sandbox API with HMAC-SHA256 signature.
 
-## 🎨 Design
+- Currency: VND
+- Platform: Mobile (expo-linking) and Web (expo-web-browser)
+- Config: `services/paymentService.ts`
 
-- Orange theme (#FF6B35)
-- Light yellow inputs (#FFE5B4)
-- Rounded buttons with shadows
-- Bottom sheet modals
+## Available Scripts
 
-## 📄 Environment Variables
-
-Create `.env`:
-```env
-EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```bash
+npm start          # Start Expo development server
+npm run android    # Run on Android
+npm run ios        # Run on iOS
+npm run web        # Run on web browser
 ```
-
-## 👨‍💻 Author
-
-**Ngct253** - [GitHub](https://github.com/Ngct253)
-
-## 📝 License
-
-MIT License
 
 ---
 

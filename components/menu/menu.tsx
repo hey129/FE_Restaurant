@@ -22,7 +22,6 @@ export const CategoryItem = ({
   </TouchableOpacity>
 );
 
-// MenuItem
 export const MenuListItem = ({ item }: { item: MenuItem }) => {
   const router = useRouter();
   return (
@@ -38,7 +37,7 @@ export const MenuListItem = ({ item }: { item: MenuItem }) => {
           <View style={styles.ratingListItem}>
             <Text style={styles.ratingTextWhite}>⭐ {item.rating?.toFixed(1) ?? "4.5"}</Text>
           </View>
-          <Text style={styles.menuItemPrice}>${item.price.toFixed(2)}</Text>
+          <Text style={styles.menuItemPrice}>{item.price.toFixed(3)} VND</Text>
         </View>
         <Text style={styles.menuItemDescription} numberOfLines={2}>
           {item.description}

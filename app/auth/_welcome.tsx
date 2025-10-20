@@ -8,7 +8,6 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Close Button (X) */}
       <TouchableOpacity 
         style={styles.closeButton}
         onPress={() => router.replace('/')}
@@ -16,13 +15,11 @@ export default function WelcomeScreen() {
         <Text style={styles.closeText}>✕</Text>
       </TouchableOpacity>
 
-      {/* Logo or Illustration Area */}
       <View style={styles.logoContainer}>
         <Text style={styles.appName}>FoodFast</Text>
         <Text style={styles.tagline}>Đặt món nhanh - Giao tận nơi</Text>
       </View>
 
-      {/* Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.loginButton}
