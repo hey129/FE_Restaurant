@@ -208,6 +208,7 @@ export async function getCustomerOrders(customerId: string) {
         order_id,
         order_date,
         total_amount,
+        payment_status,
         order_status,
         delivery_address,
         order_detail (
@@ -235,6 +236,7 @@ export async function getCustomerOrders(customerId: string) {
       created_at: order.order_date, 
       total_amount: order.total_amount,
       order_status: order.order_status,
+      payment_status: order.payment_status,
       delivery_address: order.delivery_address,
       items: (order.order_detail || []).map((detail: any) => ({
         product_name: detail.product?.product_name || 'Unknown',

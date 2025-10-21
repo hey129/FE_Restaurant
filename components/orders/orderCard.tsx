@@ -13,6 +13,7 @@ interface Order {
   created_at: string;
   total_amount: number;
   order_status: string;
+  payment_status?: string;
   delivery_address: string;
   items: OrderItem[];
 }
@@ -53,15 +54,63 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onCancelOrder }) =>
   const getStatusTextVi = (status: string) => {
     switch (status) {
       case 'Chờ xử lý':
-        return 'Chờ xác nhận';
+      case 'pending':
       case 'Đang xử lý':
         return 'Đang xử lý';
       case 'Hoàn thành':
         return 'Hoàn thành';
       case 'Đã hủy':
+      case 'Hủy':
         return 'Đã hủy';
       default:
         return status;
+    }
+  };
+
+  const getPaymentBadgeStyle = (status?: string) => {
+    const s = (status || '').toString().trim().toLowerCase();
+    switch (s) {
+      case 'chưa thanh toán':
+      case 'unpaid':
+      case 'un-paid':
+      case 'not paid':
+        return { backgroundColor: '#FF7043' };
+      case 'đã thanh toán':
+      case 'paid':
+      case 'success':
+        return { backgroundColor: '#66BB6A' };
+      case 'đã hoàn tiền':
+      case 'hoàn tiền':
+      case 'refunded':
+      case 'refunded_partial':
+      case 'refund':
+        return { backgroundColor: '#29B6F6' };
+      default:
+        return { backgroundColor: '#BDBDBD' };
+    }
+  };
+
+  const getPaymentTextVi = (status?: string) => {
+    const s = (status || '').toString().trim().toLowerCase();
+    if (!s) return 'Chưa thanh toán';
+    switch (s) {
+      case 'chưa thanh toán':
+      case 'unpaid':
+      case 'not paid':
+      case 'un-paid':
+        return 'Chưa thanh toán';
+      case 'đã thanh toán':
+      case 'paid':
+      case 'success':
+        return 'Đã thanh toán';
+      case 'đã hoàn tiền':
+      case 'hoàn tiền':
+      case 'refunded':
+      case 'refund':
+      case 'refunded_partial':
+        return 'Đã hoàn tiền';
+      default:
+        return status || 'Chưa thanh toán';
     }
   };
 
@@ -72,8 +121,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onCancelOrder }) =>
           <Text style={styles.orderId}>Đơn hàng #{order.order_id}</Text>
           <Text style={styles.orderDate}>{formatDate(order.created_at)}</Text>
         </View>
-        <View style={[styles.statusBadge, getStatusBadgeStyle(order.order_status)]}>
-          <Text style={styles.statusText}>{getStatusTextVi(order.order_status)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={[styles.statusBadge, getStatusBadgeStyle(order.order_status)]}>
+            <Text style={styles.statusText}>{getStatusTextVi(order.order_status)}</Text>
+          </View>
+          <View style={[styles.paymentBadge, getPaymentBadgeStyle(order.payment_status)]}>
+            <Text style={styles.statusText}>{getPaymentTextVi(order.payment_status)}</Text>
+          </View>
         </View>
       </View>
 
@@ -146,6 +200,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: COLORS.white,
+  },
+  paymentBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   orderBody: {
     marginBottom: 12,

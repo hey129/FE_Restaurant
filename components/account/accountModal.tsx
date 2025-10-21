@@ -46,7 +46,7 @@ export default function AccountModal({ visible, onClose }: AccountModalProps) {
       setTimeout(async () => {
         try {
           await supabase.auth.signOut();
-          router.replace("/feed/_welcome");
+          router.replace("/auth/_welcome");
         } catch (error) {
           console.error("Logout error:", error);
         }

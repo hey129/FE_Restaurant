@@ -1,7 +1,7 @@
 import { Slot, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { CartProvider } from "./context/_cartContext";
 import { OnboardingSimple } from "./auth/_onboarding";
+import { CartProvider } from "./context/_cartContext";
 
 export default function RootLayout() {
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -10,7 +10,7 @@ export default function RootLayout() {
   const handleFinishOnboarding = () => {
     setShowOnboarding(false);
     setTimeout(() => {
-      router.replace('/feed/_welcome');
+      router.replace('/');
     }, 50);
   };
 

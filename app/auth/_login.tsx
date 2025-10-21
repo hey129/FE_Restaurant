@@ -116,7 +116,7 @@ export default function LoginScreen() {
 
           <View style={styles.signupPrompt}>
             <Text style={styles.signupText}>Chưa có tài khoản? </Text>
-            <TouchableOpacity onPress={() => router.push("/feed/_signup")}>
+              <TouchableOpacity onPress={() => router.push("/auth/_signup")}>
               <Text style={styles.signupLink}>Đăng ký</Text>
             </TouchableOpacity>
           </View>

@@ -23,14 +23,14 @@ export default function WelcomeScreen() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.loginButton}
-          onPress={() => router.push('/feed/_login')}
+          onPress={() => router.push('/auth/_login')}
         >
           <Text style={styles.loginButtonText}>Đăng nhập</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.signupButton}
-          onPress={() => router.push('/feed/_signup')}
+          onPress={() => router.push('/auth/_signup')}
         >
           <Text style={styles.signupButtonText}>Đăng ký</Text>
         </TouchableOpacity>

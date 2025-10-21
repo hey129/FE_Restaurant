@@ -33,7 +33,7 @@ export default function CheckoutScreen() {
           if (Platform.OS === "web") {
             const confirmLogin = window.confirm("Bạn cần đăng nhập để tiếp tục đặt hàng");
             if (confirmLogin) {
-              router.replace("/feed/_welcome");
+              router.replace("/auth/_welcome");
             } else {
               window.history.back();
             }
@@ -44,7 +44,7 @@ export default function CheckoutScreen() {
               [
                 {
                   text: "Đăng nhập",
-                  onPress: () => router.replace("/feed/_welcome"),
+                  onPress: () => router.replace("/auth/_welcome"),
                 },
                 {
                   text: "Hủy",
