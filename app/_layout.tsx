@@ -10,7 +10,7 @@ export default function RootLayout() {
   const handleFinishOnboarding = () => {
     setShowOnboarding(false);
     setTimeout(() => {
-      router.replace('/auth/_welcome');
+      router.replace('/');
     }, 50);
   };
 
