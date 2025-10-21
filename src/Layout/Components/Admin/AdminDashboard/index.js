@@ -199,7 +199,7 @@ function AdminDashboard() {
       paid: { text: "Đã thanh toán", class: "success" },
       unpaid: { text: "Chưa thanh toán", class: "warning" },
       pending: { text: "Đang xử lý", class: "info" },
-      refund: { text: "Hoàn tiền", class: "danger" },
+      "Hoàn tiền": { text: "Hoàn tiền", class: "danger" },
     };
     return badges[status] || { text: status, class: "default" };
   };
@@ -614,6 +614,15 @@ function AdminDashboard() {
                           <h4>Địa chỉ giao hàng</h4>
                           <p>{order.delivery_address || "Chưa có địa chỉ"}</p>
                         </div>
+
+                        {order.payment?.[0]?.transaction_id && (
+                          <div className={cx("detail-section")}>
+                            <h4>Mã giao dịch</h4>
+                            <p className={cx("transaction-id")}>
+                              {order.payment[0].transaction_id}
+                            </p>
+                          </div>
+                        )}
 
                         {order.note && (
                           <div className={cx("detail-section")}>

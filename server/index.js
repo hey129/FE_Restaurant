@@ -78,6 +78,17 @@ app.listen(PORT, () => {
   console.log(` Server running on http://localhost:${PORT}`);
   console.log(` Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(` MoMo endpoint: ${process.env.MOMO_ENDPOINT}`);
+
+  // Check Supabase configuration
+  const hasSupabaseUrl = !!process.env.SUPABASE_URL;
+  const hasSupabaseKey = !!process.env.SUPABASE_ANON_KEY;
+  console.log(
+    ` Supabase URL: ${hasSupabaseUrl ? "✓ Configured" : "✗ Missing"}`
+  );
+  console.log(
+    ` Supabase Key: ${hasSupabaseKey ? "✓ Configured" : "✗ Missing"}`
+  );
+
   console.log("");
   console.log("Available routes:");
   console.log("  GET  / - Server info");

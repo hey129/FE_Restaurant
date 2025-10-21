@@ -131,25 +131,52 @@ export async function createPayment(req, res) {
       hasPayUrl: !!momoResponse.payUrl,
     });
 
-    // Update payment record in database using upsert to avoid duplicates
+    // Update payment record in database (payment record should already exist from createOrder)
     if (momoResponse.resultCode === 0 && isSupabaseConfigured && supabase) {
-      const { error: paymentError } = await supabase.from("payment").upsert(
-        {
+      // Check if payment record exists
+      const { data: existingPayment, error: checkError } = await supabase
+        .from("payment")
+        .select("payment_id")
+        .eq("order_id", parseInt(orderId))
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("❌ Failed to check payment record:", checkError);
+      } else if (existingPayment) {
+        // Update existing payment record
+        const { error: updateError } = await supabase
+          .from("payment")
+          .update({
+            method: "momo",
+            transaction_id: requestId, // Store requestId initially, will be updated with transId by IPN
+            note: `MoMo payment initiated - ${orderInfoStr} (MoMo Order: ${momoOrderId})`,
+          })
+          .eq("order_id", parseInt(orderId));
+
+        if (updateError) {
+          console.error("❌ Failed to update payment record:", updateError);
+        } else {
+          console.log(
+            "✅ Payment record updated, waiting for MoMo confirmation"
+          );
+        }
+      } else {
+        // Insert new payment record if not exists
+        const { error: insertError } = await supabase.from("payment").insert({
           order_id: parseInt(orderId),
           amount: parseFloat(amount),
           method: "momo",
-          transaction_id: momoOrderId, // Store MoMo's unique order ID
+          transaction_id: requestId, // Store requestId initially, will be updated with transId by IPN
           note: `MoMo payment initiated - ${orderInfoStr} (MoMo Order: ${momoOrderId})`,
-        },
-        {
-          onConflict: "order_id", // Update if order_id already exists
-        }
-      );
+        });
 
-      if (paymentError) {
-        console.error("❌ Failed to upsert payment record:", paymentError);
-      } else {
-        console.log("✅ Payment record updated with MoMo transaction ID");
+        if (insertError) {
+          console.error("❌ Failed to insert payment record:", insertError);
+        } else {
+          console.log(
+            "✅ Payment record created, waiting for MoMo confirmation"
+          );
+        }
       }
     } else if (!isSupabaseConfigured) {
       console.warn(
@@ -239,7 +266,7 @@ export async function handleIPN(req, res) {
         const { error: paymentUpdateError } = await supabase
           .from("payment")
           .update({
-            transaction_id: transId,
+            transaction_id: requestId,
             payment_date: new Date().toISOString(),
             note: `Payment successful - ${message}`,
           })

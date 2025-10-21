@@ -99,7 +99,7 @@ function OrderList() {
 
       // If cancelling and payment was made, set payment status to refund
       if (newStatus === "Hủy" && refundPayment) {
-        updateParams.paymentStatus = "refund";
+        updateParams.paymentStatus = "Hoàn tiền";
       }
 
       // If completing, ensure payment is marked as paid
@@ -183,7 +183,7 @@ function OrderList() {
       paid: "success",
       unpaid: "warning",
       pending: "info",
-      refund: "danger",
+      "Hoàn tiền": "danger",
     };
     return statusMap[status] || "secondary";
   };
@@ -296,6 +296,17 @@ function OrderList() {
                 </div>
 
                 <div className={cx("order-meta")}>
+                  <div className={cx("payment-method-badge")}>
+                    {order.payment?.[0]?.method?.toLowerCase() === "momo" ? (
+                      <span className={cx("badge", "momo")}>💳 MoMo</span>
+                    ) : order.payment?.[0]?.method?.toLowerCase() === "cod" ? (
+                      <span className={cx("badge", "cod")}>💵 COD</span>
+                    ) : (
+                      <span className={cx("badge", "unknown")}>
+                        {order.payment?.[0]?.method || "N/A"}
+                      </span>
+                    )}
+                  </div>
                   <div className={cx("badges")}>
                     <span
                       className={cx(
@@ -334,6 +345,16 @@ function OrderList() {
                     <h4>Địa chỉ giao hàng</h4>
                     <p>{order.delivery_address || "Chưa có địa chỉ"}</p>
                   </div>
+
+                  {/* Transaction ID */}
+                  {order.payment?.[0]?.transaction_id && (
+                    <div className={cx("detail-section")}>
+                      <h4>Mã giao dịch</h4>
+                      <p className={cx("transaction-id")}>
+                        {order.payment[0].transaction_id}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Order Note */}
                   {order.note && (

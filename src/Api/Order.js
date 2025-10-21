@@ -18,7 +18,7 @@ export async function createOrder({
   shipping,
   deliveryAddress,
   note,
-  paymentMethod = "MoMo", // Default to COD
+  paymentMethod = "momo", // Default to COD
 }) {
   if (!customerId) throw new Error("NO_CUSTOMER");
   if (!items?.length) throw new Error("EMPTY_CART");
@@ -37,7 +37,7 @@ export async function createOrder({
       delivery_address: deliveryAddress || null,
       total_amount: total,
       order_status: "Chờ xử lý",
-      payment_status: "Chưa thanh toán",
+      payment_status: "Đã thanh toán",
       note: note || null,
     })
     .select("order_id")
@@ -73,21 +73,16 @@ export async function createOrder({
     throw detailErr;
   }
 
-  // 3) Create payment record with method (use upsert to avoid duplicates)
-  const { error: payErr } = await supabase.from("payment").upsert(
-    {
-      order_id: orderId,
-      amount: total,
-      method: paymentMethod.toLowerCase(), // Store payment method in payment table (lowercase for consistency)
-      note:
-        paymentMethod === "MoMo"
-          ? "Chờ thanh toán MoMo"
-          : "Khởi tạo thanh toán",
-    },
-    {
-      onConflict: "order_id", // Update if order_id already exists
-    }
-  );
+  // 3) Create payment record with method (insert only, no upsert)
+  const { error: payErr } = await supabase.from("payment").insert({
+    order_id: orderId,
+    amount: total,
+    method: paymentMethod.toLowerCase(), // Store payment method in payment table (lowercase for consistency)
+    note:
+      paymentMethod.toLowerCase() === "momo"
+        ? "Chờ thanh toán MoMo"
+        : "Khởi tạo thanh toán",
+  });
 
   if (payErr) {
     console.error("⚠️ Payment record creation failed:", payErr);
@@ -126,7 +121,7 @@ export async function getOrders({ customerId, statuses }) {
       order_status,
       payment_status,
       note,
-      payment:payment!payment_order_id_fkey(method)
+      payment:payment!payment_order_id_fkey(method, transaction_id)
     `
     )
     .eq("customer_id", customerId)
@@ -164,7 +159,7 @@ export async function getOrderDetail({ orderId }) {
       order_status,
       payment_status,
       note,
-      payment:payment!payment_order_id_fkey(method)
+      payment:payment!payment_order_id_fkey(method, transaction_id)
     `
     )
     .eq("order_id", orderId)
@@ -298,7 +293,7 @@ export async function getAllOrders({ status = "all" } = {}) {
         customer_name,
         phone
       ),
-      payment:payment!payment_order_id_fkey(method)
+      payment:payment!payment_order_id_fkey(method, transaction_id)
     `
     )
     .order("order_date", { ascending: false });

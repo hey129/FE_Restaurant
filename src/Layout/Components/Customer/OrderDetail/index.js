@@ -211,6 +211,14 @@ function OrderDetail() {
                   : order.payment?.[0]?.method || "Chưa xác định"}
               </span>
             </div>
+            {order.payment?.[0]?.transaction_id && (
+              <div className={cx("info-row")}>
+                <span className={cx("label")}>Mã giao dịch:</span>
+                <span className={cx("value", "transaction-id")}>
+                  {order.payment[0].transaction_id}
+                </span>
+              </div>
+            )}
 
             {/* Cancel Button */}
             {canCancelOrder && (
