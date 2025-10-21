@@ -9,36 +9,51 @@ export function CustomerProvider({ children }) {
   const [customers, setCustomers] = useState([]); // List tất cả customers (nếu cần cho admin)
   const [loading, setLoading] = useState(true);
 
-  // Kiểm tra và load profile customer hiện tại khi component mount (tương tự checkUser trong Auth)
+  // Shared function to get current user and profile
+  const getCurrentUser = async () => {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      if (error) throw error;
+
+      if (!user) return null;
+
+      const { data: profile, error: profileError } = await supabase
+        .from("customer")
+        .select("customer_id, customer_name, phone, address, created_at")
+        .eq("customer_id", user.id)
+        .single();
+
+      if (profileError) {
+        console.warn("Could not fetch customer profile:", profileError);
+      }
+
+      return {
+        user,
+        profile: profile || null,
+      };
+    } catch (error) {
+      console.error("Get current user error:", error);
+      return null;
+    }
+  };
+
+  // Kiểm tra và load profile customer hiện tại khi component mount
   useEffect(() => {
     async function loadCustomer() {
       try {
-        // Lấy current user từ supabase auth để sync với AuthContext
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-        if (error) throw error;
+        const userData = await getCurrentUser();
 
-        if (!user) {
+        if (!userData || !userData.user) {
           setCustomer(null);
           setCustomers([]);
           setLoading(false);
           return;
         }
 
-        // Lấy profile từ bảng customer
-        const { data: profile, error: profileError } = await supabase
-          .from("customer")
-          .select("customer_id, customer_name, phone, address, created_at")
-          .eq("customer_id", user.id)
-          .single();
-
-        if (profileError) {
-          console.warn("Could not fetch customer profile:", profileError);
-        }
-
-        setCustomer(profile || null);
+        setCustomer(userData.profile || null);
 
         // Load list customers nếu cần (ví dụ: cho admin panel)
         const { data: allCustomers, error: customersError } = await supabase
@@ -191,35 +206,6 @@ export function CustomerProvider({ children }) {
     if (error) throw error;
     setCustomers(data || []);
     return data || [];
-  };
-  const getCurrentUser = async () => {
-    try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-      if (error) throw error;
-
-      if (!user) return null;
-
-      const { data: profile, error: profileError } = await supabase
-        .from("customer")
-        .select("customer_id, customer_name, phone, address, created_at")
-        .eq("customer_id", user.id)
-        .single();
-
-      if (profileError) {
-        console.warn("Could not fetch customer profile:", profileError);
-      }
-
-      return {
-        user,
-        profile: profile || null,
-      };
-    } catch (error) {
-      console.error("Get current user error:", error);
-      return null;
-    }
   };
 
   const value = {

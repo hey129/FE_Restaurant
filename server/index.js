@@ -57,7 +57,7 @@ app.get("/", (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error("❌ Server error:", err);
+  console.error(" Server error:", err);
   res.status(500).json({
     success: false,
     message: err.message || "Internal server error",
@@ -74,10 +74,10 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log("🚀 Restaurant Server started");
-  console.log(`📍 Server running on http://localhost:${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`💳 MoMo endpoint: ${process.env.MOMO_ENDPOINT}`);
+  console.log(" Restaurant Server started");
+  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(` Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(` MoMo endpoint: ${process.env.MOMO_ENDPOINT}`);
   console.log("");
   console.log("Available routes:");
   console.log("  GET  / - Server info");

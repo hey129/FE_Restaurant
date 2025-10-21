@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
     }
     checkUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [getCurrentUser]);
 
   // Hàm login sẽ gọi API, sau đó cập nhật state user toàn cục
   const login = async ({ email, password }) => {
