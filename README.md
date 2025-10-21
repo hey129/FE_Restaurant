@@ -72,91 +72,6 @@ A food delivery application built with React Native, Expo, and Supabase.
    npm start
    ```
 
-## Project Structure
-
-```
-app/
-├── (tabs)/              # Main tabs
-│   ├── index.tsx        # Home tab
-│   ├── orders.tsx       # Orders tab
-│   ├── profile.tsx      # Profile tab
-│   └── _layout.tsx      # Tab navigation layout
-├── feed/                # Authentication screens
-│   ├── _welcome.tsx     # Welcome screen
-│   ├── _login.tsx       # Login screen
-│   ├── _signup.tsx      # Signup screen
-│   └── _onboarding.tsx  # Onboarding screen
-├── screen/              # Other screens
-│   ├── menu.tsx         # Menu screen
-│   ├── productDetail.tsx # Product detail
-│   ├── checkout.tsx     # Checkout screen
-│   ├── payment.tsx      # Payment screen
-│   ├── editProfile.tsx  # Edit profile
-│   └── changePassword.tsx # Change password
-├── context/
-│   └── _cartContext.tsx # Cart state management
-├── modal.tsx            # Modal example (theme support)
-└── _layout.tsx          # Root layout
-
-components/
-├── auth/                # Authentication UI
-│   ├── authButton.tsx
-│   ├── authHeader.tsx
-│   ├── authInput.tsx
-│   └── index.ts
-├── cart/                # Cart components
-│   ├── cart.tsx
-│   ├── cartItem.tsx
-│   ├── cartSummary.tsx
-│   ├── emptyCart.tsx
-│   └── index.ts
-├── checkout/            # Checkout components
-│   ├── addressForm.tsx
-│   ├── deliveryTimePicker.tsx
-│   ├── orderSummary.tsx
-│   └── index.ts
-├── menu/
-│   └── menu.tsx         # Menu list component
-├── orders/              # Order components
-│   ├── orderCard.tsx
-│   ├── orderTabs.tsx
-│   ├── emptyOrders.tsx
-│   └── index.ts
-├── profile/             # Profile components
-│   ├── profileHeader.tsx
-│   ├── profileField.tsx
-│   ├── profileButton.tsx
-│   ├── profileInput.tsx
-│   └── index.ts
-├── account/
-│   └── accountModal.tsx # Account settings modal
-├── themed-text.tsx      # Theme-aware text component
-└── themed-view.tsx      # Theme-aware view component
-
-services/
-├── supabaseClient.ts    # Supabase configuration
-├── menuService.ts       # Menu data fetching
-├── orderService.ts      # Order CRUD operations
-└── paymentService.ts    # MoMo payment integration
-
-hooks/
-├── use-debounce.ts      # Debounce hook
-├── use-filtered-items.ts # Filter items hook
-├── use-menu-data.ts     # Menu data fetching hook
-├── use-pagination.ts    # Pagination hook
-├── use-color-scheme.ts  # Color scheme hook
-└── use-theme-color.ts   # Theme color hook
-
-constants/
-├── app.ts               # App constants (COLORS)
-├── endpoints.ts         # API endpoints
-├── sharedStyles.ts      # Shared styles
-└── theme.ts             # Theme colors (light/dark)
-
-utils/
-└── validation.ts        # Form validation utilities
-```
-
 ## Database Schema
 
 Run `fastfood.sql` in Supabase SQL Editor. This creates:
@@ -174,7 +89,7 @@ Run `fastfood.sql` in Supabase SQL Editor. This creates:
 Payment gateway using MoMo Sandbox API with HMAC-SHA256 signature.
 
 - Currency: VND
-- Platform: Mobile (expo-linking) and Web (expo-web-browser)
+- Platform: Mobile (expo-linking)
 - Config: `services/paymentService.ts`
 
 ## Available Scripts

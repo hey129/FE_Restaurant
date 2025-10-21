@@ -21,7 +21,7 @@ export default function EditProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        router.replace("/feed/_welcome");
+        router.replace("/auth/_welcome");
         return;
       }
 

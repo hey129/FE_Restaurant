@@ -92,7 +92,7 @@ export default function SignUpScreen() {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/feed/_login"),
+              onPress: () => router.replace("/auth/_login"),
           },
         ]
       );
@@ -167,7 +167,7 @@ export default function SignUpScreen() {
 
           <View style={styles.loginPrompt}>
             <Text style={styles.loginText}>Đã có tài khoản? </Text>
-            <TouchableOpacity onPress={() => router.replace("/feed/_login")}>
+              <TouchableOpacity onPress={() => router.replace("/auth/_login")}>
               <Text style={styles.loginLink}>Đăng nhập</Text>
             </TouchableOpacity>
           </View>

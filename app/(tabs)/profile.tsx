@@ -25,7 +25,7 @@ export default function ProfileTab() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        router.replace("/feed/_welcome");
+        router.replace("/auth/_welcome");
         return;
       }
 
@@ -64,9 +64,9 @@ export default function ProfileTab() {
         {
           text: "Đăng xuất",
           style: "destructive",
-          onPress: async () => {
+            onPress: async () => {
             await supabase.auth.signOut();
-            router.replace("/feed/_welcome");
+            router.replace("/auth/_welcome");
           },
         },
       ]

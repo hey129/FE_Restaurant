@@ -32,7 +32,7 @@ export default function PaymentScreen() {
       
       if (!user) {
         Alert.alert("Lỗi", "Vui lòng đăng nhập để tiếp tục");
-        router.replace("/feed/_login");
+        router.replace("/auth/_login");
         return;
       }
       

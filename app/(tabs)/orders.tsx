@@ -36,7 +36,7 @@ export default function OrdersTab() {
       
       if (!user) {
         console.log('[Orders] Không có user đăng nhập');
-        router.replace("/feed/_welcome");
+        router.replace("/auth/_welcome");
         return;
       }
 
