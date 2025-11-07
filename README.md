@@ -181,9 +181,7 @@ FE_Restaurant/
 │   ├── package.json          # Server dependencies
 │   └── .env                  # Server environment variables
 │
-├── database/                 # Database migrations (optional)
-│   └── migrations/
-│
+|
 ├── build/                    # Production build output
 ├── config-overrides.js       # Webpack customization
 ├── jsconfig.json             # JavaScript configuration
