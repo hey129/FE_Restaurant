@@ -1,0 +1,94 @@
+.footer {
+  background: #f9fafb;
+  padding: 2.5rem 0;
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+  }
+
+  .about {
+    .logo {
+      height: 2.25rem;
+    }
+
+    .description {
+      margin-top: 1.75rem;
+      font-size: 1rem;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    .socials {
+      margin-top: 2rem;
+      display: flex;
+      gap: 0.75rem;
+
+      .social-link {
+        background: #1f2937;
+        color: white;
+        width: 1.75rem;
+        height: 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #2563eb;
+        }
+
+        .icon {
+          width: 1rem;
+          height: 1rem;
+        }
+      }
+    }
+  }
+
+  .title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #9ca3af;
+    letter-spacing: 0.05em;
+  }
+
+  .link-list {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    a {
+      font-size: 1rem;
+      color: #000;
+      text-decoration: none;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #2563eb;
+      }
+    }
+  }
+
+  .divider {
+    margin: 4rem 0 2.5rem;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .copyright {
+    text-align: center;
+    font-size: 0.875rem;
+    color: #4b5563;
+  }
+}

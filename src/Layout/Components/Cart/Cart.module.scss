@@ -1,0 +1,232 @@
+/* --- Cấu trúc Layout chính --- */
+.page-container {
+  padding: 2rem;
+  background-color: #f9fafb;
+  font-family: sans-serif;
+  color: #111827;
+}
+
+.cart-layout {
+  display: grid;
+
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1rem 0;
+}
+
+/* --- Cột bên trái: Danh sách sản phẩm --- */
+.cart-items {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-count {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.item-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.item-details {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-category {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+.item-price {
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+}
+
+.quantity-stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  // Thêm dòng này để các border-radius con hoạt động
+  overflow: hidden;
+
+  button {
+    background: none;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #6b7280; // Thêm màu cho chữ để rõ hơn
+
+    transition: background-color 0.2s; // Thêm hiệu ứng chuyển động mượt
+
+    &:hover {
+      background-color: #f3f4f6; // Một màu xám rất nhạt
+    }
+  }
+
+  input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+    margin: 0;
+    color: #111827; // Thêm màu chữ đậm hơn
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 1rem;
+}
+
+.back-to-shop {
+  display: inline-block;
+  margin-top: 2rem;
+  color: #6b7280;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* --- Cột bên phải: Tóm tắt đơn hàng --- */
+.summary {
+  background-color: #f3f4f6;
+  padding: 2rem 2rem;
+  border-radius: 8px;
+  height: fit-content; // Chỉ cao bằng nội dung
+}
+.summary-actions {
+  display: flex; /* Kích hoạt Flexbox */
+  justify-content: space-between; /* Đẩy 2 phần tử con ra 2 phía */
+  align-items: flex-end; /* Căn các item theo phía dưới cho đẹp */
+  margin-top: 20px; /* Thêm chút khoảng cách với danh sách sản phẩm */
+}
+
+.actions-right {
+  /* Căn chỉnh nội dung bên trong khối này sang phải */
+  display: flex;
+  flex-direction: column; /* Xếp chồng tổng giá và nút bấm */
+  align-items: flex-end; /* Căn mọi thứ sang phải */
+  gap: 10px; /* Tạo khoảng cách giữa tổng giá và nút bấm */
+}
+
+// Giữ lại style cho total price nếu cần
+.total {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  &.total {
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+}
+
+.summary-group {
+  margin: 1.5rem 0;
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4b5563;
+  }
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+.divider-bold {
+  border: none;
+  border-top: 2px solid #d1d5db;
+  margin: 1.5rem 0;
+}
+
+.order-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+}
+
+.actions-left button {
+  margin: 0;
+}

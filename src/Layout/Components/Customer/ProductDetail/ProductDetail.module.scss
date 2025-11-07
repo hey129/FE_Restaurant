@@ -1,0 +1,508 @@
+@use "../GlobalStyle/GlobalStyle.scss" as *;
+.section {
+  background: linear-gradient(to bottom, white, $neutral-50);
+  padding: $spacing-2xl 0;
+  min-height: 80vh;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 $spacing-md;
+
+  @media (min-width: $breakpoint-md) {
+    padding: 0 $spacing-2xl;
+  }
+}
+
+// Breadcrumbs - Easy navigation
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $neutral-600;
+  margin-bottom: $spacing-xl;
+  flex-wrap: wrap;
+
+  .sep {
+    color: $neutral-400;
+    font-weight: $font-weight-bold;
+  }
+
+  .crumb {
+    color: $primary-500;
+    text-decoration: none;
+    font-weight: $font-weight-medium;
+    transition: all $transition-fast;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-md;
+
+    &:hover {
+      background: $primary-50;
+      color: $primary-700;
+    }
+  }
+}
+
+// Main layout - Beautiful and spacious
+.layout {
+  display: grid;
+  gap: $spacing-3xl;
+  grid-template-columns: 1fr;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (min-width: $breakpoint-lg) {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+// Media Gallery - Stunning visuals
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  position: sticky;
+  top: $spacing-2xl;
+  align-self: start;
+}
+
+.mainImgWrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: $radius-2xl;
+  overflow: hidden;
+  background: linear-gradient(135deg, $neutral-100, $neutral-50);
+  border: 3px solid rgba($primary-500, 0.1);
+  box-shadow: $shadow-xl;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+  }
+}
+
+.mainImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform $transition-slow;
+  cursor: zoom-in;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+}
+
+.thumbs {
+  display: flex;
+  gap: $spacing-md;
+  overflow-x: auto;
+  padding-bottom: $spacing-sm;
+  scrollbar-width: thin;
+  scrollbar-color: $primary-300 $neutral-100;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $neutral-100;
+    border-radius: $radius-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $primary-300;
+    border-radius: $radius-full;
+
+    &:hover {
+      background: $primary-400;
+    }
+  }
+}
+
+.thumbBtn {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  border: 3px solid transparent;
+  background: $neutral-50;
+  cursor: pointer;
+  transition: all $transition-base;
+  padding: 0;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    border-color: $primary-300;
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+
+  &.active {
+    border-color: $primary-500;
+    box-shadow: 0 0 0 2px rgba($primary-500, 0.2);
+    transform: scale(1.05);
+  }
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// Product Summary - Clear and compelling
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+  background: white;
+  padding: $spacing-2xl;
+  border-radius: $radius-2xl;
+  box-shadow: $shadow-lg;
+  border: 1px solid rgba($primary-500, 0.1);
+}
+
+.title {
+  font-size: $font-size-3xl;
+  font-weight: $font-weight-bold;
+  color: $neutral-900;
+  line-height: $line-height-tight;
+  margin: 0;
+
+  @media (min-width: $breakpoint-md) {
+    font-size: $font-size-4xl;
+  }
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg 0;
+  border-top: 2px solid $neutral-200;
+  border-bottom: 2px solid $neutral-200;
+}
+
+.price {
+  font-size: $font-size-3xl;
+  font-weight: $font-weight-bold;
+  background: linear-gradient(135deg, $primary-500, $primary-700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  @media (min-width: $breakpoint-md) {
+    font-size: $font-size-4xl;
+  }
+}
+
+.stock {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $radius-full;
+  background: $success-100;
+  color: $success-700;
+  border: 2px solid $success-200;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  &.out {
+    background: $error-100;
+    color: $error-700;
+    border-color: $error-200;
+  }
+}
+
+.skuRow {
+  display: flex;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $neutral-600;
+  padding: $spacing-md;
+  background: $neutral-50;
+  border-radius: $radius-md;
+}
+
+.skuLabel {
+  font-weight: $font-weight-semibold;
+}
+
+.sku {
+  font-family: $font-family-mono;
+  font-weight: $font-weight-medium;
+  color: $neutral-800;
+}
+
+.desc {
+  font-size: $font-size-lg;
+  line-height: $line-height-relaxed;
+  color: $neutral-700;
+  margin: 0;
+  padding: $spacing-lg;
+  background: $primary-50;
+  border-radius: $radius-lg;
+  border-left: 4px solid $primary-500;
+}
+
+// Actions - Easy and fun to use
+.actions {
+  display: flex;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+  margin-top: $spacing-lg;
+}
+
+.qty {
+  display: flex;
+  align-items: center;
+  border: 2px solid $neutral-200;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  background: white;
+  box-shadow: $shadow-sm;
+}
+
+.qtyBtn {
+  min-width: 56px;
+  height: 56px;
+  background: white;
+  border: none;
+  color: $primary-500;
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  cursor: pointer;
+  transition: all $transition-base;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  &:hover {
+    background: $primary-50;
+    color: $primary-700;
+  }
+
+  &:active {
+    background: $primary-100;
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.qtyInput {
+  width: 70px;
+  height: 56px;
+  text-align: center;
+  border: none;
+  border-left: 2px solid $neutral-200;
+  border-right: 2px solid $neutral-200;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $neutral-900;
+  margin: 0;
+  padding: 0;
+  background: $neutral-50;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-500;
+    background: white;
+  }
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+}
+
+.addBtn {
+  flex: 1;
+  min-width: 220px;
+  height: 56px;
+  background: linear-gradient(135deg, $primary-500, $primary-600);
+  color: white;
+  border: none;
+  border-radius: $radius-xl;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  cursor: pointer;
+  transition: all $transition-base;
+  padding: 0 $spacing-2xl;
+  box-shadow: $shadow-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+
+  &:hover {
+    background: linear-gradient(135deg, $primary-600, $primary-700);
+    transform: translateY(-3px);
+    box-shadow: $shadow-xl;
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+}
+
+// Attributes Table - Clear information
+.attrs {
+  margin-top: $spacing-2xl;
+  padding-top: $spacing-2xl;
+  border-top: 2px solid $neutral-200;
+
+  h3 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $neutral-900;
+    margin: 0 0 $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+}
+
+.attrTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+
+  tr {
+    border-bottom: 1px solid $neutral-100;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $primary-50;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  th,
+  td {
+    padding: $spacing-lg;
+    text-align: left;
+  }
+
+  th {
+    font-weight: $font-weight-bold;
+    color: $neutral-600;
+    width: 40%;
+    font-size: $font-size-base;
+    background: $neutral-50;
+  }
+
+  td {
+    color: $neutral-900;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+  }
+}
+
+// Error state - Helpful messages
+.error {
+  color: $error-700;
+  font-size: $font-size-lg;
+  padding: $spacing-xl;
+  background: $error-50;
+  border-radius: $radius-lg;
+  border: 2px solid $error-200;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+// Loading state
+.section p {
+  text-align: center;
+  color: $neutral-600;
+  font-size: $font-size-xl;
+  padding: $spacing-3xl;
+}
+
+// Responsive adjustments
+@media (max-width: $breakpoint-md) {
+  .media {
+    position: static;
+  }
+
+  .summary {
+    padding: $spacing-xl;
+  }
+
+  .title {
+    font-size: $font-size-2xl;
+  }
+
+  .price {
+    font-size: $font-size-2xl;
+  }
+
+  .actions {
+    flex-direction: column;
+
+    .qty,
+    .addBtn {
+      width: 100%;
+      min-width: auto;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .mainImgWrap {
+    border-radius: $radius-xl;
+  }
+
+  .summary {
+    padding: $spacing-lg;
+    border-radius: $radius-xl;
+  }
+
+  .attrTable {
+    th,
+    td {
+      padding: $spacing-md;
+      font-size: $font-size-sm;
+    }
+
+    th {
+      width: 35%;
+    }
+  }
+}
