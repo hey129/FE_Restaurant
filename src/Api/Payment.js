@@ -19,7 +19,7 @@ export async function createMomoPayment({ orderId, amount, orderInfo }) {
       body: JSON.stringify({
         orderId,
         amount,
-        orderInfo: orderInfo || `Thanh toán đơn hàng #${orderId}`,
+        orderInfo: orderInfo || `Payment for order #${orderId}`,
       }),
     });
 
@@ -31,7 +31,6 @@ export async function createMomoPayment({ orderId, amount, orderInfo }) {
 
     return data;
   } catch (error) {
-    console.error("❌ Create MoMo payment error:", error);
     throw error;
   }
 }
@@ -64,7 +63,6 @@ export async function queryMomoPaymentStatus({ orderId, requestId }) {
 
     return data;
   } catch (error) {
-    console.error("❌ Query payment status error:", error);
     throw error;
   }
 }

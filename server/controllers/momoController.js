@@ -281,8 +281,8 @@ export async function handleIPN(req, res) {
         const { error: orderUpdateError } = await supabase
           .from("orders")
           .update({
-            payment_status: "Đã thanh toán",
-            order_status: "Đang xử lý",
+            payment_status: "Paid",
+            order_status: "Processing",
           })
           .eq("order_id", parseInt(dbOrderId));
 
@@ -300,8 +300,8 @@ export async function handleIPN(req, res) {
         const { error: orderUpdateError } = await supabase
           .from("orders")
           .update({
-            payment_status: "Thất bại",
-            order_status: "Đã hủy",
+            payment_status: "Failed",
+            order_status: "Cancelled",
           })
           .eq("order_id", parseInt(dbOrderId));
 
@@ -332,21 +332,7 @@ export async function handleIPN(req, res) {
  */
 export async function handleCallback(req, res) {
   try {
-    const {
-      partnerCode,
-      orderId,
-      requestId,
-      amount,
-      orderInfo,
-      orderType,
-      transId,
-      resultCode,
-      message,
-      payType,
-      responseTime,
-      extraData,
-      signature,
-    } = req.query;
+    const { orderId, transId, resultCode, message } = req.query;
 
     console.log("🔙 MoMo Callback received:", {
       orderId,

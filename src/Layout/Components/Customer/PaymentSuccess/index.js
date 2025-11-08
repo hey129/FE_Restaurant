@@ -30,7 +30,7 @@ function PaymentSuccess() {
 
       if (!orderId || !resultCode) {
         setStatus("failed");
-        toast.error("Thông tin thanh toán không hợp lệ");
+        toast.error("Invalid payment information");
         return;
       }
 
@@ -44,7 +44,7 @@ function PaymentSuccess() {
           amount,
           message,
         });
-        toast.success("Thanh toán thành công!");
+        toast.success("Payment successful!", { duration: 3000 });
 
         // Redirect to order list after 3 seconds
         setTimeout(() => {
@@ -53,7 +53,7 @@ function PaymentSuccess() {
       } else {
         // Failed or cancelled
         setStatus("failed");
-        toast.error(message || "Thanh toán thất bại");
+        toast.error(message || "Payment failed", { duration: 3000 });
 
         // Redirect to cart after 3 seconds
         setTimeout(() => {
@@ -80,38 +80,36 @@ function PaymentSuccess() {
           {status === "checking" && (
             <div className={cx("status", "checking")}>
               <div className={cx("spinner")}></div>
-              <h2>Đang kiểm tra thanh toán...</h2>
-              <p>Vui lòng chờ trong giây lát</p>
+              <h2>Checking payment...</h2>
+              <p>Please wait a moment</p>
             </div>
           )}
 
           {status === "success" && orderInfo && (
             <div className={cx("status", "success")}>
               <div className={cx("icon", "success-icon")}>✓</div>
-              <h2>Thanh toán thành công!</h2>
+              <h2>Payment Successful!</h2>
               <p className={cx("message")}>{orderInfo.message}</p>
               <div className={cx("details")}>
                 <div className={cx("detail-row")}>
-                  <span>Mã đơn hàng:</span>
+                  <span>Order ID:</span>
                   <strong>#{orderInfo.orderId}</strong>
                 </div>
                 <div className={cx("detail-row")}>
-                  <span>Mã giao dịch:</span>
+                  <span>Transaction ID:</span>
                   <strong>{orderInfo.transId}</strong>
                 </div>
                 <div className={cx("detail-row")}>
-                  <span>Số tiền:</span>
+                  <span>Amount:</span>
                   <strong>{formatVND(orderInfo.amount)}</strong>
                 </div>
               </div>
-              <p className={cx("redirect")}>
-                Đang chuyển đến trang đơn hàng...
-              </p>
+              <p className={cx("redirect")}>Redirecting to order page...</p>
               <button
                 className={cx("btn")}
                 onClick={() => navigate("/profile/onprocessorder")}
               >
-                Xem đơn hàng ngay
+                View order now
               </button>
             </div>
           )}
@@ -119,13 +117,13 @@ function PaymentSuccess() {
           {status === "failed" && (
             <div className={cx("status", "failed")}>
               <div className={cx("icon", "failed-icon")}>✕</div>
-              <h2>Thanh toán thất bại</h2>
+              <h2>Payment Failed</h2>
               <p className={cx("message")}>
-                Giao dịch không thành công hoặc đã bị hủy
+                Transaction was unsuccessful or cancelled
               </p>
-              <p className={cx("redirect")}>Đang quay về giỏ hàng...</p>
+              <p className={cx("redirect")}>Returning to cart...</p>
               <button className={cx("btn")} onClick={() => navigate("/cart")}>
-                Quay về giỏ hàng
+                Return to cart
               </button>
             </div>
           )}

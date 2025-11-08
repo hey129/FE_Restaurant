@@ -6,7 +6,7 @@ export default function MomoPayButton({ orderId, amount, onSuccess, onError }) {
       const response = await createMomoPayment({
         orderId,
         amount,
-        orderInfo: `Thanh toán đơn hàng #${orderId}`,
+        orderInfo: `Payment for order #${orderId}`,
       });
 
       if (response?.success && response?.payUrl) {
@@ -17,7 +17,7 @@ export default function MomoPayButton({ orderId, amount, onSuccess, onError }) {
           onSuccess(response);
         }
       } else {
-        const errorMsg = response?.message || "Không thể tạo thanh toán MoMo";
+        const errorMsg = response?.message || "Unable to create MoMo payment";
         if (onError) {
           onError(new Error(errorMsg));
         } else {
@@ -29,7 +29,7 @@ export default function MomoPayButton({ orderId, amount, onSuccess, onError }) {
       if (onError) {
         onError(error);
       } else {
-        alert(error.message || "Lỗi thanh toán MoMo");
+        alert(error.message || "MoMo payment error");
       }
     }
   };
@@ -48,7 +48,7 @@ export default function MomoPayButton({ orderId, amount, onSuccess, onError }) {
         fontWeight: "bold",
       }}
     >
-      💳 Thanh toán MoMo
+      💳 Pay with MoMo
     </button>
   );
 }

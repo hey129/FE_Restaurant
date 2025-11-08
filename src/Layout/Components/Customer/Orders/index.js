@@ -79,8 +79,8 @@ function Orders() {
       } catch (err) {
         if (!active) return;
         console.error("Load orders error:", err);
-        setError(err.message || "Không thể tải đơn hàng");
-        toast.error("Không thể tải đơn hàng");
+        setError(err.message || "Unable to load orders");
+        toast.error("Unable to load orders");
       } finally {
         if (!active) return;
         setLoading(false);
@@ -101,7 +101,7 @@ function Orders() {
   if (!isAuthenticated) {
     return (
       <div className={cx("container")}>
-        <h2>Vui lòng đăng nhập để xem đơn hàng</h2>
+        <h2>Please login to view orders</h2>
       </div>
     );
   }
@@ -109,8 +109,8 @@ function Orders() {
   if (loading) {
     return (
       <div className={cx("container")}>
-        <h2>Tất cả đơn hàng</h2>
-        <p>Đang tải...</p>
+        <h2>All Orders</h2>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -118,7 +118,7 @@ function Orders() {
   if (error) {
     return (
       <div className={cx("container")}>
-        <h2>Tất cả đơn hàng</h2>
+        <h2>All Orders</h2>
         <p className={cx("error")}>{error}</p>
       </div>
     );
@@ -126,11 +126,11 @@ function Orders() {
 
   return (
     <div className={cx("container")}>
-      <h2 className={cx("title")}>Tất cả đơn hàng</h2>
+      <h2 className={cx("title")}>All Orders</h2>
 
       {orders.length === 0 ? (
         <div className={cx("empty")}>
-          <p>Bạn chưa có đơn hàng nào</p>
+          <p>You don't have any orders yet</p>
         </div>
       ) : (
         <div className={cx("orders-list")}>
@@ -142,7 +142,7 @@ function Orders() {
             >
               <div className={cx("order-header")}>
                 <div className={cx("order-id")}>
-                  <strong>Đơn hàng #{order.order_id}</strong>
+                  <strong>Order #{order.order_id}</strong>
                   <span className={cx("order-date")}>
                     {formatDate(order.order_date)}
                   </span>
@@ -160,28 +160,24 @@ function Orders() {
               <div className={cx("order-body")}>
                 <div className={cx("order-info")}>
                   <div className={cx("info-row")}>
-                    <span className={cx("label")}>Địa chỉ giao hàng:</span>
+                    <span className={cx("label")}>Delivery Address:</span>
                     <span className={cx("value")}>
-                      {order.delivery_address || "Chưa cập nhật"}
+                      {order.delivery_address || "Not updated"}
                     </span>
                   </div>
                   <div className={cx("info-row")}>
-                    <span className={cx("label")}>Trạng thái thanh toán:</span>
+                    <span className={cx("label")}>Payment Status:</span>
                     <span
                       className={cx(
                         "value",
-                        order.payment_status === "Đã thanh toán"
-                          ? "paid"
-                          : "unpaid"
+                        order.payment_status === "Paid" ? "paid" : "refunded"
                       )}
                     >
-                      {order.payment_status === "Đã thanh toán"
-                        ? "Đã thanh toán"
-                        : "Chưa thanh toán"}
+                      {order.payment_status === "Paid" ? "Paid" : "Refunded"}
                     </span>
                   </div>
                   <div className={cx("info-row")}>
-                    <span className={cx("label")}>Phương thức:</span>
+                    <span className={cx("label")}>Payment Method:</span>
                     <span className={cx("value", "payment-method")}>
                       {order.payment?.[0]?.method?.toLowerCase() === "momo"
                         ? "💳 MoMo"
@@ -193,7 +189,7 @@ function Orders() {
                 </div>
 
                 <div className={cx("order-total")}>
-                  <span className={cx("total-label")}>Tổng tiền:</span>
+                  <span className={cx("total-label")}>Total:</span>
                   <span className={cx("total-amount")}>
                     {formatVND(order.total_amount)}
                   </span>
@@ -201,7 +197,7 @@ function Orders() {
               </div>
 
               <div className={cx("order-footer")}>
-                <span className={cx("view-detail")}>Xem chi tiết →</span>
+                <span className={cx("view-detail")}>View Details →</span>
               </div>
             </div>
           ))}

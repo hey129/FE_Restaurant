@@ -29,8 +29,7 @@ export async function getCategories({
   const { data, error } = await query;
 
   if (error) {
-    console.error("Lỗi khi lấy danh sách category:", error);
-    return [];
+    throw error;
   }
 
   return data || [];

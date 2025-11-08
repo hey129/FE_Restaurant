@@ -2,14 +2,14 @@
 import { supabase } from "./supabase";
 
 /**
- * Tạo đơn hàng từ giỏ hàng hiện tại.
+ * Create order from current cart.
  * @param {Object} params
- * @param {string} params.customerId - UUID người dùng (auth.users.id / customer.customer_id)
- * @param {Array<{id:number, quantity:number, price:number}>} params.items - các item trong cart
- * @param {number} params.shipping - phí ship (VND)
- * @param {string} [params.deliveryAddress] - địa chỉ giao (có thể khác profile)
- * @param {string} [params.note] - ghi chú
- * @param {string} [params.paymentMethod] - phương thức thanh toán ("cod", "bank", ...)
+ * @param {string} params.customerId - User UUID (auth.users.id / customer.customer_id)
+ * @param {Array<{id:number, quantity:number, price:number}>} params.items - cart items
+ * @param {number} params.shipping - shipping fee (VND)
+ * @param {string} [params.deliveryAddress] - delivery address (can be different from profile)
+ * @param {string} [params.note] - order note
+ * @param {string} [params.paymentMethod] - payment method ("cod", "bank", ...)
  * @returns {Promise<{orderId:number}>}
  */
 export async function createOrder({
@@ -36,21 +36,12 @@ export async function createOrder({
       customer_id: customerId,
       delivery_address: deliveryAddress || null,
       total_amount: total,
-      order_status: "Chờ xử lý",
-      payment_status: "Đã thanh toán",
+      order_status: "Pending",
+      payment_status: "Paid",
       note: note || null,
     })
     .select("order_id")
     .single();
-
-  console.log(
-    customerId,
-    items,
-    shipping,
-    deliveryAddress,
-    note,
-    paymentMethod
-  );
 
   if (orderErr) throw orderErr;
   const orderId = orderRow.order_id;
@@ -60,7 +51,7 @@ export async function createOrder({
     order_id: orderId,
     product_id: it.id,
     quantity: it.quantity,
-    price: it.price, // snapshot giá
+    price: it.price, // price snapshot
   }));
 
   const { error: detailErr } = await supabase
@@ -80,12 +71,11 @@ export async function createOrder({
     method: paymentMethod.toLowerCase(), // Store payment method in payment table (lowercase for consistency)
     note:
       paymentMethod.toLowerCase() === "momo"
-        ? "Chờ thanh toán MoMo"
-        : "Khởi tạo thanh toán",
+        ? "Awaiting MoMo payment"
+        : "Payment initiated",
   });
 
   if (payErr) {
-    console.error("⚠️ Payment record creation failed:", payErr);
     // Don't throw error here, order is already created
   }
 
@@ -251,22 +241,8 @@ export async function updateOrderStatus({
 export async function cancelOrder({ orderId }) {
   return updateOrderStatus({
     orderId,
-    orderStatus: "Hủy",
-    paymentStatus: "Hoàn tiền", // ✅ Always set to Refund when cancelling
-  });
-}
-
-/**
- * Complete order
- * @param {Object} params
- * @param {number} params.orderId - Order ID
- * @returns {Promise<Object>}
- */
-export async function completeOrder({ orderId }) {
-  return updateOrderStatus({
-    orderId,
-    orderStatus: "Hoàn thành",
-    paymentStatus: "Đã thanh toán",
+    orderStatus: "Cancelled",
+    paymentStatus: "Refunded", // ✅ Always set to Refund when cancelling
   });
 }
 
@@ -335,51 +311,4 @@ export async function getOrderItems({ orderId }) {
 
   if (error) throw error;
   return data || [];
-}
-
-/**
- * Get payment details for an order
- * @param {Object} params
- * @param {number} params.orderId - Order ID
- * @returns {Promise<Object>}
- */
-export async function getOrderPayment({ orderId }) {
-  if (!orderId) throw new Error("NO_ORDER_ID");
-
-  const { data, error } = await supabase
-    .from("payment")
-    .select("*")
-    .eq("order_id", orderId)
-    .order("payment_date", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    // PGRST116 = no rows returned
-    throw error;
-  }
-
-  return data || null;
-}
-
-/**
- * Update payment status
- * @param {Object} params
- * @param {number} params.orderId - Order ID
- * @param {string} params.paymentStatus - New payment status
- * @returns {Promise<Object>}
- */
-export async function updatePaymentStatus({ orderId, paymentStatus }) {
-  if (!orderId) throw new Error("NO_ORDER_ID");
-  if (!paymentStatus) throw new Error("NO_PAYMENT_STATUS");
-
-  const { data, error } = await supabase
-    .from("orders")
-    .update({ payment_status: paymentStatus })
-    .eq("order_id", orderId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }

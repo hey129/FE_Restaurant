@@ -58,11 +58,10 @@ export default function Login() {
       navigate(next || "/");
     } catch (err) {
       console.error("Login error:", err);
-      // Nếu lỗi từ server (ví dụ: sai email/password so với data), hiển thị thông báo cụ thể
+      // If error from server (e.g., wrong email/password), display specific message
       setMsg({
         type: "error",
-        text:
-          err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.",
+        text: err.message || "Login failed. Please check your information.",
       });
     } finally {
       setSubmitting(false);
@@ -88,7 +87,7 @@ export default function Login() {
                   placeholder="you@example.com"
                   required
                 />
-                {/* Hiển thị lỗi của trường email */}
+                {/* Display email field error */}
                 {errors.email && (
                   <p className={cx("error-text")}>{errors.email}</p>
                 )}

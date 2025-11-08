@@ -40,8 +40,8 @@ function Cart() {
       <div className={cx("page-container")}>
         <div className={cx("cart-layout")}>
           <div className={cx("cart-items")}>
-            <h1 className={cx("title")}>Bạn chưa đăng nhập</h1>
-            <p>Vui lòng đăng nhập để xem giỏ hàng của bạn.</p>
+            <h1 className={cx("title")}>You are not logged in</h1>
+            <p>Please login to view your cart.</p>
             <Return />
           </div>
         </div>
@@ -55,13 +55,13 @@ function Cart() {
         {/* LEFT: ITEMS */}
         <div className={cx("cart-items")}>
           <div className={cx("header")}>
-            <h1 className={cx("title")}>Giỏ hàng</h1>
+            <h1 className={cx("title")}>Shopping Cart</h1>
             <span className={cx("item-count")}>{items.length} items</span>
           </div>
           <hr className={cx("divider")} />
 
           {items.length === 0 && (
-            <p className={cx("empty")}>Giỏ hàng đang trống.</p>
+            <p className={cx("empty")}>Your cart is empty.</p>
           )}
 
           {items.map((item) => (

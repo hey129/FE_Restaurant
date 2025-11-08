@@ -29,24 +29,52 @@ const formatDate = (dateString) => {
 
 const getStatusText = (status) => {
   const statusMap = {
-    pending: "Chờ xác nhận",
-    processing: "Đang xử lý",
-    shipping: "Đang giao hàng",
-    delivered: "Đã giao hàng",
-    cancelled: "Đã hủy",
+    Pending: "Pending",
+    Completed: "Completed",
+    Cancelled: "Cancelled",
   };
   return statusMap[status] || status;
 };
 
 const getStatusColor = (status) => {
   const colorMap = {
-    pending: "warning",
-    processing: "info",
-    shipping: "primary",
-    delivered: "success",
-    cancelled: "danger",
+    Pending: "warning",
+    Completed: "success",
+    Cancelled: "danger",
   };
   return colorMap[status] || "default";
+};
+
+// Status timeline steps
+const getStatusTimeline = (currentStatus) => {
+  const allSteps = [
+    { key: "Pending", label: "Pending" },
+    { key: "Completed", label: "Completed" },
+  ];
+
+  if (
+    currentStatus === "Cancelled" ||
+    currentStatus === "Đã hủy" ||
+    currentStatus === "Hủy"
+  ) {
+    return [
+      { key: "Pending", label: "Ordered", active: true },
+      {
+        key: "Cancelled",
+        label: "Cancelled",
+        active: true,
+        isCancelled: true,
+      },
+    ];
+  }
+
+  const currentIndex = allSteps.findIndex((step) => step.key === currentStatus);
+
+  return allSteps.map((step, index) => ({
+    ...step,
+    active: index <= currentIndex,
+    current: index === currentIndex,
+  }));
 };
 
 function OrderDetail() {
@@ -82,7 +110,9 @@ function OrderDetail() {
 
         // Verify this order belongs to the logged-in user
         if (data.customer_id !== user.customer_id) {
-          toast.error("Bạn không có quyền xem đơn hàng này");
+          toast.error("You do not have permission to view this order", {
+            duration: 3000,
+          });
           navigate("/profile/order");
           return;
         }
@@ -91,8 +121,8 @@ function OrderDetail() {
       } catch (err) {
         if (!active) return;
         console.error("Load order detail error:", err);
-        setError(err.message || "Không thể tải chi tiết đơn hàng");
-        toast.error("Không thể tải chi tiết đơn hàng");
+        setError(err.message || "Cannot load order details");
+        toast.error("Cannot load order details", { duration: 3000 });
       } finally {
         if (!active) return;
         setLoading(false);
@@ -111,20 +141,24 @@ function OrderDetail() {
   };
 
   const handleCancelOrder = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) {
+    if (!window.confirm("Are you sure you want to cancel this order?")) {
       return;
     }
 
     try {
       setCancelling(true);
       await cancelOrder({ orderId: order.order_id });
-      toast.success("Đơn hàng đã được hủy thành công");
+      toast.success("Order cancelled successfully", { duration: 3000 });
 
-      // Update local state
-      setOrder((prev) => ({ ...prev, order_status: "Đã hủy" }));
+      // Update local state with cancelled status and refund payment status
+      setOrder((prev) => ({
+        ...prev,
+        order_status: "Cancelled",
+        payment_status: "Refunded",
+      }));
     } catch (err) {
       console.error("Cancel order error:", err);
-      toast.error(err.message || "Không thể hủy đơn hàng");
+      toast.error(err.message || "Cannot cancel order", { duration: 3000 });
     } finally {
       setCancelling(false);
     }
@@ -132,14 +166,13 @@ function OrderDetail() {
 
   // Check if order can be cancelled (pending, processing, or shipping status)
   const canCancelOrder =
-    order &&
-    ["Chờ xử lý", "Đang xử lý", "Đang giao"].includes(order.order_status);
+    order && ["Pending", "Processing"].includes(order.order_status);
 
   if (loading) {
     return (
       <div className={cx("container")}>
         <div className={cx("loading")}>
-          <p>Đang tải chi tiết đơn hàng...</p>
+          <p>Loading order details...</p>
         </div>
       </div>
     );
@@ -149,9 +182,9 @@ function OrderDetail() {
     return (
       <div className={cx("container")}>
         <div className={cx("error-container")}>
-          <p className={cx("error")}>{error || "Không tìm thấy đơn hàng"}</p>
+          <p className={cx("error")}>{error || "Order not found"}</p>
           <button className={cx("btn-back")} onClick={handleBack}>
-            Quay lại danh sách đơn hàng
+            Back to order list
           </button>
         </div>
       </div>
@@ -163,72 +196,114 @@ function OrderDetail() {
     0
   );
   const shippingFee = order.total_amount - itemsSubtotal;
+  const statusTimeline = getStatusTimeline(order.order_status);
 
   return (
     <div className={cx("container")}>
       <div className={cx("header")}>
-        <h1 className={cx("title")}>Chi tiết đơn hàng #{order.order_id}</h1>
+        <h1 className={cx("title")}>Order Detail #{order.order_id}</h1>
       </div>
 
       <div className={cx("content")}>
-        {/* Order Status Card */}
+        {/* Enhanced Order Status Card with Timeline */}
         <div className={cx("card", "status-card")}>
           <div className={cx("card-header")}>
-            <h3>Trạng thái đơn hàng</h3>
-            <span
-              className={cx("status-badge", getStatusColor(order.order_status))}
-            >
-              {getStatusText(order.order_status)}
-            </span>
-          </div>
-          <div className={cx("card-body")}>
-            <div className={cx("info-row")}>
-              <span className={cx("label")}>Ngày đặt hàng:</span>
-              <span className={cx("value")}>
-                {formatDate(order.order_date)}
-              </span>
-            </div>
-            <div className={cx("info-row")}>
-              <span className={cx("label")}>Trạng thái thanh toán:</span>
+            <div className={cx("status-header-content")}>
+              <h3>Order Status</h3>
               <span
                 className={cx(
-                  "value",
-                  order.payment_status === "Đã thanh toán" ? "paid" : "unpaid"
+                  "status-badge",
+                  "large",
+                  getStatusColor(order.order_status)
                 )}
               >
-                {order.payment_status === "Đã thanh toán"
-                  ? "Đã thanh toán"
-                  : "Chưa thanh toán"}
+                <span>{getStatusText(order.order_status)}</span>
               </span>
             </div>
-            <div className={cx("info-row")}>
-              <span className={cx("label")}>Phương thức thanh toán:</span>
-              <span className={cx("value")}>
-                {order.payment?.[0]?.method?.toLowerCase() === "momo"
-                  ? "💳 MoMo"
-                  : order.payment?.[0]?.method?.toLowerCase() === "cod"
-                  ? "💵 Thanh toán khi nhận hàng (COD)"
-                  : order.payment?.[0]?.method || "Chưa xác định"}
-              </span>
+          </div>
+          <div className={cx("card-body")}>
+            {/* Status Timeline */}
+            <div className={cx("status-timeline")}>
+              {statusTimeline.map((step, index) => (
+                <div
+                  key={step.key}
+                  className={cx("timeline-step", {
+                    active: step.active,
+                    current: step.current,
+                    cancelled: step.isCancelled,
+                  })}
+                >
+                  <div className={cx("timeline-marker")}>
+                    <span className={cx("timeline-icon")}></span>
+                  </div>
+                  <div className={cx("timeline-label")}>{step.label}</div>
+                  {index < statusTimeline.length - 1 && (
+                    <div className={cx("timeline-connector")} />
+                  )}
+                </div>
+              ))}
             </div>
-            {order.payment?.[0]?.transaction_id && (
+
+            {/* Order Information */}
+            <div className={cx("order-info-grid")}>
               <div className={cx("info-row")}>
-                <span className={cx("label")}>Mã giao dịch:</span>
-                <span className={cx("value", "transaction-id")}>
-                  {order.payment[0].transaction_id}
+                <span className={cx("label")}>Order Date:</span>
+                <span className={cx("value", "highlight")}>
+                  {formatDate(order.order_date)}
                 </span>
               </div>
-            )}
+              <div className={cx("info-row")}>
+                <span className={cx("label")}>Payment Status:</span>
+                <span
+                  className={cx(
+                    "value",
+                    "payment-status",
+                    order.payment_status === "Paid"
+                      ? "paid"
+                      : order.payment_status === "Refunded"
+                      ? "refunded"
+                      : "unpaid"
+                  )}
+                >
+                  {order.payment_status === "Paid"
+                    ? "Paid"
+                    : order.payment_status === "Refunded"
+                    ? "Refunded"
+                    : "Unpaid"}
+                </span>
+              </div>
+              <div className={cx("info-row")}>
+                <span className={cx("label")}>Payment Method:</span>
+                <span className={cx("value")}>
+                  {order.payment?.[0]?.method?.toLowerCase() === "momo"
+                    ? "MoMo E-Wallet"
+                    : order.payment?.[0]?.method?.toLowerCase() === "cod"
+                    ? "Cash on Delivery (COD)"
+                    : order.payment?.[0]?.method || "Unknown"}
+                </span>
+              </div>
+              {order.payment?.[0]?.transaction_id && (
+                <div className={cx("info-row")}>
+                  <span className={cx("label")}>Transaction ID:</span>
+                  <span className={cx("value", "transaction-id")}>
+                    {order.payment[0].transaction_id}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Cancel Button */}
             {canCancelOrder && (
               <div className={cx("cancel-section")}>
+                <p className={cx("cancel-note")}>
+                  You can cancel this order before it is shipped
+                </p>
                 <button
                   className={cx("btn-cancel")}
                   onClick={handleCancelOrder}
                   disabled={cancelling}
                 >
-                  {cancelling ? "Đang hủy..." : "Hủy đơn hàng"}
+                  {cancelling ? "Cancelling..." : "Cancel Order"}
                 </button>
               </div>
             )}
@@ -238,18 +313,18 @@ function OrderDetail() {
         {/* Delivery Info Card */}
         <div className={cx("card")}>
           <div className={cx("card-header")}>
-            <h3>Thông tin giao hàng</h3>
+            <h3>Delivery Information</h3>
           </div>
           <div className={cx("card-body")}>
             <div className={cx("info-row")}>
-              <span className={cx("label")}>Địa chỉ:</span>
+              <span className={cx("label")}>Address:</span>
               <span className={cx("value")}>
-                {order.delivery_address || "Chưa cập nhật"}
+                {order.delivery_address || "Not updated"}
               </span>
             </div>
             {order.note && (
               <div className={cx("info-row")}>
-                <span className={cx("label")}>Ghi chú:</span>
+                <span className={cx("label")}>Note:</span>
                 <span className={cx("value")}>{order.note}</span>
               </div>
             )}
@@ -259,7 +334,7 @@ function OrderDetail() {
         {/* Order Items Card */}
         <div className={cx("card", "items-card")}>
           <div className={cx("card-header")}>
-            <h3>Sản phẩm ({order.items.length})</h3>
+            <h3>Products ({order.items.length})</h3>
           </div>
           <div className={cx("card-body")}>
             <div className={cx("items-list")}>
@@ -297,19 +372,19 @@ function OrderDetail() {
         {/* Order Summary Card */}
         <div className={cx("card", "summary-card")}>
           <div className={cx("card-header")}>
-            <h3>Tóm tắt đơn hàng</h3>
+            <h3>Order Summary</h3>
           </div>
           <div className={cx("card-body")}>
             <div className={cx("summary-row")}>
-              <span className={cx("label")}>Tạm tính:</span>
+              <span className={cx("label")}>Subtotal:</span>
               <span className={cx("value")}>{formatVND(itemsSubtotal)}</span>
             </div>
             <div className={cx("summary-row")}>
-              <span className={cx("label")}>Phí vận chuyển:</span>
+              <span className={cx("label")}>Shipping Fee:</span>
               <span className={cx("value")}>{formatVND(shippingFee)}</span>
             </div>
             <div className={cx("summary-row", "total")}>
-              <span className={cx("label")}>Tổng cộng:</span>
+              <span className={cx("label")}>Total:</span>
               <span className={cx("value")}>
                 {formatVND(order.total_amount)}
               </span>

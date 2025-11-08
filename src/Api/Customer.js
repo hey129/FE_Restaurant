@@ -6,7 +6,7 @@ const CustomerContext = createContext();
 
 export function CustomerProvider({ children }) {
   const [customer, setCustomer] = useState(null); // Profile của customer hiện tại
-  const [customers, setCustomers] = useState([]); // List tất cả customers (nếu cần cho admin)
+  const [customers, setCustomers] = useState([]); // List all customers (if needed for admin)
   const [loading, setLoading] = useState(true);
 
   // Shared function to get current user and profile
@@ -27,7 +27,7 @@ export function CustomerProvider({ children }) {
         .single();
 
       if (profileError) {
-        console.warn("Could not fetch customer profile:", profileError);
+        // Profile might not exist yet for new users
       }
 
       return {
@@ -35,7 +35,6 @@ export function CustomerProvider({ children }) {
         profile: profile || null,
       };
     } catch (error) {
-      console.error("Get current user error:", error);
       return null;
     }
   };
@@ -64,7 +63,6 @@ export function CustomerProvider({ children }) {
         if (customersError) throw customersError;
         setCustomers(allCustomers || []);
       } catch (error) {
-        console.error("Load customer error:", error);
         setCustomer(null);
         setCustomers([]);
       } finally {
@@ -106,11 +104,10 @@ export function CustomerProvider({ children }) {
       });
 
       if (insertError) {
-        console.error("Profile creation failed:", insertError);
         throw insertError;
       }
 
-      // Cập nhật state sau register thành công
+      // Update state after successful registration
       setCustomer({
         customer_id: authData.user.id,
         customer_name,
@@ -125,7 +122,6 @@ export function CustomerProvider({ children }) {
         message: "Registration successful!",
       };
     } catch (error) {
-      console.error("Registration error:", error);
       throw error;
     }
   };
@@ -147,7 +143,7 @@ export function CustomerProvider({ children }) {
         .single();
 
       if (profileError) {
-        console.warn("Could not fetch customer profile:", profileError);
+        // Profile might not exist
       }
 
       return {
@@ -157,7 +153,6 @@ export function CustomerProvider({ children }) {
         profile: profile || null,
       };
     } catch (error) {
-      console.error("Login error:", error);
       throw error;
     }
   };
@@ -168,12 +163,11 @@ export function CustomerProvider({ children }) {
       if (error) throw error;
       return { success: true };
     } catch (error) {
-      console.error("Logout error:", error);
       throw error;
     }
   };
 
-  // Hàm update profile (thêm để quản lý customer)
+  // Update profile function (added to manage customer)
   const updateProfile = async (updates) => {
     if (!customer) throw new Error("No customer profile available");
     const allowedFields = ["customer_name", "phone", "address"];
@@ -244,7 +238,6 @@ export async function getCustomerProfile(customerId) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error("Get customer profile error:", error);
     throw error;
   }
 }
@@ -259,7 +252,6 @@ export async function getCustomers() {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error("Get customers error:", error);
     return [];
   }
 }

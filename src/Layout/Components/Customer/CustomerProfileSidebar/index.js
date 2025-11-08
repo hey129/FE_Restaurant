@@ -10,7 +10,7 @@ export default function CustomerProfileSideBar() {
     <aside className={cx("sidebar")}>
       <div className={cx("card")}>
         <div className={cx("header")}>
-          <h3 className={cx("title")}>Tài khoản</h3>
+          <h3 className={cx("title")}>Account</h3>
         </div>
         <ul className={cx("list")}>
           <li>
@@ -20,7 +20,7 @@ export default function CustomerProfileSideBar() {
               end
               className={({ isActive }) => cx("item", { active: isActive })}
             >
-              Thông tin khách hàng
+              Customer Profile
             </NavLink>
           </li>
           <li>
@@ -30,7 +30,7 @@ export default function CustomerProfileSideBar() {
               end
               className={({ isActive }) => cx("item", { active: isActive })}
             >
-              Đơn hàng
+              Orders
             </NavLink>
           </li>
         </ul>

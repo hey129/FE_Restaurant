@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getCurrentUser]);
 
-  // Hàm login sẽ gọi API, sau đó cập nhật state user toàn cục
+  // Login function will call API, then update global user state
   const login = async ({ email, password }) => {
     const data = await loginCustomer({ email, password });
     setUser(data.profile);
