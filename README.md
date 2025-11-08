@@ -2,21 +2,6 @@
 
 A modern restaurant ordering and management system built with React and Supabase, featuring real-time order tracking and MoMo payment integration.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [Available Scripts](#available-scripts)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Overview
 
 FE_Restaurant is a full-stack restaurant application that allows customers to browse menus, place orders, and make payments online. The system uses Supabase for backend services (authentication, database, real-time updates) and a dedicated Node.js server for secure MoMo payment processing.
@@ -25,33 +10,38 @@ FE_Restaurant is a full-stack restaurant application that allows customers to br
 
 ### Customer Features
 
-- Browse menu with categories and search functionality
-- View detailed product information with ratings
-- Real-time shopping cart management
-- User authentication (Register/Login) with Supabase Auth
-- Customer profile management
-- Place orders with delivery address customization
-- Secure MoMo payment integration
-- Order history and tracking
-- View order details with product information
-- Payment confirmation and order status updates
+- **User Authentication** - Secure login/registration with email and password
+- **Browse Menu** - View products by category with search and filter
+- **Shopping Cart** - Add/remove items, update quantities
+- **Online Payment** - MoMo e-wallet integration for seamless checkout
+- **Order Tracking** - Real-time order status updates
+- **Order History** - View past orders and reorder
+- **Profile Management** - Update personal information and addresses
+- **Delivery Management** - Multiple delivery addresses support
+- **Product Ratings** - View detailed product information with ratings
+- **Real-time Cart Sync** - Cart synchronization using Supabase
+- **Toast Notifications** - User feedback for all actions
 
 ### Restaurant/Admin Features (In Development)
 
-- Restaurant dashboard
-- Order management interface
-- Admin control panel
+- **Dashboard** - Overview of orders and sales
+- **Menu Management** - CRUD operations for products and categories
+- **Order Management** - Process orders, update status
+- **Customer Management** - View customer information
+- **Payment Tracking** - Monitor payment status
+- **Analytics** - Sales reports and insights
 
 ### Technical Features
 
-- Real-time cart synchronization using Supabase
-- Responsive UI with SASS/SCSS
-- Client-side routing with React Router v7
-- Context-based state management (Auth, Cart, Customer)
-- Toast notifications for user feedback
-- Image optimization and lazy loading
-- Duplicate cart item consolidation
-- Custom webpack configuration with Babel
+- **Real-time Updates** - Live order status changes with Supabase subscriptions
+- **Responsive Design** - Mobile-friendly UI
+- **Modern UI/UX** - Clean and intuitive interface with SASS/SCSS
+- **Database Integration** - Supabase PostgreSQL backend
+- **RESTful API** - Well-structured backend services
+- **Optimized Performance** - Image optimization and lazy loading
+- **Smart Cart Management** - Duplicate cart item consolidation
+- **Custom Routing** - Client-side routing with React Router v7
+- **Testing Ready** - Jest and React Testing Library integration
 
 ## Tech Stack
 
@@ -75,7 +65,6 @@ FE_Restaurant is a full-stack restaurant application that allows customers to br
   - PostgreSQL Database
   - Authentication & Authorization
   - Real-time subscriptions
-  - Row Level Security (RLS)
 - **Node.js** - Runtime for payment server
 - **Express 5.1.0** - Web framework for payment endpoints
 - **CORS** - Cross-origin resource sharing
@@ -85,8 +74,9 @@ FE_Restaurant is a full-stack restaurant application that allows customers to br
 
 - **react-app-rewired 2.2.1** - Override create-react-app config
 - **customize-cra 1.0.0** - Customize webpack configuration
-- **babel-plugin-module-resolver 5.0.2** - Custom import paths
+- **babel-plugin-module-resolver 5.0.2** - Custom import paths (~ alias)
 - **Jest & React Testing Library** - Testing framework
+- **Concurrently** - Run multiple commands simultaneously
 
 ## Architecture
 
@@ -109,16 +99,9 @@ Most operations communicate directly with Supabase from the frontend:
 A lightweight Node.js/Express server handles:
 
 - MoMo payment initialization
-- Payment callbacks and webhooks
+- Payment callbacks and webhooks (IPN)
 - Payment status queries
-- Secure signature generation
-
-**Why this approach?**
-
-- Supabase provides secure, scalable backend with Row Level Security
-- Payment processing requires server-side signature generation
-- Reduces backend complexity for most operations
-- Real-time capabilities built into Supabase
+- Secure signature generation with HMAC SHA-256
 
 ## Project Structure
 
@@ -145,9 +128,9 @@ FE_Restaurant/
 │   │   └── images/           # Images and icons
 │   │
 │   ├── Layout/               # Layout components
-│   │   └── Components/
+│   │   ├── DefaultLayout/    # Main layout wrapper
+│   │   └── Components/       # Layout-specific components
 │   │       ├── Customer/     # Customer-facing layouts
-│   │       │   ├── DefaultLayout/
 │   │       │   ├── Header/
 │   │       │   ├── Footer/
 │   │       │   ├── Menu/
@@ -165,20 +148,26 @@ FE_Restaurant/
 │   │   │   ├── CreateOrder/
 │   │   │   ├── Profile/
 │   │   │   ├── CustomerProfile/
-│   │   │   ├── AllOrders/
+│   │   │   ├── Order/
+│   │   │   ├── OrderList/
 │   │   │   ├── OrderDetail/
+│   │   │   ├── OnProcessOrder/
+│   │   │   ├── ShippedOrder/
 │   │   │   ├── PaymentSuccess/
 │   │   │   ├── Login/
 │   │   │   └── Registry/
 │   │   ├── Restaurant/       # Restaurant management (in development)
+│   │   │   └── index.js
 │   │   └── Admin/            # Admin panel (in development)
+│   │       └── index.js
 │   │
 │   ├── Routes/               # Route definitions
 │   │   └── index.js          # Public and private routes
 │   │
 │   ├── App.js                # Root component with providers
 │   ├── index.js              # Application entry point
-│   └── setupTests.js         # Test configuration
+│   ├── setupTests.js         # Test configuration
+│   └── reportWebVitals.js    # Performance monitoring
 │
 ├── server/                   # Payment backend server
 │   ├── config/
@@ -189,8 +178,10 @@ FE_Restaurant/
 │   ├── routes/
 │   │   └── payment.js        # Payment routes
 │   ├── index.js              # Server entry point
-│   └── package.json          # Server dependencies
+│   ├── package.json          # Server dependencies
+│   └── .env                  # Server environment variables
 │
+|
 ├── build/                    # Production build output
 ├── config-overrides.js       # Webpack customization
 ├── jsconfig.json             # JavaScript configuration
@@ -213,7 +204,7 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/FE_Restaurant.git
+git clone https://github.com/your-username/FE_Restaurant.git
 cd FE_Restaurant
 ```
 
@@ -229,6 +220,12 @@ npm install
 cd server
 npm install
 cd ..
+```
+
+Or use the combined script:
+
+```bash
+npm run install:all
 ```
 
 ## Configuration
@@ -254,7 +251,7 @@ REACT_APP_API_URL=http://localhost:5000
 
 ### Backend Environment Variables
 
-Create a `.env` file in the `server` directory:
+Create a `.env` file in the `server/` directory:
 
 ```env
 # Server Configuration
@@ -271,15 +268,9 @@ MOMO_PARTNER_CODE=your_momo_partner_code
 MOMO_ACCESS_KEY=your_momo_access_key
 MOMO_SECRET_KEY=your_momo_secret_key
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
-MOMO_REDIRECT_URL=http://localhost:3000/payment/return
+MOMO_REDIRECT_URL=http://localhost:3000/payment/success
 MOMO_IPN_URL=http://localhost:5000/api/momo/ipn
 ```
-
-**How to get MoMo credentials:**
-
-1. Register for MoMo Business account
-2. Contact MoMo to get test credentials
-3. For production, complete business verification
 
 ### Supabase Database Setup
 
@@ -301,26 +292,13 @@ See [Database Schema](#database-schema) section for detailed schema.
 
 ### Development Mode
 
-#### Run both frontend and backend concurrently:
-
-```bash
-npm run dev
-```
-
-This will start:
-
-- Frontend at [http://localhost:3000](http://localhost:3000)
-- Backend at [http://localhost:5000](http://localhost:5000)
-
-#### Or run them separately:
-
-**Frontend only:**
+**Frontend :**
 
 ```bash
 npm start
 ```
 
-**Backend only:**
+**Backend :**
 
 ```bash
 npm run server
@@ -353,14 +331,15 @@ npm start
 
 ### Frontend Scripts
 
-| Script           | Command                  | Description                         |
-| ---------------- | ------------------------ | ----------------------------------- |
-| `npm start`      | Start development server | Runs app at http://localhost:3000   |
-| `npm run build`  | Build for production     | Creates optimized build in `build/` |
-| `npm test`       | Run tests                | Launches test runner in watch mode  |
-| `npm run eject`  | Eject from CRA           | **Warning: One-way operation!**     |
-| `npm run server` | Start backend            | Starts payment server               |
-| `npm run dev`    | Run full stack           | Runs both frontend and backend      |
+| Script                | Command                  | Description                         |
+| --------------------- | ------------------------ | ----------------------------------- |
+| `npm start`           | Start development server | Runs app at http://localhost:3000   |
+| `npm run build`       | Build for production     | Creates optimized build in `build/` |
+| `npm test`            | Run tests                | Launches test runner in watch mode  |
+| `npm run eject`       | Eject from CRA           | **Warning: One-way operation!**     |
+| `npm run server`      | Start backend            | Starts payment server               |
+| `npm run dev`         | Run full stack           | Runs both frontend and backend      |
+| `npm run install:all` | Install all deps         | Installs frontend + backend deps    |
 
 ### Backend Scripts
 
@@ -370,29 +349,6 @@ npm start
 | `npm run dev` | Development mode | Runs with auto-reload on changes     |
 
 ## Key Features Implementation
-
-### Context Providers
-
-The app uses React Context API for global state management:
-
-**AuthProvider** (`src/Api/Auth.js`)
-
-- Manages user authentication state
-- Provides login/logout functions
-- Password change functionality
-
-**CartProvider** (`src/Api/Cart.js`)
-
-- Real-time cart synchronization with Supabase
-- Add, remove, update cart items
-- Automatic duplicate consolidation
-- Cart clearing after order placement
-
-**CustomerProvider** (`src/Api/Customer.js`)
-
-- Customer profile management
-- User registration
-- Profile updates
 
 ### Routing
 
@@ -404,35 +360,29 @@ The app uses React Context API for global state management:
 - `/login` - Login page
 - `/registry` - Registration page
 - `/order/:id` - Order details
-- `/profile` - User profile (requires auth)
-- `/createorder` - Checkout page (requires auth)
 - `/payment/success` - Payment success
 - `/payment/return` - Payment callback
 
-**Private Routes** (restricted):
+**Protected Routes** (requires authentication):
+
+- `/profile` - User profile
+- `/createorder` - Checkout page
+- `/orders` - Order history
+- `/orders/:id` - Specific order details
+
+**Private Routes** (admin/restaurant only):
 
 - `/restaurant` - Restaurant dashboard
 - `/admin` - Admin panel
 
-### Payment Integration
+## API Documentation
 
-**Payment Flow:**
+### Base URL
 
-1. Customer completes order form
-2. Frontend calls `createOrder()` to save order in database
-3. Frontend calls `createMomoPayment()` to backend server
-4. Backend generates secure signature and requests payment URL from MoMo
-5. User is redirected to MoMo payment page
-6. After payment, MoMo redirects user back and sends IPN to server
-7. Server updates payment status in database
-8. User sees confirmation page
-
-**Security Features:**
-
-- HMAC SHA256 signature verification
-- Server-side secret key storage
-- IPN callback verification
-- Payment status validation
+```
+Backend: http://localhost:5000
+Supabase: https://your-project.supabase.co
+```
 
 ## Testing
 
@@ -448,36 +398,19 @@ Run tests with coverage:
 npm test -- --coverage
 ```
 
-## Contributing
+Run tests in watch mode:
 
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [Supabase](https://supabase.com) - Backend infrastructure
-- [MoMo](https://momo.vn) - Payment gateway
-- [React](https://react.dev) - Frontend framework
-- [React Router](https://reactrouter.com) - Routing library
-
+```bash
+npm test -- --watch
+```
 ## Support
 
 For issues and questions:
 
-- Open an issue on GitHub
-- Email: your-email@example.com
-
-## Authors
-
-- Your Name - Initial work
+- Email: lyphuclinh2901@gmail.com
+- Issues: [GitHub Issues](https://github.com/hey129/FE_Restaurant/issues)
+- Documentation: This README and inline code comments
 
 ---
 
-Made with love by [Your Name]
+**Built with React and Supabase**
