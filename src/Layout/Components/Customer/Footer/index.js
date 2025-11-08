@@ -9,7 +9,7 @@ function Footer() {
     <section className={cx("footer")}>
       <div className={cx("container")}>
         <div className={cx("grid")}>
-          {/* Logo + mô tả + mạng xã hội */}
+          {/* Logo + description + social media */}
           <div className={cx("about")}>
             {/* Logo */}
             <div className={cx("logo")}>

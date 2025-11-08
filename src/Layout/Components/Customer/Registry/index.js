@@ -34,7 +34,7 @@ export default function Registry() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setMsg({ type: "", text: "" }); // Xóa thông báo cũ
+    setMsg({ type: "", text: "" }); // Clear old message
 
     const newErrors = {};
     if (form.password.length < 6) {
@@ -44,14 +44,14 @@ export default function Registry() {
       newErrors.confirmPassword = "Unmatched.";
     }
 
-    // Nếu có lỗi, cập nhật state errors và dừng lại
+    // If there are errors, update errors state and stop
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
     // --- KẾT THÚC LOGIC VALIDATION MỚI ---
 
-    setErrors({}); // Xóa hết lỗi nếu validation thành công
+    setErrors({}); // Clear all errors if validation successful
     setSubmitting(true);
 
     try {
@@ -65,7 +65,7 @@ export default function Registry() {
 
       setMsg({
         type: "success",
-        text: result.message || "Đăng ký thành công!",
+        text: result.message || "Registration successful!",
       });
 
       setTimeout(() => navigate("/login"), 2000);
@@ -73,7 +73,7 @@ export default function Registry() {
       console.error("Registration error:", err);
       setMsg({
         type: "error",
-        text: err.message || "Đăng ký thất bại. Vui lòng thử lại.",
+        text: err.message || "Registration failed. Please try again.",
       });
     } finally {
       setSubmitting(false);
@@ -109,7 +109,7 @@ export default function Registry() {
                     type="text"
                     value={form.customer_name}
                     onChange={handleChange}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="John Doe"
                     required
                   />
                   {errors.customer_name && (
@@ -139,7 +139,7 @@ export default function Registry() {
                   type="text"
                   value={form.address}
                   onChange={handleChange}
-                  placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"
+                  placeholder="House number, street, district, city"
                   required
                 />
               </div>

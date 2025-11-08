@@ -71,7 +71,7 @@ function MenuCard({ product }) {
         },
         1
       );
-      toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+      toast.success("Product added to cart!");
     } catch (e) {
       if (e?.message === AUTH_REQUIRED) {
         const next = location.pathname + location.search + location.hash;
@@ -139,7 +139,7 @@ export default function Menu({ filters }) {
         const rows = Array.isArray(data) ? data : [data];
         const normalized = rows.map((r) => ({
           id: r.id ?? r.product_id ?? r.idx,
-          title: r.title ?? r.name ?? r.product_name ?? "Không có tên",
+          title: r.title ?? r.name ?? r.product_name ?? "No name",
           img: r.img ?? r.image_url ?? r.image ?? "",
           price: Number(r.price) || 0,
           rating: Math.max(0, Math.min(5, Number(r.rating) || 0)),
@@ -148,7 +148,7 @@ export default function Menu({ filters }) {
 
         if (!cancelled) setProducts(normalized);
       } catch (e) {
-        if (!cancelled) setError(e.message || "Không thể tải sản phẩm.");
+        if (!cancelled) setError(e.message || "Unable to load products.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -163,7 +163,7 @@ export default function Menu({ filters }) {
     return (
       <section className={cx("section")}>
         <div className={cx("container")}>
-          <p>Đang tải sản phẩm…</p>
+          <p>Loading products...</p>
         </div>
       </section>
     );
@@ -173,8 +173,8 @@ export default function Menu({ filters }) {
     return (
       <section className={cx("section")}>
         <div className={cx("container")}>
-          <p className={cx("error")}>Lỗi: {error}</p>
-          <button onClick={() => window.location.reload()}>Thử lại</button>
+          <p className={cx("error")}>Error: {error}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
         </div>
       </section>
     );

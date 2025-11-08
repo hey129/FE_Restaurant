@@ -54,8 +54,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
         const normalized = row
           ? {
               id: row.product_id ?? row.id ?? row.idx ?? String(id),
-              title:
-                row.product_name ?? row.title ?? row.name ?? "Không có tên",
+              title: row.product_name ?? row.title ?? row.name ?? "No name",
               images:
                 row.images ??
                 row.gallery ??
@@ -67,7 +66,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
               description:
                 row.description ??
                 row.desc ??
-                "Chưa có mô tả cho sản phẩm này.",
+                "No description available for this product.",
               sku: row.sku ?? row.code ?? null,
               stock: typeof row.stock === "number" ? row.stock : null,
               category: row.category ?? row.cat ?? null,
@@ -77,8 +76,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
 
         if (!cancelled) setProduct(normalized);
       } catch (e) {
-        if (!cancelled)
-          setError(e.message || "Không thể tải chi tiết sản phẩm.");
+        if (!cancelled) setError(e.message || "Cannot load product details.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -115,7 +113,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
         },
         qty
       );
-      toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+      toast.success("Added to cart!", { duration: 3000 });
     } catch (e) {
       if (e?.message === AUTH_REQUIRED) {
         const next = location.pathname + location.search + location.hash;
@@ -131,7 +129,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
     return (
       <section className={cx("section")}>
         <div className={cx("container")}>
-          <p>Đang tải chi tiết sản phẩm…</p>
+          <p>Loading product details...</p>
         </div>
       </section>
     );
@@ -140,8 +138,8 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
   if (error) {
     return (
       <section className={cx("section")}>
-        <div className={cx("container")}>
-          <p className={cx("error")}>Lỗi: {error}</p>
+        <div className={cx("loading")}>
+          <p className={cx("error")}>Error: {error}</p>
         </div>
       </section>
     );
@@ -151,7 +149,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
     return (
       <section className={cx("section")}>
         <div className={cx("container")}>
-          <p>Không tìm thấy sản phẩm.</p>
+          <p>Product not found.</p>
         </div>
       </section>
     );
@@ -202,14 +200,14 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
               <span className={cx("price")}>{vnd}</span>
               {stock !== null && (
                 <span className={cx("stock", { out: stock <= 0 })}>
-                  {stock > 0 ? `Còn hàng: ${stock}` : "Hết hàng"}
+                  {stock > 0 ? `In Stock: ${stock}` : "Out of Stock"}
                 </span>
               )}
             </div>
 
             {sku && (
               <div className={cx("skuRow")}>
-                <span className={cx("skuLabel")}>Mã SP:</span>
+                <span className={cx("skuLabel")}>SKU:</span>
                 <span className={cx("sku")}>{sku}</span>
               </div>
             )}
@@ -220,7 +218,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
               <div className={cx("qty")}>
                 <Button
                   onClick={dec}
-                  aria-label="Giảm số lượng"
+                  aria-label="Decrease quantity"
                   className={cx("qtyBtn")}
                 >
                   −
@@ -239,14 +237,14 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
                 />
                 <Button
                   onClick={inc}
-                  aria-label="Tăng số lượng"
+                  aria-label="Increase quantity"
                   className={cx("qtyBtn")}
                 >
                   +
                 </Button>
               </div>
               <Button className={cx("addBtn")} onClick={handleAddToCart}>
-                Thêm vào giỏ
+                Add to Cart
               </Button>
             </div>
 

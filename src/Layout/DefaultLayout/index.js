@@ -11,7 +11,7 @@ function DefaultLayout({ children }) {
           position="top-right"
           gutter={8}
           toastOptions={{
-            duration: 2000,
+            duration: 3000,
             style: { zIndex: 999999 },
           }}
         />

@@ -47,14 +47,14 @@ export default function Sidebar({ onChange }) {
   if (loading) {
     return (
       <div className={cx("layout")}>
-        <p>Đang tải danh mục…</p>
+        <p>Loading categories...</p>
       </div>
     );
   }
   if (error) {
     return (
       <div className={cx("layout")}>
-        <p className={cx("error")}>Lỗi: {error}</p>
+        <p className={cx("error")}>Error: {error}</p>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function Sidebar({ onChange }) {
           <div className={cx("searchInput")}>
             <input
               name="search"
-              placeholder="Tìm sản phẩm…"
+              placeholder="Search products..."
               className={cx("input")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}

@@ -6,7 +6,7 @@ export default function PaymentReturn() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("Đang kiểm tra kết quả thanh toán...");
+  const [message, setMessage] = useState("Checking payment result...");
 
   useEffect(() => {
     const resultCode = searchParams.get("resultCode");
@@ -24,8 +24,8 @@ export default function PaymentReturn() {
     if (resultCode === "0") {
       // Payment successful
       setStatus("success");
-      setMessage("✅ Thanh toán thành công!");
-      toast.success("Thanh toán thành công!");
+      setMessage("✅ Payment successful!");
+      toast.success("Payment successful!");
 
       // Redirect to success page after 2 seconds
       setTimeout(() => {
@@ -36,29 +36,29 @@ export default function PaymentReturn() {
     } else if (resultCode === "1006") {
       // User cancelled payment
       setStatus("cancelled");
-      setMessage("❌ Bạn đã hủy thanh toán");
-      toast.error("Thanh toán đã bị hủy");
+      setMessage("❌ You cancelled the payment");
+      toast.error("Payment was cancelled");
 
       setTimeout(() => {
-        navigate("/cart");
+        navigate("/");
       }, 2000);
     } else if (resultCode) {
       // Payment failed
       setStatus("failed");
       setMessage(
-        `❌ Thanh toán thất bại: ${momoMessage || `Mã lỗi ${resultCode}`}`
+        `❌ Payment failed: ${momoMessage || `Error code ${resultCode}`}`
       );
       toast.error(
-        `Thanh toán thất bại: ${momoMessage || `Mã lỗi ${resultCode}`}`
+        `Payment failed: ${momoMessage || `Error code ${resultCode}`}`
       );
 
       setTimeout(() => {
-        navigate("/cart");
+        navigate("/");
       }, 3000);
     } else {
       // No result code
       setStatus("unknown");
-      setMessage("⚠️ Không nhận được kết quả thanh toán");
+      setMessage("⚠️ No payment result received");
     }
   }, [searchParams, navigate]);
 
@@ -87,7 +87,7 @@ export default function PaymentReturn() {
         <div>
           <div style={{ fontSize: "48px", marginBottom: "20px" }}>✅</div>
           <h2 style={{ color: "#28a745" }}>{message}</h2>
-          <p>Đang chuyển đến trang xác nhận...</p>
+          <p>Redirecting to confirmation page...</p>
         </div>
       )}
 
@@ -95,7 +95,7 @@ export default function PaymentReturn() {
         <div>
           <div style={{ fontSize: "48px", marginBottom: "20px" }}>❌</div>
           <h2 style={{ color: "#ffc107" }}>{message}</h2>
-          <p>Đang chuyển về giỏ hàng...</p>
+          <p>Returning to cart...</p>
         </div>
       )}
 
@@ -103,7 +103,7 @@ export default function PaymentReturn() {
         <div>
           <div style={{ fontSize: "48px", marginBottom: "20px" }}>❌</div>
           <h2 style={{ color: "#dc3545" }}>{message}</h2>
-          <p>Đang chuyển về giỏ hàng...</p>
+          <p>Returning to cart...</p>
         </div>
       )}
 
@@ -112,7 +112,7 @@ export default function PaymentReturn() {
           <div style={{ fontSize: "48px", marginBottom: "20px" }}>⚠️</div>
           <h2 style={{ color: "#6c757d" }}>{message}</h2>
           <button
-            onClick={() => navigate("/cart")}
+            onClick={() => navigate("/")}
             style={{
               marginTop: "20px",
               padding: "10px 20px",

@@ -45,7 +45,7 @@ function OrderList() {
       setOrders(data || []);
     } catch (err) {
       console.error("Load orders error:", err);
-      toast.error("Không thể tải danh sách đơn hàng");
+      toast.error("Cannot load order list", { duration: 3000 });
     } finally {
       setLoading(false);
     }
@@ -98,13 +98,13 @@ function OrderList() {
       };
 
       // If cancelling and payment was made, set payment status to refund
-      if (newStatus === "Hủy" && refundPayment) {
-        updateParams.paymentStatus = "Hoàn tiền";
+      if (newStatus === "Cancelled" && refundPayment) {
+        updateParams.paymentStatus = "Refunded";
       }
 
       // If completing, ensure payment is marked as paid
-      if (newStatus === "Hoàn thành") {
-        updateParams.paymentStatus = "Đã thanh toán";
+      if (newStatus === "Completed") {
+        updateParams.paymentStatus = "Paid";
       }
 
       const data = await updateOrderStatus(updateParams);
@@ -117,18 +117,20 @@ function OrderList() {
       );
 
       const statusText = {
-        cancelled: "đã hủy",
-        completed: "đã hoàn thành",
+        cancelled: "cancelled",
+        completed: "completed",
       };
 
-      toast.success(`Đơn hàng #${orderId} ${statusText[newStatus]}!`);
+      toast.success(`Order #${orderId} ${statusText[newStatus]}!`, {
+        duration: 3000,
+      });
 
       if (refundPayment) {
-        toast.success("Trạng thái thanh toán đã được cập nhật thành Hoàn tiền");
+        toast.success("Payment status updated to Refunded", { duration: 3000 });
       }
     } catch (err) {
       console.error("Update order status error:", err);
-      toast.error("Không thể cập nhật trạng thái đơn hàng");
+      toast.error("Cannot update order status", { duration: 3000 });
     } finally {
       setProcessingAction(null);
     }
@@ -137,13 +139,14 @@ function OrderList() {
   // Handle cancel order
   const handleCancelOrder = async (order) => {
     const confirmCancel = window.confirm(
-      `Bạn có chắc chắn muốn hủy đơn hàng #${order.order_id}?\n\n` +
-        `Khách hàng: ${order.customer?.customer_name || "N/A"}\n` +
-        `Tổng tiền: ${formatVND(order.total_amount)}\n` +
-        `Trạng thái thanh toán: ${order.payment_status || "N/A"}\n\n` +
+      `Are you sure you want to cancel order #${order.order_id}?\n\n` +
+        `Customer: ${order.customer?.customer_name || "N/A"}\n` +
+        `Total: ${formatVND(order.total_amount)}\n` +
+        `Payment Status: ${order.payment_status || "N/A"}\n\n` +
         `${
+          order.payment_status === "Paid" ||
           order.payment_status === "Đã thanh toán"
-            ? "⚠️ Đơn hàng đã thanh toán sẽ được đánh dấu hoàn tiền."
+            ? "⚠️ Paid order will be marked as refunded."
             : ""
         }`
     );
@@ -151,29 +154,45 @@ function OrderList() {
     if (!confirmCancel) return;
 
     // If payment was made (paid status), refund it
-    const needsRefund = order.payment_status === "Đã thanh toán";
-    await updateOrderStatusLocal(order.order_id, "Hủy", needsRefund);
+    const needsRefund = order.payment_status === "Paid";
+    await updateOrderStatusLocal(order.order_id, "Cancelled", needsRefund);
   };
 
   // Handle complete order
   const handleCompleteOrder = async (order) => {
     const confirmComplete = window.confirm(
-      `Xác nhận hoàn thành đơn hàng #${order.order_id}?\n\n` +
-        `Khách hàng: ${order.customer?.customer_name || "N/A"}\n` +
-        `Tổng tiền: ${formatVND(order.total_amount)}`
+      `Confirm completion of order #${order.order_id}?\n\n` +
+        `Customer: ${order.customer?.customer_name || "N/A"}\n` +
+        `Total: ${formatVND(order.total_amount)}`
     );
 
     if (!confirmComplete) return;
 
-    await updateOrderStatusLocal(order.order_id, "Hoàn thành");
+    await updateOrderStatusLocal(order.order_id, "Completed");
   };
 
   // Get status badge class
   const getStatusClass = (status) => {
     const statusMap = {
+      // Lowercase
       pending: "warning",
+      processing: "info",
+      shipping: "primary",
       completed: "success",
       cancelled: "danger",
+      // Capitalized English
+      Pending: "warning",
+      Processing: "info",
+      Shipping: "primary",
+      Completed: "success",
+      Cancelled: "danger",
+      // Vietnamese (legacy)
+      "Chờ xử lý": "warning",
+      "Đang xử lý": "info",
+      "Đang giao": "primary",
+      "Hoàn thành": "success",
+      "Đã hủy": "danger",
+      Hủy: "danger",
     };
     return statusMap[status] || "secondary";
   };
@@ -183,6 +202,10 @@ function OrderList() {
       paid: "success",
       unpaid: "warning",
       pending: "info",
+      Paid: "success",
+      Unpaid: "warning",
+      Refunded: "danger",
+      "Đã thanh toán": "success",
       "Hoàn tiền": "danger",
     };
     return statusMap[status] || "secondary";
@@ -190,19 +213,32 @@ function OrderList() {
 
   const getStatusText = (status) => {
     const textMap = {
-      pending: "Chờ xử lý",
-      completed: "Hoàn thành",
-      cancelled: "Đã hủy",
+      pending: "Pending",
+      completed: "Completed",
+      cancelled: "Cancelled",
+      Pending: "Pending",
+      Processing: "Processing",
+      Shipping: "Shipping",
+      Completed: "Completed",
+      Cancelled: "Cancelled",
+      "Chờ xử lý": "Pending",
+      "Đang xử lý": "Processing",
+      "Đang giao": "Shipping",
+      "Hoàn thành": "Completed",
+      "Đã hủy": "Cancelled",
     };
     return textMap[status] || status;
   };
 
   const getPaymentStatusText = (status) => {
     const textMap = {
-      "Đã thanh toán": "Đã thanh toán",
-      "Chưa thanh toán": "Chưa thanh toán",
-      "Chờ xử lý": "Đang xử lý",
-      "Hoàn tiền": "Hoàn tiền",
+      Paid: "Paid",
+      Unpaid: "Unpaid",
+      Refunded: "Refunded",
+      "Đã thanh toán": "Paid",
+      "Chưa thanh toán": "Unpaid",
+      "Chờ xử lý": "Processing",
+      "Hoàn tiền": "Refunded",
     };
     return textMap[status] || status;
   };
@@ -212,7 +248,7 @@ function OrderList() {
       <div className={cx("container")}>
         <div className={cx("loading")}>
           <div className={cx("spinner")}></div>
-          <p>Đang tải danh sách đơn hàng...</p>
+          <p>Loading order list...</p>
         </div>
       </div>
     );
@@ -224,10 +260,10 @@ function OrderList() {
 
       {/* Header */}
       <div className={cx("header")}>
-        <h1 className={cx("title")}>Quản lý đơn hàng </h1>
+        <h1 className={cx("title")}>Order Management</h1>
         <div className={cx("stats")}>
           <div className={cx("stat-item")}>
-            <span className={cx("stat-label")}>Tổng đơn:</span>
+            <span className={cx("stat-label")}>Total Orders:</span>
             <span className={cx("stat-value")}>{orders.length}</span>
           </div>
         </div>
@@ -239,32 +275,32 @@ function OrderList() {
           className={cx("filter-btn", { active: filter === "all" })}
           onClick={() => setFilter("all")}
         >
-          Tất cả
+          All
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "Chờ xử lý" })}
-          onClick={() => setFilter("Chờ xử lý")}
+          className={cx("filter-btn", { active: filter === "Pending" })}
+          onClick={() => setFilter("Pending")}
         >
-          Chờ xử lý
+          Pending
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "Hoàn thành" })}
-          onClick={() => setFilter("Hoàn thành")}
+          className={cx("filter-btn", { active: filter === "Completed" })}
+          onClick={() => setFilter("Completed")}
         >
-          Hoàn thành
+          Completed
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "Hủy" })}
-          onClick={() => setFilter("Hủy")}
+          className={cx("filter-btn", { active: filter === "Cancelled" })}
+          onClick={() => setFilter("Cancelled")}
         >
-          Đã hủy
+          Cancelled
         </button>
       </div>
 
       {/* Orders List */}
       {orders.length === 0 ? (
         <div className={cx("empty")}>
-          <p>Không có đơn hàng nào</p>
+          <p>No orders found</p>
         </div>
       ) : (
         <div className={cx("orders-list")}>
@@ -289,7 +325,7 @@ function OrderList() {
                   </div>
                   <div className={cx("order-customer")}>
                     <strong>
-                      {order.customer?.customer_name || "Khách hàng"}
+                      {order.customer?.customer_name || "Customer"}
                     </strong>
                     <span>{order.customer?.phone || ""}</span>
                   </div>
@@ -342,14 +378,14 @@ function OrderList() {
                 <div className={cx("order-details")}>
                   {/* Delivery Address */}
                   <div className={cx("detail-section")}>
-                    <h4>Địa chỉ giao hàng</h4>
-                    <p>{order.delivery_address || "Chưa có địa chỉ"}</p>
+                    <h4>Delivery Address</h4>
+                    <p>{order.delivery_address || "No address"}</p>
                   </div>
 
                   {/* Transaction ID */}
                   {order.payment?.[0]?.transaction_id && (
                     <div className={cx("detail-section")}>
-                      <h4>Mã giao dịch</h4>
+                      <h4>Transaction ID</h4>
                       <p className={cx("transaction-id")}>
                         {order.payment[0].transaction_id}
                       </p>
@@ -359,7 +395,7 @@ function OrderList() {
                   {/* Order Note */}
                   {order.note && (
                     <div className={cx("detail-section")}>
-                      <h4>Ghi chú</h4>
+                      <h4>Note</h4>
                       <p>{order.note}</p>
                     </div>
                   )}
@@ -367,7 +403,7 @@ function OrderList() {
                   {/* Order Items */}
                   {order.items && order.items.length > 0 && (
                     <div className={cx("detail-section")}>
-                      <h4>Chi tiết sản phẩm</h4>
+                      <h4>Product Details</h4>
                       <div className={cx("items-list")}>
                         {order.items.map((item) => (
                           <div
@@ -384,10 +420,10 @@ function OrderList() {
                             />
                             <div className={cx("item-info")}>
                               <div className={cx("item-name")}>
-                                {item.product?.product_name || "Sản phẩm"}
+                                {item.product?.product_name || "Product"}
                               </div>
                               <div className={cx("item-quantity")}>
-                                SL: {item.quantity}
+                                Qty: {item.quantity}
                               </div>
                             </div>
                             <div className={cx("item-price")}>
@@ -402,43 +438,45 @@ function OrderList() {
                   {/* Note */}
                   {order.note && (
                     <div className={cx("detail-section")}>
-                      <h4>Ghi chú</h4>
+                      <h4>Note</h4>
                       <p className={cx("note")}>{order.note}</p>
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className={cx("order-actions")}>
-                    {order.order_status === "Chờ xử lý" && (
-                      <>
-                        <button
-                          className={cx("btn", "btn-success")}
-                          onClick={() => handleCompleteOrder(order)}
-                          disabled={processingAction === order.order_id}
-                        >
-                          {processingAction === order.order_id
-                            ? "Đang xử lý..."
-                            : "Hoàn thành"}
-                        </button>
-                        <button
-                          className={cx("btn", "btn-danger")}
-                          onClick={() => handleCancelOrder(order)}
-                          disabled={processingAction === order.order_id}
-                        >
-                          Hủy đơn
-                        </button>
-                      </>
-                    )}
+                  {/* Action Buttons at the End */}
+                  {order.order_status === "Pending" && (
+                    <div className={cx("action-buttons-end")}>
+                      <button
+                        className={cx("btn", "btn-success", "btn-xs")}
+                        onClick={() => handleCompleteOrder(order)}
+                        disabled={processingAction === order.order_id}
+                      >
+                        {processingAction === order.order_id
+                          ? "Processing..."
+                          : "✓ Complete"}
+                      </button>
+                      <button
+                        className={cx("btn", "btn-danger", "btn-xs")}
+                        onClick={() => handleCancelOrder(order)}
+                        disabled={processingAction === order.order_id}
+                      >
+                        ✗ Cancel
+                      </button>
+                    </div>
+                  )}
 
-                    {(order.order_status === "Hoàn thành" ||
-                      order.order_status === "Hủy") && (
-                      <div className={cx("status-message")}>
-                        {order.order_status === "Hoàn thành"
-                          ? "✅ Đơn hàng đã hoàn thành"
-                          : "❌ Đơn hàng đã bị hủy"}
-                      </div>
-                    )}
-                  </div>
+                  {/* Status Message for Completed/Cancelled */}
+                  {(order.order_status === "Completed" ||
+                    order.order_status === "Cancelled" ||
+                    order.order_status === "Hoàn thành" ||
+                    order.order_status === "Hủy") && (
+                    <div className={cx("status-message")}>
+                      {order.order_status === "Completed" ||
+                      order.order_status === "Hoàn thành"
+                        ? "✓ Order completed"
+                        : "✗ Order cancelled"}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

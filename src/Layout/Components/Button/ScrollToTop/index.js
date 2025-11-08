@@ -22,12 +22,12 @@ function ScrollToTopButton() {
     });
   };
 
-  // 2. useEffect để thêm và xóa event listener
+  // 2. useEffect to add and remove event listener
   useEffect(() => {
     // Thêm event listener khi component được mount
     window.addEventListener("scroll", toggleVisibility);
 
-    // Xóa event listener khi component bị unmount để tránh rò rỉ bộ nhớ
+    // Remove event listener when component unmounts to avoid memory leaks
     return () => {
       window.removeEventListener("scroll", toggleVisibility);
     };

@@ -44,7 +44,7 @@ export default function CreateOrder() {
   // Redirect if cart is empty
   useEffect(() => {
     if (isAuthenticated && items.length === 0) {
-      toast.error("Giỏ hàng trống", { duration: 2000 });
+      toast.error("Cart is empty", { duration: 3000 });
       navigate("/cart");
     }
   }, [isAuthenticated, items.length, navigate]);
@@ -80,25 +80,25 @@ export default function CreateOrder() {
     }
 
     if (!items.length) {
-      toast.error("Giỏ hàng trống", { duration: 2000 });
+      toast.error("Cart is empty", { duration: 3000 });
       return;
     }
 
     if (!profile?.customer_id) {
-      toast.error("Không tìm thấy thông tin người dùng", { duration: 2000 });
+      toast.error("User information not found", { duration: 3000 });
       return;
     }
 
     const deliveryAddress = useOtherAddress ? form.otherAddress : form.address;
 
     if (!deliveryAddress?.trim()) {
-      toast.error("Vui lòng nhập địa chỉ giao hàng", { duration: 2000 });
+      toast.error("Please enter delivery address", { duration: 3000 });
       return;
     }
 
     try {
       setSubmitting(true);
-      toast.loading("Đang xử lý đơn hàng...");
+      toast.loading("Processing order...", { duration: 3000 });
 
       // Handle MoMo payment
       if (form.paymentMethod === "MoMo") {
@@ -118,12 +118,12 @@ export default function CreateOrder() {
 
           // Step 2: Create MoMo payment
           toast.dismiss();
-          toast.loading("Đang kết nối với MoMo...");
+          toast.loading("Connecting to MoMo...", { duration: 3000 });
 
           const paymentResponse = await createMomoPayment({
             orderId,
             amount: total,
-            orderInfo: `Thanh toán đơn hàng #${orderId}`,
+            orderInfo: `Payment for order #${orderId}`,
           });
 
           console.log("💳 MoMo response:", paymentResponse);
@@ -132,7 +132,7 @@ export default function CreateOrder() {
           if (!paymentResponse.success || !paymentResponse.payUrl) {
             throw new Error(
               paymentResponse.message ||
-                "Không thể kết nối với MoMo. Vui lòng thử lại sau."
+                "Cannot connect to MoMo. Please try again later."
             );
           }
 
@@ -141,7 +141,9 @@ export default function CreateOrder() {
           await clearCart();
 
           toast.dismiss();
-          toast.success("Chuyển đến trang thanh toán MoMo...");
+          toast.success("Redirecting to MoMo payment page...", {
+            duration: 3000,
+          });
 
           // Redirect to MoMo payment page
           setTimeout(() => {
@@ -152,19 +154,22 @@ export default function CreateOrder() {
           toast.dismiss();
           toast.error(
             paymentError.message ||
-              "Không thể kết nối với MoMo. Đơn hàng của bạn đã được tạo nhưng chưa thanh toán. Vui lòng liên hệ hỗ trợ."
+              "Cannot connect to MoMo. Your order has been created but not paid. Please contact support.",
+            { duration: 3000 }
           );
           setSubmitting(false);
         }
       } else {
         toast.dismiss();
-        toast.error("Phương thức thanh toán không hợp lệ");
+        toast.error("Invalid payment method", { duration: 3000 });
         setSubmitting(false);
       }
     } catch (err) {
       console.error("❌ Order creation error:", err);
       toast.dismiss();
-      toast.error(err.message || "Tạo đơn hàng thất bại. Vui lòng thử lại.");
+      toast.error(err.message || "Order creation failed. Please try again.", {
+        duration: 3000,
+      });
       setSubmitting(false);
     }
   };
@@ -176,20 +181,20 @@ export default function CreateOrder() {
         <div className={cx("grid")}>
           {/* FORM */}
           <div className={cx("card")}>
-            <h3 className={cx("title")}>Thông tin giao hàng</h3>
+            <h3 className={cx("title")}>Delivery Information</h3>
             <form className={cx("form")} onSubmit={submit}>
               <div className={cx("row2")}>
                 <div className={cx("formGroup")}>
-                  <label>Họ tên</label>
+                  <label>Full Name</label>
                   <input
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="John Doe"
                   />
                 </div>
                 <div className={cx("formGroup")}>
-                  <label>Điện thoại</label>
+                  <label>Phone</label>
                   <input
                     name="phone"
                     value={form.phone}
@@ -199,12 +204,12 @@ export default function CreateOrder() {
                 </div>
               </div>
               <div className={cx("formGroup")}>
-                <label>Địa chỉ mặc định</label>
+                <label>Default Address</label>
                 <input
                   name="address"
                   value={form.address}
                   onChange={handleChange}
-                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
+                  placeholder="Street, ward, district, city"
                 />
               </div>
               <div className={cx("formCheck")}>
@@ -214,23 +219,23 @@ export default function CreateOrder() {
                   checked={useOtherAddress}
                   onChange={() => setUseOtherAddress((v) => !v)}
                 />
-                <label htmlFor="useOther">Giao đến địa chỉ khác</label>
+                <label htmlFor="useOther">Deliver to another address</label>
               </div>
               {useOtherAddress && (
                 <div className={cx("formGroup")}>
-                  <label>Địa chỉ giao khác</label>
+                  <label>Other Address</label>
                   <textarea
                     name="otherAddress"
                     value={form.otherAddress}
                     onChange={handleChange}
                     rows={3}
-                    placeholder="Nhập địa chỉ giao hàng khác..."
+                    placeholder="Enter delivery address..."
                   />
                 </div>
               )}
               <div className={cx("row2")}>
                 <div className={cx("formGroup")}>
-                  <label>Phương thức thanh toán</label>
+                  <label>Payment Method</label>
                   <select
                     name="paymentMethod"
                     value={form.paymentMethod}
@@ -241,22 +246,18 @@ export default function CreateOrder() {
                 </div>
 
                 <div className={cx("formGroup")}>
-                  <label>Phí vận chuyển</label>
+                  <label>Shipping Fee</label>
                   <select
                     value={ship}
                     onChange={(e) => setShip(Number(e.target.value))}
                   >
-                    <option value={15000}>
-                      Giao thường – {formatVND(15000)}
-                    </option>
-                    <option value={30000}>
-                      Giao nhanh – {formatVND(30000)}
-                    </option>
+                    <option value={15000}>Standard – {formatVND(15000)}</option>
+                    <option value={30000}>Express – {formatVND(30000)}</option>
                   </select>
                 </div>
               </div>
               <div className={cx("formGroup")}>
-                <label>Ghi chú</label>
+                <label>Note</label>
                 <textarea
                   name="note"
                   value={form.note}
@@ -269,14 +270,14 @@ export default function CreateOrder() {
                 type="submit"
                 disabled={submitting}
               >
-                {submitting ? "Đang xử lý..." : "Xác nhận đặt hàng"}
+                {submitting ? "Processing..." : "Confirm Order"}
               </button>
             </form>
           </div>
 
           {/* SUMMARY */}
           <div className={cx("card")}>
-            <h3 className={cx("title")}>Tóm tắt đơn hàng</h3>
+            <h3 className={cx("title")}>Order Summary</h3>
             <div className={cx("summaryList")}>
               {items.map((it) => (
                 <div key={it.id} className={cx("summaryItem")}>
@@ -295,15 +296,15 @@ export default function CreateOrder() {
             </div>
             <hr />
             <div className={cx("rowPrice")}>
-              <span>Tạm tính</span>
+              <span>Subtotal</span>
               <strong>{formatVND(subtotal)}</strong>
             </div>
             <div className={cx("rowPrice")}>
-              <span>Phí vận chuyển</span>
+              <span>Shipping Fee</span>
               <strong>{formatVND(ship)}</strong>
             </div>
             <div className={cx("rowPrice", "total")}>
-              <span>Tổng cộng</span>
+              <span>Total</span>
               <strong>{formatVND(total)}</strong>
             </div>
           </div>

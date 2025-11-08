@@ -1,7 +1,7 @@
 import Menu from "~/Pages/Customer/Menu";
 import ProfilePage from "~/Pages/Customer/Profile";
 import CustomerProfile from "~/Pages/Customer/CustomerProfile";
-import AllOrders from "~/Pages/Customer/AllOrders";
+import OrderList from "~/Pages/Customer/OrderList";
 import RestaurantHome from "~/Pages/Restaurant";
 import AdminHome from "~/Pages/Admin";
 import Registry from "~/Pages/Customer/Registry";
@@ -45,7 +45,7 @@ const publicRoutes = [
 
       {
         path: "order",
-        component: AllOrders,
+        component: OrderList,
       },
     ],
     layout: DefaultLayout, // Layout chung của toàn trang nếu có

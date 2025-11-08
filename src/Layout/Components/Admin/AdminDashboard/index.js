@@ -196,10 +196,10 @@ function AdminDashboard() {
 
   const getPaymentBadge = (status) => {
     const badges = {
-      paid: { text: "Đã thanh toán", class: "success" },
-      unpaid: { text: "Chưa thanh toán", class: "warning" },
-      pending: { text: "Đang xử lý", class: "info" },
-      "Hoàn tiền": { text: "Hoàn tiền", class: "danger" },
+      paid: { text: "Paid", class: "success" },
+      unpaid: { text: "Unpaid", class: "warning" },
+      pending: { text: "Processing", class: "info" },
+      Refund: { text: "Refund", class: "danger" },
     };
     return badges[status] || { text: status, class: "default" };
   };
@@ -209,7 +209,7 @@ function AdminDashboard() {
       <div className={cx("container")}>
         <div className={cx("loading")}>
           <div className={cx("spinner")}></div>
-          <p>Đang tải dữ liệu...</p>
+          <p>Loading data...</p>
         </div>
       </div>
     );
@@ -223,7 +223,7 @@ function AdminDashboard() {
       <div className={cx("header")}>
         <h1 className={cx("title")}> Admin Dashboard</h1>
         <button className={cx("refresh-btn")} onClick={loadData}>
-          Làm mới
+          Refresh
         </button>
       </div>
 
@@ -233,31 +233,31 @@ function AdminDashboard() {
           className={cx("tab", { active: activeTab === "overview" })}
           onClick={() => setActiveTab("overview")}
         >
-          Tổng quan
+          Overview
         </button>
         <button
           className={cx("tab", { active: activeTab === "products" })}
           onClick={() => setActiveTab("products")}
         >
-          Sản phẩm ({products.length})
+          Products ({products.length})
         </button>
         <button
           className={cx("tab", { active: activeTab === "categories" })}
           onClick={() => setActiveTab("categories")}
         >
-          Danh mục ({categories.length})
+          Categories ({categories.length})
         </button>
         <button
           className={cx("tab", { active: activeTab === "customers" })}
           onClick={() => setActiveTab("customers")}
         >
-          Khách hàng ({customers.length})
+          Customers ({customers.length})
         </button>
         <button
           className={cx("tab", { active: activeTab === "orders" })}
           onClick={() => setActiveTab("orders")}
         >
-          Đơn hàng ({orders.length})
+          Orders ({orders.length})
         </button>
       </div>
 
@@ -269,42 +269,42 @@ function AdminDashboard() {
             <div className={cx("stats-grid")}>
               <div className={cx("stat-card", "blue")}>
                 <div className={cx("stat-info")}>
-                  <h3>Sản phẩm</h3>
+                  <h3>Products</h3>
                   <p className={cx("stat-number")}>{stats.totalProducts}</p>
                 </div>
               </div>
 
               <div className={cx("stat-card", "green")}>
                 <div className={cx("stat-info")}>
-                  <h3>Danh mục</h3>
+                  <h3>Categories</h3>
                   <p className={cx("stat-number")}>{stats.totalCategories}</p>
                 </div>
               </div>
 
               <div className={cx("stat-card", "purple")}>
                 <div className={cx("stat-info")}>
-                  <h3>Khách hàng</h3>
+                  <h3>Customers</h3>
                   <p className={cx("stat-number")}>{stats.totalCustomers}</p>
                 </div>
               </div>
 
               <div className={cx("stat-card", "orange")}>
                 <div className={cx("stat-info")}>
-                  <h3>Đơn hàng</h3>
+                  <h3>Orders</h3>
                   <p className={cx("stat-number")}>{stats.totalOrders}</p>
                 </div>
               </div>
 
               <div className={cx("stat-card", "yellow")}>
                 <div className={cx("stat-info")}>
-                  <h3>Chờ xử lý</h3>
+                  <h3>Pending</h3>
                   <p className={cx("stat-number")}>{stats.pendingOrders}</p>
                 </div>
               </div>
 
               <div className={cx("stat-card", "teal")}>
                 <div className={cx("stat-info")}>
-                  <h3>Hoàn thành</h3>
+                  <h3>Completed</h3>
                   <p className={cx("stat-number")}>{stats.completedOrders}</p>
                 </div>
               </div>
@@ -312,7 +312,7 @@ function AdminDashboard() {
               <div className={cx("stat-card", "red", "wide")}>
                 <div className={cx("stat-icon")}>💰</div>
                 <div className={cx("stat-info")}>
-                  <h3>Tổng doanh thu</h3>
+                  <h3>Total Revenue</h3>
                   <p className={cx("stat-number")}>
                     {formatVND(stats.totalRevenue)}
                   </p>
@@ -341,19 +341,19 @@ function AdminDashboard() {
         {/* Products Tab */}
         {activeTab === "products" && (
           <div className={cx("table-container")}>
-            <h2 className={cx("section-title")}>Danh sách sản phẩm</h2>
+            <h2 className={cx("section-title")}>Product List</h2>
             <div className={cx("table-wrapper")}>
               <table className={cx("data-table")}>
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Hình ảnh</th>
-                    <th>Tên sản phẩm</th>
-                    <th>Danh mục</th>
-                    <th>Giá</th>
-                    <th>Đánh giá</th>
-                    <th>Trạng thái</th>
-                    <th>Mô tả</th>
+                    <th>Image</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                    <th>Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -390,7 +390,7 @@ function AdminDashboard() {
                         </span>
                       </td>
                       <td className={cx("description")}>
-                        {product.description || "Không có mô tả"}
+                        {product.description || "No description"}
                       </td>
                     </tr>
                   ))}
@@ -403,17 +403,17 @@ function AdminDashboard() {
         {/* Categories Tab */}
         {activeTab === "categories" && (
           <div className={cx("table-container")}>
-            <h2 className={cx("section-title")}>Danh sách danh mục</h2>
+            <h2 className={cx("section-title")}>Category List</h2>
             <div className={cx("table-wrapper")}>
               <table className={cx("data-table")}>
                 <thead>
                   <tr>
                     <th>ID</th>
                     <th>Icon</th>
-                    <th>Tên danh mục</th>
-                    <th>Số sản phẩm</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày tạo</th>
+                    <th>Category Name</th>
+                    <th>Number of Products</th>
+                    <th>Status</th>
+                    <th>Created Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -433,7 +433,7 @@ function AdminDashboard() {
                         <td className={cx("category-name")}>{category.name}</td>
                         <td>
                           <span className={cx("product-count-badge")}>
-                            {productCount} sản phẩm
+                            {productCount} products
                           </span>
                         </td>
                         <td>
@@ -443,9 +443,7 @@ function AdminDashboard() {
                               category.status ? "active" : "inactive"
                             )}
                           >
-                            {category.status
-                              ? "✓ Hoạt động"
-                              : "✗ Không hoạt động"}
+                            {category.status ? "✓ Active" : "✗ Inactive"}
                           </span>
                         </td>
                         <td>{formatDate(category.created_at)}</td>
@@ -461,16 +459,16 @@ function AdminDashboard() {
         {/* Customers Tab */}
         {activeTab === "customers" && (
           <div className={cx("table-container")}>
-            <h2 className={cx("section-title")}>Danh sách khách hàng</h2>
+            <h2 className={cx("section-title")}>Customer List</h2>
             <div className={cx("table-wrapper")}>
               <table className={cx("data-table")}>
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên khách hàng</th>
-                    <th>Số điện thoại</th>
-                    <th>Địa chỉ</th>
-                    <th>Ngày tạo</th>
+                    <th>Customer Name</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Created Date</th>
                     <th>Số đơn hàng</th>
                   </tr>
                 </thead>
@@ -510,7 +508,7 @@ function AdminDashboard() {
         {activeTab === "orders" && (
           <div className={cx("orders-section")}>
             <div className={cx("section-header")}>
-              <h2 className={cx("section-title")}>Danh sách đơn hàng</h2>
+              <h2 className={cx("section-title")}>Order List</h2>
               <div className={cx("payment-filters")}>
                 <button
                   className={cx("filter-btn", {
@@ -553,14 +551,14 @@ function AdminDashboard() {
                     >
                       <div className={cx("order-info")}>
                         <div className={cx("order-id")}>
-                          Đơn hàng #{order.order_id}
+                          Order #{order.order_id}
                         </div>
                         <div className={cx("order-date")}>
                           {formatDate(order.order_date)}
                         </div>
                         <div className={cx("order-customer")}>
                           <strong>
-                            {order.customer?.customer_name || "Khách hàng"}
+                            {order.customer?.customer_name || "Customer"}
                           </strong>
                           <span>{order.customer?.phone || ""}</span>
                         </div>
@@ -611,13 +609,13 @@ function AdminDashboard() {
                     {expandedOrder === order.order_id && (
                       <div className={cx("order-details")}>
                         <div className={cx("detail-section")}>
-                          <h4>Địa chỉ giao hàng</h4>
-                          <p>{order.delivery_address || "Chưa có địa chỉ"}</p>
+                          <h4>Delivery Address</h4>
+                          <p>{order.delivery_address || "No address"}</p>
                         </div>
 
                         {order.payment?.[0]?.transaction_id && (
                           <div className={cx("detail-section")}>
-                            <h4>Mã giao dịch</h4>
+                            <h4>Transaction ID</h4>
                             <p className={cx("transaction-id")}>
                               {order.payment[0].transaction_id}
                             </p>
@@ -626,14 +624,14 @@ function AdminDashboard() {
 
                         {order.note && (
                           <div className={cx("detail-section")}>
-                            <h4>Ghi chú</h4>
+                            <h4>Note</h4>
                             <p>{order.note}</p>
                           </div>
                         )}
 
                         {order.items && order.items.length > 0 && (
                           <div className={cx("detail-section")}>
-                            <h4>Chi tiết sản phẩm</h4>
+                            <h4>Product Details</h4>
                             <div className={cx("items-list")}>
                               {order.items.map((item) => (
                                 <div
@@ -650,7 +648,7 @@ function AdminDashboard() {
                                       {item.product?.product_name}
                                     </p>
                                     <p className={cx("item-quantity")}>
-                                      Số lượng: {item.quantity}
+                                      Quantity: {item.quantity}
                                     </p>
                                   </div>
                                   <div className={cx("item-price")}>

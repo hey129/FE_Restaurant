@@ -67,15 +67,15 @@ export default function CustomerProfile() {
         <div className={cx("container")}>
           <div className={cx("card")}>
             <div className={cx("cardBody")}>
-              <h3 className={cx("title")}>Bạn chưa đăng nhập</h3>
-              <p>Vui lòng đăng nhập để xem hồ sơ.</p>
+              <h3 className={cx("title")}>You are not logged in</h3>
+              <p>Please login to view profile.</p>
               <button
                 className={cx("btn", "btnPrimary")}
                 onClick={() =>
                   navigate(`/login?next=${encodeURIComponent(next)}`)
                 }
               >
-                Đăng nhập
+                Login
               </button>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function CustomerProfile() {
     return (
       <section className={cx("section")}>
         <div className={cx("container")}>
-          <p>Đang tải hồ sơ…</p>
+          <p>Loading profile...</p>
         </div>
       </section>
     );
@@ -108,27 +108,26 @@ export default function CustomerProfile() {
         ...form,
       });
       setProfile(updated);
-      toast.success("Đã cập nhật hồ sơ!");
+      toast.success("Profile updated!", { duration: 3000 });
     } catch (e) {
       console.error(e);
-      toast.error(e.message || "Cập nhật thất bại");
+      toast.error(e.message || "Update failed", { duration: 3000 });
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!pwd.new1 || pwd.new1.length < 6) {
-      return toast.error("Mật khẩu tối thiểu 6 ký tự");
+      return toast.error("Password must be at least 6 characters");
     }
-    if (pwd.new1 !== pwd.new2)
-      return toast.error("Mật khẩu nhập lại không khớp");
+    if (pwd.new1 !== pwd.new2) return toast.error("Passwords do not match");
     try {
       await changePassword(pwd.new1);
       setPwd({ new1: "", new2: "" });
-      toast.success("Đã đổi mật khẩu");
+      toast.success("Password changed successfully");
     } catch (e) {
       console.error(e);
-      toast.error(e.message || "Đổi mật khẩu thất bại");
+      toast.error(e.message || "Failed to change password");
     }
   };
 
@@ -140,7 +139,7 @@ export default function CustomerProfile() {
           {/* BÊN TRÁI: AUTH INFO */}
           <div className={cx("card")}>
             <div className={cx("cardHeader")}>
-              <h3 className={cx("title")}>Tài khoản (Authentication) </h3>
+              <h3 className={cx("title")}>Account (Authentication) </h3>
             </div>
             <div className={cx("cardBody")}>
               <div className={cx("row")}>
@@ -162,30 +161,30 @@ export default function CustomerProfile() {
           <div className={cx("card")}>
             <div className={cx("cardHeader")}>
               <h3 className={cx("title")}>
-                Hồ sơ khách hàng (public.customer)
+                Customer Profile (public.customer)
               </h3>
             </div>
             <div className={cx("cardBody")}>
               {!profile ? (
                 <p>
-                  Chưa có hồ sơ khách hàng. Hãy cập nhật thông tin bên dưới.
+                  No customer profile. Please update your information below.
                 </p>
               ) : null}
 
               <form onSubmit={handleSave} className={cx("form")}>
                 <div className={cx("formGroup")}>
-                  <label>Họ và tên</label>
+                  <label>Full Name</label>
                   <input
                     name="customer_name"
                     value={form.customer_name}
                     onChange={handleChange}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="John Doe"
                     required
                   />
                 </div>
 
                 <div className={cx("formGroup")}>
-                  <label>Điện thoại</label>
+                  <label>Phone</label>
                   <input
                     name="phone"
                     value={form.phone}
@@ -195,17 +194,17 @@ export default function CustomerProfile() {
                 </div>
 
                 <div className={cx("formGroup")}>
-                  <label>Địa chỉ</label>
+                  <label>Address</label>
                   <input
                     name="address"
                     value={form.address}
                     onChange={handleChange}
-                    placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"
+                    placeholder="House number, street, district, city"
                   />
                 </div>
 
                 <button className={cx("btn", "btnPrimary")} type="submit">
-                  Lưu thay đổi
+                  Save Changes
                 </button>
               </form>
             </div>
