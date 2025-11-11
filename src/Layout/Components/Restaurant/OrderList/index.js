@@ -154,7 +154,9 @@ function OrderList() {
     if (!confirmCancel) return;
 
     // If payment was made (paid status), refund it
-    const needsRefund = order.payment_status === "Paid";
+    const needsRefund =
+      order.payment_status === "Paid" ||
+      order.payment_status === "Đã thanh toán";
     await updateOrderStatusLocal(order.order_id, "Cancelled", needsRefund);
   };
 

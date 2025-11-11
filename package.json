@@ -12,6 +12,8 @@
     "axios": "^1.12.2",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
+    "crypto": "^1.0.1",
+    "express": "^5.1.0",
     "normalize.css": "^8.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -29,7 +31,9 @@
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
     "server": "cd server && npm start",
-    "dev": "concurrently \"npm start\" \"npm run server\""
+    "server:install": "cd server && npm install",
+    "dev": "concurrently \"npm start\" \"npm run server\"",
+    "install:all": "npm install && npm run server:install"
   },
   "eslintConfig": {
     "extends": [

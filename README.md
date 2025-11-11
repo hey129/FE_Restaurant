@@ -5,25 +5,6 @@ A modern restaurant ordering and management system built with React and Supabase
 ## Overview
 
 FE_Restaurant is a full-stack restaurant application that allows customers to browse menus, place orders, and make payments online. The system uses Supabase for backend services (authentication, database, real-time updates) and a dedicated Node.js server for secure MoMo payment processing.
-### Interface 
-#### Customer
-<img width="1904" height="867" alt="image" src="https://github.com/user-attachments/assets/cc3aad6b-7e69-41f0-964a-c8c544cdcdbc" />
-
-<img width="1902" height="866" alt="image" src="https://github.com/user-attachments/assets/b3a20054-030e-49a9-bbfb-5f5fd184305b" />
-
-<img width="1902" height="862" alt="image" src="https://github.com/user-attachments/assets/e9ea0057-fbd4-4865-aab8-7730018bf375" />
-
-<img width="1897" height="870" alt="image" src="https://github.com/user-attachments/assets/34c322db-9cd7-434c-ad5b-6cf59c2e2c77" />
-
-#### Restaurant
-
-<img width="1899" height="868" alt="image" src="https://github.com/user-attachments/assets/331d5973-3944-4cd3-99c7-4335e1195047" />
-
-#### Admin
-
-<img width="1896" height="868" alt="image" src="https://github.com/user-attachments/assets/d116d265-5173-4216-b716-c375d14167a5" />
-
-<img width="1900" height="868" alt="image" src="https://github.com/user-attachments/assets/b2197707-6e0b-4a70-9c41-3481ce814dd0" />
 
 ## Features
 
@@ -37,6 +18,7 @@ FE_Restaurant is a full-stack restaurant application that allows customers to br
 - **Order History** - View past orders and reorder
 - **Profile Management** - Update personal information and addresses
 - **Delivery Management** - Multiple delivery addresses support
+- **Product Ratings** - View detailed product information with ratings
 - **Real-time Cart Sync** - Cart synchronization using Supabase
 - **Toast Notifications** - User feedback for all actions
 
@@ -47,6 +29,7 @@ FE_Restaurant is a full-stack restaurant application that allows customers to br
 - **Order Management** - Process orders, update status
 - **Customer Management** - View customer information
 - **Payment Tracking** - Monitor payment status
+- **Analytics** - Sales reports and insights
 
 ### Technical Features
 
@@ -198,7 +181,9 @@ FE_Restaurant/
 │   ├── package.json          # Server dependencies
 │   └── .env                  # Server environment variables
 │
-|
+├── database/                 # Database migrations (optional)
+│   └── migrations/
+│
 ├── build/                    # Production build output
 ├── config-overrides.js       # Webpack customization
 ├── jsconfig.json             # JavaScript configuration
@@ -420,6 +405,7 @@ Run tests in watch mode:
 ```bash
 npm test -- --watch
 ```
+
 ## Support
 
 For issues and questions:
