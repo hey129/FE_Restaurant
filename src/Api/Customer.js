@@ -226,22 +226,6 @@ export function useCustomer() {
   return useContext(CustomerContext);
 }
 
-// Giữ nguyên các API functions cũ nếu cần export riêng (không wrap trong context)
-export async function getCustomerProfile(customerId) {
-  try {
-    const { data, error } = await supabase
-      .from("customer")
-      .select("customer_id, customer_name, phone, address, created_at")
-      .eq("customer_id", customerId)
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    throw error;
-  }
-}
-
 export async function getCustomers() {
   try {
     const { data, error } = await supabase

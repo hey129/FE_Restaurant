@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
  * Create order from current cart.
  * @param {Object} params
  * @param {string} params.customerId - User UUID (auth.users.id / customer.customer_id)
+ * @param {string} params.merchantId - Required: Merchant ID for the order
  * @param {Array<{id:number, quantity:number, price:number}>} params.items - cart items
  * @param {number} params.shipping - shipping fee (VND)
  * @param {string} [params.deliveryAddress] - delivery address (can be different from profile)
@@ -14,6 +15,7 @@ import { supabase } from "./supabase";
  */
 export async function createOrder({
   customerId,
+  merchantId,
   items,
   shipping,
   deliveryAddress,
@@ -21,6 +23,7 @@ export async function createOrder({
   paymentMethod = "momo", // Default to COD
 }) {
   if (!customerId) throw new Error("NO_CUSTOMER");
+  if (!merchantId) throw new Error("NO_MERCHANT_ID");
   if (!items?.length) throw new Error("EMPTY_CART");
 
   const itemsTotal = items.reduce(
@@ -34,6 +37,7 @@ export async function createOrder({
     .from("orders")
     .insert({
       customer_id: customerId,
+      merchant_id: merchantId,
       delivery_address: deliveryAddress || null,
       total_amount: total,
       order_status: "Pending",
@@ -84,6 +88,7 @@ export async function createOrder({
     .from("cart")
     .update({ status: "ordered" })
     .eq("customer_id", customerId)
+    .eq("merchant_id", merchantId)
     .eq("status", "active");
 
   return { orderId };
@@ -93,11 +98,13 @@ export async function createOrder({
  * Get orders for a customer by status
  * @param {Object} params
  * @param {string} params.customerId - Customer UUID
+ * @param {string} params.merchantId - Required: Merchant ID to scope orders
  * @param {string[]} params.statuses - Array of order statuses to filter (e.g., ["pending", "processing"])
  * @returns {Promise<Array>}
  */
-export async function getOrders({ customerId, statuses }) {
+export async function getOrders({ customerId, merchantId, statuses }) {
   if (!customerId) throw new Error("NO_CUSTOMER");
+  if (!merchantId) throw new Error("NO_MERCHANT_ID");
 
   let query = supabase
     .from("orders")
@@ -105,6 +112,7 @@ export async function getOrders({ customerId, statuses }) {
       `
       order_id,
       customer_id,
+      merchant_id,
       order_date,
       delivery_address,
       total_amount,
@@ -115,6 +123,7 @@ export async function getOrders({ customerId, statuses }) {
     `
     )
     .eq("customer_id", customerId)
+    .eq("merchant_id", merchantId)
     .order("order_date", { ascending: false });
 
   if (statuses && statuses.length > 0) {
@@ -249,16 +258,20 @@ export async function cancelOrder({ orderId }) {
 /**
  * Get all orders with customer info (Admin/Restaurant view)
  * @param {Object} params
+ * @param {string} params.merchantId - Required: Merchant ID to scope orders
  * @param {string} [params.status] - Optional status filter ('all' for no filter)
  * @returns {Promise<Array>}
  */
-export async function getAllOrders({ status = "all" } = {}) {
+export async function getAllOrders({ merchantId, status = "all" } = {}) {
+  if (!merchantId) throw new Error("NO_MERCHANT_ID");
+  
   let query = supabase
     .from("orders")
     .select(
       `
       order_id,
       customer_id,
+      merchant_id,
       order_date,
       delivery_address,
       total_amount,
@@ -272,6 +285,7 @@ export async function getAllOrders({ status = "all" } = {}) {
       payment:payment!payment_order_id_fkey(method, transaction_id)
     `
     )
+    .eq("merchant_id", merchantId)
     .order("order_date", { ascending: false });
 
   // Apply filter if not 'all'

@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 
 /**
  * Get products with optional filters and category information
+ * @param {string} merchantId - Required: Merchant ID to scope products
  * @param {Object} filters - Filter options
  * @param {number} filters.id - Get single product by ID
  * @param {number|string} filters.category - Filter by category ID
@@ -11,7 +12,9 @@ import { supabase } from "./supabase";
  * @param {boolean} options.includeCategory - Include category details (for Admin)
  * @returns {Promise<Array|Object>} Array of products or single product
  */
-export async function getProducts(filters = {}, options = {}) {
+export async function getProducts(merchantId, filters = {}, options = {}) {
+  if (!merchantId) throw new Error("merchantId is required");
+  
   const { includeCategory = false } = options;
 
   // Select query based on whether we need category details
@@ -25,16 +28,18 @@ export async function getProducts(filters = {}, options = {}) {
       rating,
       status,
       category_id,
+      merchant_id,
       category:category_id (
         category_id,
         name
       )
     `
-    : "product_id, product_name, image, price, description, rating, category_id";
+    : "product_id, product_name, image, price, description, rating, category_id, merchant_id";
 
   let query = supabase
     .from("product")
     .select(selectQuery)
+    .eq("merchant_id", merchantId)
     .order("product_id", { ascending: true });
 
   // Get single product by ID
@@ -64,9 +69,10 @@ export async function getProducts(filters = {}, options = {}) {
 
 /**
  * Get all products with category info (for Admin)
- * @deprecated Use getProducts({}, { includeCategory: true }) instead
+ * @param {string} merchantId - Required: Merchant ID to scope products
+ * @deprecated Use getProducts(merchantId, {}, { includeCategory: true }) instead
  * @returns {Promise<Array>}
  */
-export async function getAllProducts() {
-  return getProducts({}, { includeCategory: true });
+export async function getAllProducts(merchantId) {
+  return getProducts(merchantId, {}, { includeCategory: true });
 }

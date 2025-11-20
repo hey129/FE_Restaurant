@@ -1,0 +1,221 @@
+// src/Layout/Components/Customer/MerchantSelector/MerchantSelector.module.scss
+
+.selector {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+
+  .header {
+    margin-bottom: 24px;
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    width: 100%;
+  }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    &:hover {
+      border-color: #ff6b35;
+      box-shadow: 0 4px 16px rgba(255, 107, 53, 0.2);
+      transform: translateY(-4px);
+    }
+
+    &.active {
+      border-color: #ff6b35;
+      background: linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, rgba(255, 107, 53, 0.02) 100%);
+      box-shadow: 0 4px 16px rgba(255, 107, 53, 0.15);
+    }
+
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .merchant-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .merchant-address,
+    .merchant-phone {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      word-break: break-word;
+    }
+
+    .merchant-phone {
+      color: #ff6b35;
+      font-weight: 500;
+    }
+
+    .badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #ff6b35;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .loading,
+  .error,
+  .empty {
+    padding: 40px 20px;
+    text-align: center;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  .loading {
+    background-color: #f5f5f5;
+    color: #666;
+  }
+
+  .error {
+    background-color: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+  }
+
+  .empty {
+    background-color: #f9f9f9;
+    color: #999;
+  }
+}
+
+// Mobile responsive
+@media (max-width: 1024px) {
+  .selector {
+    padding: 20px;
+
+    .header {
+      margin-bottom: 20px;
+
+      h2 {
+        font-size: 20px;
+      }
+    }
+
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      padding: 16px;
+
+      .merchant-name {
+        font-size: 16px;
+      }
+
+      .merchant-address,
+      .merchant-phone {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .selector {
+    padding: 16px;
+    margin-bottom: 24px;
+
+    .header {
+      margin-bottom: 16px;
+
+      h2 {
+        font-size: 18px;
+      }
+    }
+
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      padding: 12px;
+
+      .merchant-name {
+        font-size: 14px;
+      }
+
+      .merchant-address,
+      .merchant-phone {
+        font-size: 11px;
+      }
+
+      .badge {
+        top: 8px;
+        right: 8px;
+        padding: 3px 10px;
+        font-size: 11px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .selector {
+    padding: 12px;
+
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .card {
+      padding: 10px;
+
+      .merchant-name {
+        font-size: 13px;
+      }
+
+      .merchant-address,
+      .merchant-phone {
+        font-size: 10px;
+      }
+
+      .card-content {
+        gap: 8px;
+      }
+    }
+  }
+}

@@ -12,8 +12,5 @@ export {
   getAllOrders,
   getOrderItems,
 } from "./Order";
-export {
-  createMomoPayment,
-  queryMomoPaymentStatus,
-  getPaymentByOrderId,
-} from "./Payment";
+export { createMomoPayment } from "./Payment";
+export { getMerchants, getMerchantById } from "./Merchant";

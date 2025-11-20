@@ -118,10 +118,13 @@ function MenuCard({ product }) {
   );
 }
 
-export default function Menu({ filters }) {
+export default function Menu({ filters, merchantId }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Use prop merchantId if provided, otherwise fall back to auth context
+  const { merchantId: authMerchantId } = useAuth();
+  const currentMerchantId = merchantId || authMerchantId;
 
   useEffect(() => {
     let cancelled = false;
@@ -131,9 +134,14 @@ export default function Menu({ filters }) {
         setLoading(true);
         setError("");
 
-        // ✅ GỌI HÀM API DUY NHẤT
-        //    Giả định fetchProducts hỗ trợ nhận filters (category/search)
-        const data = await fetchProducts(filters);
+        // If no merchant selected, show empty state
+        if (!currentMerchantId) {
+          setProducts([]);
+          return;
+        }
+
+        // ✅ GỌI HÀM API DUY NHẤT with merchantId
+        const data = await fetchProducts(currentMerchantId, filters);
 
         // ✅ Chuẩn hoá dữ liệu về shape UI cần
         const rows = Array.isArray(data) ? data : [data];
@@ -157,7 +165,7 @@ export default function Menu({ filters }) {
     return () => {
       cancelled = true;
     };
-  }, [filters]); // ← Sidebar đổi filters, Menu refetch
+  }, [currentMerchantId, filters]); // Refetch when merchant changes or filters change
 
   if (loading) {
     return (

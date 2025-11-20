@@ -1,4 +1,5 @@
 import Menu from "~/Pages/Customer/Menu";
+import MerchantListPage from "~/Pages/Customer/MerchantList";
 import ProfilePage from "~/Pages/Customer/Profile";
 import CustomerProfile from "~/Pages/Customer/CustomerProfile";
 import OrderList from "~/Pages/Customer/OrderList";
@@ -17,6 +18,18 @@ import PaymentReturn from "~/Layout/Components/Customer/PaymentReturn";
 const publicRoutes = [
   {
     path: "/",
+    component: MerchantListPage,
+    layout: DefaultLayout,
+  },
+
+  {
+    path: "/merchants",
+    component: MerchantListPage,
+    layout: DefaultLayout,
+  },
+
+  {
+    path: "/menu/:merchantId",
     component: Menu,
     layout: DefaultLayout,
   },

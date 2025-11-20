@@ -6,7 +6,7 @@ import { category as fetchCategories } from "~/Api"; // nhớ export named: expo
 
 const cx = classNames.bind(styles);
 
-export default function Sidebar({ onChange }) {
+export default function Sidebar({ onChange, merchantId }) {
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState(null); // sẽ là category_id hoặc null
   const [search, setSearch] = useState("");
@@ -18,7 +18,7 @@ export default function Sidebar({ onChange }) {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetchCategories();
+        const data = await fetchCategories(merchantId);
         const normalized = data
           .filter((c) => c.status !== false)
           .map((c) => ({
@@ -32,7 +32,7 @@ export default function Sidebar({ onChange }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [merchantId]);
   // debounce search input so we don't call parent on every keystroke
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300); // 300ms debounce

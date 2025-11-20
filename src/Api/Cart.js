@@ -14,17 +14,17 @@ export const AUTH_REQUIRED = "AUTH_REQUIRED";
 
 const CartContext = createContext();
 
-export function CartProvider({ children }) {
+export function CartProvider({ children, merchantId }) {
   const { user } = useAuth();
   const customerId = user?.customer_id || null; // Sử dụng customer_id từ profile
 
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(!!customerId);
+  const [loading, setLoading] = useState(!!customerId && !!merchantId);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      if (!customerId) {
+      if (!customerId || !merchantId) {
         setItems([]);
         setLoading(false);
         return;
@@ -36,6 +36,7 @@ export function CartProvider({ children }) {
           `
         cart_id,
         customer_id,
+        merchant_id,
         product_id,
         quantity,
         price,          
@@ -51,6 +52,7 @@ export function CartProvider({ children }) {
       `
         )
         .eq("customer_id", customerId)
+        .eq("merchant_id", merchantId)
         .eq("status", "active") // Chỉ lấy active items
         .order("added_at", { ascending: false });
 
@@ -116,7 +118,7 @@ export function CartProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [customerId]);
+  }, [customerId, merchantId]);
 
   const subtotal = useMemo(
     () => items.reduce((sum, it) => sum + it.price * it.quantity, 0),
@@ -126,6 +128,7 @@ export function CartProvider({ children }) {
   const addToCart = useCallback(
     async (product, qty = 1) => {
       if (!customerId) throw new Error(AUTH_REQUIRED);
+      if (!merchantId) throw new Error("NO_MERCHANT_ID");
 
       const normalized = {
         id: product.id, // phải là integer vì FK product_id integer
@@ -168,6 +171,7 @@ export function CartProvider({ children }) {
         .from("cart")
         .select("cart_id, quantity")
         .eq("customer_id", customerId)
+        .eq("merchant_id", merchantId)
         .eq("product_id", normalized.id)
         .eq("status", "active");
 
@@ -229,6 +233,7 @@ export function CartProvider({ children }) {
         // 2b) Insert mới
         const { error: insErr } = await supabase.from("cart").insert({
           customer_id: customerId,
+          merchant_id: merchantId,
           product_id: normalized.id,
           quantity: Math.max(1, qty),
           price: normalized.price,
@@ -240,6 +245,7 @@ export function CartProvider({ children }) {
             .from("cart")
             .select("product_id, quantity, price, added_at")
             .eq("customer_id", customerId)
+            .eq("merchant_id", merchantId)
             .eq("status", "active");
           setItems(
             (reload || []).map((d) => ({
@@ -253,13 +259,14 @@ export function CartProvider({ children }) {
         }
       }
     },
-    [customerId, items]
+    [customerId, merchantId, items]
   );
 
   // Tương tự sửa updateQuantity, removeFromCart (sử dụng customer_id, table 'cart')
   const updateQuantity = useCallback(
     async (productId, qty) => {
       if (!customerId) throw new Error(AUTH_REQUIRED);
+      if (!merchantId) throw new Error("NO_MERCHANT_ID");
       const clamped = Math.min(99, Math.max(1, qty));
       setItems((prev) =>
         prev.map((x) => (x.id === productId ? { ...x, quantity: clamped } : x))
@@ -270,6 +277,7 @@ export function CartProvider({ children }) {
         .from("cart")
         .select("cart_id")
         .eq("customer_id", customerId)
+        .eq("merchant_id", merchantId)
         .eq("product_id", productId)
         .eq("status", "active");
 
@@ -294,42 +302,47 @@ export function CartProvider({ children }) {
         }
       }
     },
-    [customerId]
+    [customerId, merchantId]
   );
 
   const removeFromCart = useCallback(
     async (productId) => {
       if (!customerId) throw new Error(AUTH_REQUIRED);
+      if (!merchantId) throw new Error("NO_MERCHANT_ID");
       setItems((prev) => prev.filter((x) => x.id !== productId));
       const { error } = await supabase
         .from("cart")
         .update({ status: "removed" }) // Soft delete thay vì delete thật
         .eq("customer_id", customerId)
+        .eq("merchant_id", merchantId)
         .eq("product_id", productId)
         .eq("status", "active"); // Chỉ update active items
       if (error) {
         // Handle error silently
       }
     },
-    [customerId]
+    [customerId, merchantId]
   );
 
   const clearCart = useCallback(async () => {
     if (!customerId) throw new Error(AUTH_REQUIRED);
+    if (!merchantId) throw new Error("NO_MERCHANT_ID");
     setItems([]);
     const { error } = await supabase
       .from("cart")
       .update({ status: "removed" })
       .eq("customer_id", customerId)
+      .eq("merchant_id", merchantId)
       .eq("status", "active");
     if (error) {
       // Handle error silently
     }
-  }, [customerId]);
+  }, [customerId, merchantId]);
 
   // Cleanup function to consolidate duplicate entries in database
   const consolidateDuplicates = useCallback(async () => {
     if (!customerId) return;
+    if (!merchantId) return;
 
     try {
       // Get all active cart items
@@ -337,6 +350,7 @@ export function CartProvider({ children }) {
         .from("cart")
         .select("cart_id, product_id, quantity")
         .eq("customer_id", customerId)
+        .eq("merchant_id", merchantId)
         .eq("status", "active")
         .order("added_at", { ascending: true }); // Keep oldest first
 
@@ -384,7 +398,7 @@ export function CartProvider({ children }) {
     } catch (error) {
       console.error("Error consolidating duplicates:", error);
     }
-  }, [customerId]);
+  }, [customerId, merchantId]);
 
   const value = {
     loading,

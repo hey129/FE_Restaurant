@@ -17,7 +17,7 @@ const cx = classNames.bind(styles);
 export default function ProductDetail({ productId: propId, initialProduct }) {
   const { id: routeId } = useParams();
   const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, merchantId } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,12 +43,12 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
     let cancelled = false;
 
     async function load() {
-      if (!id || initialProduct) return;
+      if (!id || !merchantId || initialProduct) return;
       try {
         setLoading(true);
         setError("");
 
-        const data = await fetchProducts({ id });
+        const data = await fetchProducts(merchantId, { id });
         const row = data;
 
         const normalized = row
@@ -87,7 +87,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
     return () => {
       cancelled = true;
     };
-  }, [id, initialProduct]);
+  }, [id, initialProduct, merchantId]);
 
   function inc() {
     setQty((q) => Math.min(99, q + 1));
