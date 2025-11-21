@@ -34,7 +34,7 @@ const getStatusText = (status) => {
 const getStatusColor = (status) => {
   const colorMap = {
     Pending: "warning",
-    Completedd: "success",
+    Completed: "success",
     Cancelled: "danger",
   };
   return colorMap[status] || "default";
@@ -44,7 +44,7 @@ const getStatusColor = (status) => {
 const getStatusTimeline = (currentStatus) => {
   const allSteps = [
     { key: "Pending", label: "Pending" },
-    { key: "Completedd", label: "Completedd" },
+    { key: "Completed", label: "Completed" },
   ];
 
   if (currentStatus === "Cancelled" || currentStatus === "Cancelled") {

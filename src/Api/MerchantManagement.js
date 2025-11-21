@@ -377,8 +377,8 @@ export async function getMerchantStats({ merchantId }) {
     ),
     PendingOrders: (allOrders || []).filter((o) => o.order_status === "Pending")
       .length,
-    CompleteddOrders: (allOrders || []).filter(
-      (o) => o.order_status === "Completedd"
+    CompletedOrders: (allOrders || []).filter(
+      (o) => o.order_status === "Completed"
     ).length,
     CancelledOrders: (allOrders || []).filter(
       (o) => o.order_status === "Cancelled"

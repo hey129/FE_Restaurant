@@ -53,3 +53,17 @@ export async function getAllCategories(merchantId) {
     orderBy: "category_id",
   });
 }
+
+/**
+ * Get all categories from all merchants (for Admin Dashboard)
+ * @returns {Promise<Array>} Array of all categories
+ */
+export async function getAdminAllCategories() {
+  const { data, error } = await supabase
+    .from("category")
+    .select("category_id, name, status, created_at, merchant_id")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}

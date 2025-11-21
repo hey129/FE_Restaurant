@@ -40,7 +40,7 @@ function OrderList({ merchant }) {
     }
   });
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, Pending, Processing, Completedd, Cancelled
+  const [filter, setFilter] = useState("all"); // all, Pending, Processing, Completed, Cancelled
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [ProcessingAction, setProcessingAction] = useState(null);
 
@@ -141,7 +141,7 @@ function OrderList({ merchant }) {
       }
 
       // If completing, ensure payment is marked as Paid
-      if (newStatus === "Completedd") {
+      if (newStatus === "Completed") {
         updateParams.paymentStatus = "Paid";
       }
 
@@ -156,7 +156,7 @@ function OrderList({ merchant }) {
 
       const statusText = {
         Cancelled: "Cancelled",
-        Completedd: "Completedd",
+        Completed: "Completed",
       };
 
       toast.success(`Order #${orderId} ${statusText[newStatus]}!`, {
@@ -206,7 +206,7 @@ function OrderList({ merchant }) {
 
     if (!confirmCompleted) return;
 
-    await updateOrderStatusLocal(order.order_id, "Completedd");
+    await updateOrderStatusLocal(order.order_id, "Completed");
   };
 
   // Get status badge class
@@ -215,7 +215,7 @@ function OrderList({ merchant }) {
       Pending: "warning",
       Processing: "info",
       shipping: "primary",
-      Completedd: "success",
+      Completed: "success",
       Cancelled: "danger",
     };
     return statusMap[status] || "secondary";
@@ -282,10 +282,10 @@ function OrderList({ merchant }) {
           Pending
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "Completedd" })}
-          onClick={() => setFilter("Completedd")}
+          className={cx("filter-btn", { active: filter === "Completed" })}
+          onClick={() => setFilter("Completed")}
         >
-          Completedd
+          Completed
         </button>
         <button
           className={cx("filter-btn", { active: filter === "Cancelled" })}
@@ -463,12 +463,12 @@ function OrderList({ merchant }) {
                     </div>
                   )}
 
-                  {/* Status Message for Completedd/Cancelled */}
-                  {(order.order_status === "Completedd" ||
+                  {/* Status Message for Completed/Cancelled */}
+                  {(order.order_status === "Completed" ||
                     order.order_status === "Cancelled") && (
                     <div className={cx("status-message")}>
-                      {order.order_status === "Completedd"
-                        ? "✓ Order Completedd"
+                      {order.order_status === "Completed"
+                        ? "✓ Order Completed"
                         : "✗ Order Cancelled"}
                     </div>
                   )}

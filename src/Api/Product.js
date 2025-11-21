@@ -76,3 +76,34 @@ export async function getProducts(merchantId, filters = {}, options = {}) {
 export async function getAllProducts(merchantId) {
   return getProducts(merchantId, {}, { includeCategory: true });
 }
+
+/**
+ * Get all products from all merchants (for Admin Dashboard)
+ * @returns {Promise<Array>} Array of all products with category info
+ */
+export async function getAdminAllProducts() {
+  const { data, error } = await supabase
+    .from("product")
+    .select(
+      `
+      product_id,
+      product_name,
+      price,
+      image,
+      description,
+      rating,
+      status,
+      created_at,
+      merchant_id,
+      category_id,
+      category:category_id (
+        category_id,
+        name
+      )
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}

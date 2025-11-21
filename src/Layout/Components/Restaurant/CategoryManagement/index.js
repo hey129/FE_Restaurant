@@ -14,7 +14,7 @@ const cx = classNames.bind(styles);
 function CategoryManagement({ merchant }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -55,7 +55,7 @@ function CategoryManagement({ merchant }) {
       name: "",
     });
     setEditingId(null);
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleEditCategory = (category) => {
@@ -63,26 +63,43 @@ function CategoryManagement({ merchant }) {
       name: category.name,
     });
     setEditingId(category.category_id);
-    setShowForm(true);
+    setShowModal(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Please enter category name");
+      return;
+    }
+
     try {
       if (editingId) {
         await updateMerchantCategory({
           categoryId: editingId,
-          ...formData,
+          name: formData.name,
         });
         toast.success("Category updated!");
       } else {
         await createMerchantCategory({
           merchantId,
-          ...formData,
+          name: formData.name,
         });
         toast.success("Category created!");
       }
-      setShowForm(false);
+      closeModal();
       loadCategories();
     } catch (error) {
       console.error("Error saving category:", error);
@@ -121,28 +138,6 @@ function CategoryManagement({ merchant }) {
         </button>
       </div>
 
-      {showForm && (
-        <form className={cx("form")} onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Category Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-          <div className={cx("form-buttons")}>
-            <button type="submit">Save</button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className={cx("btn-cancel")}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
       <div className={cx("categories-list")}>
         {categories.length === 0 ? (
           <p>No categories found. Create your first category!</p>
@@ -178,6 +173,40 @@ function CategoryManagement({ merchant }) {
           ))
         )}
       </div>
+
+      {/* Category Modal */}
+      {showModal && (
+        <div className={cx("modal-overlay")} onClick={closeModal}>
+          <div className={cx("modal")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("modal-header")}>
+              <h3>{editingId ? "Edit Category" : "Add New Category"}</h3>
+              <button className={cx("modal-close")} onClick={closeModal}>
+                ✕
+              </button>
+            </div>
+            <div className={cx("modal-body")}>
+              <div className={cx("form-group")}>
+                <label>Category Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleFormChange}
+                  placeholder="Enter category name"
+                />
+              </div>
+            </div>
+            <div className={cx("modal-footer")}>
+              <button className={cx("btn-cancel")} onClick={closeModal}>
+                Cancel
+              </button>
+              <button className={cx("btn-submit")} onClick={handleSubmit}>
+                {editingId ? "Update" : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

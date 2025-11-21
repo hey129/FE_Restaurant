@@ -299,6 +299,37 @@ export async function getAllOrders({ merchantId, status = "all" } = {}) {
 }
 
 /**
+ * Get all orders from all merchants (for Admin Dashboard)
+ * @returns {Promise<Array>} Array of all orders with customer and payment info
+ */
+export async function getAdminAllOrders() {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      `
+      order_id,
+      customer_id,
+      merchant_id,
+      order_date,
+      delivery_address,
+      total_amount,
+      order_status,
+      payment_status,
+      note,
+      customer:customer_id (
+        customer_name,
+        phone
+      ),
+      payment:payment!payment_order_id_fkey(method, transaction_id)
+    `
+    )
+    .order("order_date", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
  * Get merchant dashboard data - orders with full details
  * @param {Object} params
  * @param {string} params.merchantId - Required: Merchant ID
@@ -315,8 +346,7 @@ export async function getMerchantDashboard({ merchantId }) {
     const stats = {
       total: allOrders.length,
       Pending: allOrders.filter((o) => o.order_status === "Pending").length,
-      Completedd: allOrders.filter((o) => o.order_status === "Completedd")
-        .length,
+      Completed: allOrders.filter((o) => o.order_status === "Completed").length,
       Cancelled: allOrders.filter((o) => o.order_status === "Cancelled").length,
       totalRevenue: allOrders.reduce(
         (sum, o) => sum + Number(o.total_amount || 0),

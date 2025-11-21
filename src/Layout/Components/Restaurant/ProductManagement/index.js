@@ -16,7 +16,7 @@ function ProductManagement({ merchant }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     productName: "",
@@ -76,7 +76,7 @@ function ProductManagement({ merchant }) {
       image: "",
     });
     setEditingId(null);
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleEditProduct = (product) => {
@@ -88,26 +88,55 @@ function ProductManagement({ merchant }) {
       image: product.image,
     });
     setEditingId(product.product_id);
-    setShowForm(true);
+    setShowModal(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.productName.trim()) {
+      toast.error("Please enter product name");
+      return;
+    }
+    if (!formData.categoryId) {
+      toast.error("Please select a category");
+      return;
+    }
+
     try {
       if (editingId) {
         await updateMerchantProduct({
           productId: editingId,
-          ...formData,
+          productName: formData.productName,
+          price: formData.price,
+          categoryId: formData.categoryId,
+          description: formData.description,
+          image: formData.image,
         });
         toast.success("Product updated!");
       } else {
         await createMerchantProduct({
           merchantId,
-          ...formData,
+          productName: formData.productName,
+          price: formData.price,
+          categoryId: formData.categoryId,
+          description: formData.description,
+          image: formData.image,
         });
         toast.success("Product created!");
       }
-      setShowForm(false);
+      closeModal();
       loadProducts();
     } catch (error) {
       console.error("Error saving product:", error);
@@ -145,70 +174,6 @@ function ProductManagement({ merchant }) {
           + Add Product
         </button>
       </div>
-
-      {showForm && (
-        <form className={cx("form")} onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Product Name"
-            value={formData.productName}
-            onChange={(e) =>
-              setFormData({ ...formData, productName: e.target.value })
-            }
-            required
-          />
-          <input
-            type="number"
-            placeholder="Price"
-            value={formData.price}
-            onChange={(e) =>
-              setFormData({ ...formData, price: e.target.value })
-            }
-            required
-          />
-          <select
-            value={formData.categoryId}
-            onChange={(e) =>
-              setFormData({ ...formData, categoryId: e.target.value })
-            }
-            required
-            className={cx("category-select")}
-          >
-            <option value="">Select Category</option>
-            {categories.map((category) => (
-              <option key={category.category_id} value={category.category_id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Description"
-            value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
-          />
-          <input
-            type="text"
-            placeholder="Image URL"
-            value={formData.image}
-            onChange={(e) =>
-              setFormData({ ...formData, image: e.target.value })
-            }
-          />
-          <div className={cx("form-buttons")}>
-            <button type="submit">Save</button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className={cx("btn-cancel")}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
 
       <div className={cx("products-list")}>
         {products.length === 0 ? (
@@ -251,6 +216,91 @@ function ProductManagement({ merchant }) {
           ))
         )}
       </div>
+
+      {/* Product Modal */}
+      {showModal && (
+        <div className={cx("modal-overlay")} onClick={closeModal}>
+          <div className={cx("modal")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("modal-header")}>
+              <h3>{editingId ? "Edit Product" : "Add New Product"}</h3>
+              <button className={cx("modal-close")} onClick={closeModal}>
+                ✕
+              </button>
+            </div>
+            <div className={cx("modal-body")}>
+              <div className={cx("form-group")}>
+                <label>Product Name *</label>
+                <input
+                  type="text"
+                  name="productName"
+                  value={formData.productName}
+                  onChange={handleFormChange}
+                  placeholder="Enter product name"
+                />
+              </div>
+              <div className={cx("form-row")}>
+                <div className={cx("form-group")}>
+                  <label>Price *</label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleFormChange}
+                    placeholder="Enter price"
+                    min="0"
+                  />
+                </div>
+                <div className={cx("form-group")}>
+                  <label>Category *</label>
+                  <select
+                    name="categoryId"
+                    value={formData.categoryId}
+                    onChange={handleFormChange}
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((category) => (
+                      <option
+                        key={category.category_id}
+                        value={category.category_id}
+                      >
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className={cx("form-group")}>
+                <label>Description</label>
+                <input
+                  type="text"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleFormChange}
+                  placeholder="Enter description"
+                />
+              </div>
+              <div className={cx("form-group")}>
+                <label>Image URL</label>
+                <input
+                  type="text"
+                  name="image"
+                  value={formData.image}
+                  onChange={handleFormChange}
+                  placeholder="Enter image URL"
+                />
+              </div>
+            </div>
+            <div className={cx("modal-footer")}>
+              <button className={cx("btn-cancel")} onClick={closeModal}>
+                Cancel
+              </button>
+              <button className={cx("btn-submit")} onClick={handleSubmit}>
+                {editingId ? "Update" : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
