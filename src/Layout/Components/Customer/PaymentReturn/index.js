@@ -78,14 +78,14 @@ export default function PaymentReturn() {
 
       {status === "loading" && (
         <div>
-          <div style={{ fontSize: "48px", marginBottom: "20px" }}>⏳</div>
+          <div style={{ fontSize: "48px", marginBottom: "20px" }}></div>
           <h2>{message}</h2>
         </div>
       )}
 
       {status === "success" && (
         <div>
-          <div style={{ fontSize: "48px", marginBottom: "20px" }}>✅</div>
+          <div style={{ fontSize: "48px", marginBottom: "20px" }}></div>
           <h2 style={{ color: "#28a745" }}>{message}</h2>
           <p>Redirecting to confirmation page...</p>
         </div>
@@ -93,7 +93,7 @@ export default function PaymentReturn() {
 
       {status === "Cancelled" && (
         <div>
-          <div style={{ fontSize: "48px", marginBottom: "20px" }}>❌</div>
+          <div style={{ fontSize: "48px", marginBottom: "20px" }}></div>
           <h2 style={{ color: "#ffc107" }}>{message}</h2>
           <p>Returning to cart...</p>
         </div>
@@ -101,7 +101,7 @@ export default function PaymentReturn() {
 
       {status === "failed" && (
         <div>
-          <div style={{ fontSize: "48px", marginBottom: "20px" }}>❌</div>
+          <div style={{ fontSize: "48px", marginBottom: "20px" }}></div>
           <h2 style={{ color: "#dc3545" }}>{message}</h2>
           <p>Returning to cart...</p>
         </div>

@@ -207,7 +207,7 @@ function Orders() {
                     <span className={cx("label")}>Payment Method:</span>
                     <span className={cx("value", "payment-method")}>
                       {order.payment?.[0]?.method?.toLowerCase() === "momo"
-                        ? "💳 MoMo"
+                        ? "MoMo"
                         : order.payment?.[0]?.method?.toLowerCase() === "cod"
                         ? "💵 COD"
                         : order.payment?.[0]?.method || "N/A"}
@@ -224,7 +224,7 @@ function Orders() {
               </div>
 
               <div className={cx("order-footer")}>
-                <span className={cx("view-detail")}>View Details →</span>
+                <span className={cx("view-detail")}>View Details</span>
               </div>
             </div>
           ))}

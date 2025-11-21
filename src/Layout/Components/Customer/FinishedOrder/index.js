@@ -189,7 +189,7 @@ function FinishedOrder() {
                     <span className={cx("label")}>Phương thức:</span>
                     <span className={cx("value", "payment-method")}>
                       {order.payment?.[0]?.method?.toLowerCase() === "momo"
-                        ? "💳 MoMo"
+                        ? "MoMo"
                         : order.payment?.[0]?.method?.toLowerCase() === "cod"
                         ? "💵 COD"
                         : order.payment?.[0]?.method || "N/A"}
@@ -206,7 +206,7 @@ function FinishedOrder() {
               </div>
 
               <div className={cx("order-footer")}>
-                <span className={cx("view-detail")}>Xem chi tiết →</span>
+                <span className={cx("view-detail")}>Xem chi tiết</span>
               </div>
             </div>
           ))}

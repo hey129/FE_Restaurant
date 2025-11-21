@@ -1,7 +1,6 @@
 import classNames from "classnames/bind";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./Header.module.scss";
-import { FaPizzaSlice } from "react-icons/fa";
 import Button from "~/Layout/Components/Button";
 import { useAuth } from "~/Api"; // 1. Import hook useAuth
 
@@ -39,7 +38,6 @@ function Header() {
           {/* Logo */}
           <div className={cx("logo")}>
             <Link to="/" title="Home">
-              <FaPizzaSlice />
               PIZZA
             </Link>
           </div>

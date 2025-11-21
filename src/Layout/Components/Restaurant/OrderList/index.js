@@ -256,7 +256,7 @@ function OrderList({ merchant }) {
       {/* Header with Stats and Filters */}
       <div className={cx("header")}>
         <div className={cx("header-left")}>
-          <h2 className={cx("title")}>📋 Orders</h2>
+          <h2 className={cx("title")}>Orders</h2>
           <p className={cx("subtitle")}>Manage and track orders</p>
         </div>
         <div className={cx("stats")}>
@@ -332,7 +332,7 @@ function OrderList({ merchant }) {
                 <div className={cx("order-meta")}>
                   <div className={cx("payment-method-badge")}>
                     {order.payment?.[0]?.method?.toLowerCase() === "momo" ? (
-                      <span className={cx("badge", "momo")}>💳 MoMo</span>
+                      <span className={cx("badge", "momo")}>MoMo</span>
                     ) : order.payment?.[0]?.method?.toLowerCase() === "cod" ? (
                       <span className={cx("badge", "cod")}>💵 COD</span>
                     ) : (
@@ -451,7 +451,7 @@ function OrderList({ merchant }) {
                       >
                         {ProcessingAction === order.order_id
                           ? "Processing..."
-                          : "✓ Completed"}
+                          : "Completed"}
                       </button>
                       <button
                         className={cx("btn", "btn-danger", "btn-xs")}
@@ -468,7 +468,7 @@ function OrderList({ merchant }) {
                     order.order_status === "Cancelled") && (
                     <div className={cx("status-message")}>
                       {order.order_status === "Completed"
-                        ? "✓ Order Completed"
+                        ? "Order Completed"
                         : "✗ Order Cancelled"}
                     </div>
                   )}

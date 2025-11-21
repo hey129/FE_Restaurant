@@ -14,6 +14,8 @@ import Cart from "~/Pages/Customer/Cart";
 import CreateOrder from "~/Pages/Customer/CreateOrder";
 import PaymentSuccess from "~/Pages/Customer/PaymentSuccess";
 import PaymentReturn from "~/Layout/Components/Customer/PaymentReturn";
+import AdminLayout from "~/Layout/AdminLayout";
+import RestaurantLayout from "~/Layout/RestaurantLayout";
 
 const publicRoutes = [
   {
@@ -93,8 +95,16 @@ const publicRoutes = [
 ];
 
 const privateRoutes = [
-  { path: "/restaurant", component: RestaurantHome, layout: null },
-  { path: "/admin", component: AdminHome, layout: null },
+  {
+    path: "/restaurant",
+    component: RestaurantHome,
+    layout: RestaurantLayout,
+  },
+  {
+    path: "/admin",
+    component: AdminHome,
+    layout: AdminLayout,
+  },
 ];
 
 export { publicRoutes, privateRoutes };

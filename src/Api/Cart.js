@@ -81,7 +81,7 @@ export function CartProvider({ children, merchantId }) {
             const merchantName =
               d.merchant?.merchant_name || d.merchant_name || "Restaurant";
             console.log(
-              `📦 Product: ${d.product?.product_name}, Merchant: ${merchantName}`
+              `Product: ${d.product?.product_name}, Merchant: ${merchantName}`
             );
             productMap.set(key, {
               id: d.product_id,

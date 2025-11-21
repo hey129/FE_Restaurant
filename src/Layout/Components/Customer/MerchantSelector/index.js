@@ -107,7 +107,7 @@ export default function MerchantSelector({ onMerchantSelect }) {
               )}
             </div>
             {selectedId === merchant.merchant_id && (
-              <div className={cx("badge")}>✓ Đã Chọn</div>
+              <div className={cx("badge")}>Selected</div>
             )}
           </div>
         ))}

@@ -1,6 +1,5 @@
 import classNames from "classnames/bind";
 import styles from "./Footer.module.scss";
-import { FaPizzaSlice } from "react-icons/fa";
 
 const cx = classNames.bind(styles);
 
@@ -9,12 +8,11 @@ function Footer() {
     <section className={cx("footer")}>
       <div className={cx("container")}>
         <div className={cx("grid")}>
-          {/* Logo + description + social media */}
+          {/* Logo + mô tả + mạng xã hội */}
           <div className={cx("about")}>
             {/* Logo */}
             <div className={cx("logo")}>
               <a href="#" title="Home">
-                <FaPizzaSlice />
                 PIZZA
               </a>
             </div>

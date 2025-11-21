@@ -1,5 +1,5 @@
-import Header from "../Components/Header";
-import Footer from "../Components/Footer";
+import Header from "../Components/Customer/Header";
+import Footer from "../Components/Customer/Footer";
 import { Toaster } from "react-hot-toast";
 
 function DefaultLayout({ children }) {

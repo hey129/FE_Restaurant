@@ -48,7 +48,7 @@ export default function MomoPayButton({ orderId, amount, onSuccess, onError }) {
         fontWeight: "bold",
       }}
     >
-      💳 Pay with MoMo
+      Pay with MoMo
     </button>
   );
 }

@@ -49,7 +49,7 @@ export default function MerchantLogin() {
       <Toaster position="top-right" />
       <div className={cx("login-container")}>
         <div className={cx("login-card")}>
-          <h1 className={cx("title")}>🍽️ Merchant Dashboard</h1>
+          <h1 className={cx("title")}>Merchant Dashboard</h1>
           <p className={cx("subtitle")}>Login to manage your restaurant</p>
 
           <form className={cx("form")} onSubmit={handleSubmit}>

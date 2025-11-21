@@ -88,8 +88,8 @@ export default function CreateOrder() {
       }
     });
     const result = Array.from(grouped.values());
-    console.log("📦 itemsByMerchant groups:", result.length, result);
-    console.log("🎯 selectedMerchants:", selectedMerchants);
+    console.log("itemsByMerchant groups:", result.length, result);
+    console.log("selectedMerchants:", selectedMerchants);
     return result;
   }, [items, selectedMerchants]);
 
@@ -356,7 +356,7 @@ export default function CreateOrder() {
                     value={form.paymentMethod}
                     onChange={handleChange}
                   >
-                    <option value="MoMo">💳 MoMo</option>
+                    <option value="MoMo">MoMo</option>
                   </select>
                 </div>
 

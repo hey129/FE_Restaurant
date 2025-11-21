@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "~/Api";
 import MerchantLogin from "~/Layout/Components/Restaurant/MerchantLogin";
 import RestaurantDashboard from "~/Layout/Components/Restaurant/Dashboard";
 
 function Restaurant() {
-  const navigate = useNavigate();
-  const { isAuthenticated, loading, user, isMerchant } = useAuth();
+  const { isAuthenticated, loading, isMerchant } = useAuth();
 
   // Show loading
   if (loading) {

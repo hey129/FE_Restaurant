@@ -87,7 +87,7 @@ function PaymentSuccess() {
 
           {status === "success" && orderInfo && (
             <div className={cx("status", "success")}>
-              <div className={cx("icon", "success-icon")}>✓</div>
+              <div className={cx("icon", "success-icon")}></div>
               <h2>Payment Successful!</h2>
               <p className={cx("message")}>{orderInfo.message}</p>
               <div className={cx("details")}>

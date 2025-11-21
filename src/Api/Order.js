@@ -392,3 +392,39 @@ export async function getOrderItems({ orderId }) {
   if (error) throw error;
   return data || [];
 }
+
+/**
+ * Get all orders across all merchants (for admin view)
+ * @returns {Promise<Array>} Array of all orders
+ */
+export async function getAllOrdersAdmin() {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        `
+        order_id,
+        customer_id,
+        merchant_id,
+        order_date,
+        delivery_address,
+        total_amount,
+        order_status,
+        payment_status,
+        note,
+        customer:customer_id (
+          customer_name,
+          phone
+        ),
+        payment:payment!payment_order_id_fkey(method, transaction_id)
+      `
+      )
+      .order("order_date", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error("Get all orders error:", err);
+    throw err;
+  }
+}

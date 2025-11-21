@@ -152,7 +152,7 @@ function CategoryManagement({ merchant }) {
                     category.status ? "active" : "inactive"
                   )}
                 >
-                  {category.status ? "✓ Active" : "✗ Inactive"}
+                  {category.status ? "Active" : "Inactive"}
                 </span>
               </div>
               <div className={cx("category-actions")}>
