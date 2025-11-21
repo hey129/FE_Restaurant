@@ -136,13 +136,8 @@
   .value {
     color: #333;
 
-    &.paid {
+    &.Paid {
       color: #28a745;
-      font-weight: 600;
-    }
-
-    &.unpaid {
-      color: #dc3545;
       font-weight: 600;
     }
   }

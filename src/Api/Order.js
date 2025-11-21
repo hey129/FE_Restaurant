@@ -99,7 +99,7 @@ export async function createOrder({
  * @param {Object} params
  * @param {string} params.customerId - Customer UUID
  * @param {string} params.merchantId - Required: Merchant ID to scope orders
- * @param {string[]} params.statuses - Array of order statuses to filter (e.g., ["pending", "processing"])
+ * @param {string[]} params.statuses - Array of order statuses to filter (e.g., ["Pending", "Processing"])
  * @returns {Promise<Array>}
  */
 export async function getOrders({ customerId, merchantId, statuses }) {
@@ -264,7 +264,7 @@ export async function cancelOrder({ orderId }) {
  */
 export async function getAllOrders({ merchantId, status = "all" } = {}) {
   if (!merchantId) throw new Error("NO_MERCHANT_ID");
-  
+
   let query = supabase
     .from("orders")
     .select(
@@ -296,6 +296,42 @@ export async function getAllOrders({ merchantId, status = "all" } = {}) {
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+/**
+ * Get merchant dashboard data - orders with full details
+ * @param {Object} params
+ * @param {string} params.merchantId - Required: Merchant ID
+ * @returns {Promise<Object>} with stats and orders
+ */
+export async function getMerchantDashboard({ merchantId }) {
+  if (!merchantId) throw new Error("NO_MERCHANT_ID");
+
+  try {
+    // Get all orders
+    const allOrders = await getAllOrders({ merchantId, status: "all" });
+
+    // Calculate stats
+    const stats = {
+      total: allOrders.length,
+      Pending: allOrders.filter((o) => o.order_status === "Pending").length,
+      Completedd: allOrders.filter((o) => o.order_status === "Completedd")
+        .length,
+      Cancelled: allOrders.filter((o) => o.order_status === "Cancelled").length,
+      totalRevenue: allOrders.reduce(
+        (sum, o) => sum + Number(o.total_amount || 0),
+        0
+      ),
+    };
+
+    return {
+      stats,
+      orders: allOrders,
+    };
+  } catch (err) {
+    console.error("getMerchantDashboard error:", err);
+    throw err;
+  }
 }
 
 /**

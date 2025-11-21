@@ -79,6 +79,52 @@
   gap: $spacing-sm;
 }
 
+/* --- Merchant Group Section --- */
+.merchant-group {
+  background: $neutral-50;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-xl;
+  border-radius: $radius-lg;
+  border: 2px solid $neutral-200;
+  transition: all $transition-base;
+
+  &:hover {
+    border-color: $primary-400;
+    box-shadow: $shadow-md;
+  }
+}
+
+.merchant-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-lg;
+  border-bottom: 2px solid $neutral-200;
+}
+
+.merchant-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: $primary-500;
+  flex-shrink: 0;
+}
+
+.merchant-name {
+  flex-grow: 1;
+  font-weight: $font-weight-bold;
+  font-size: $font-size-lg;
+  color: $neutral-900;
+}
+
+.merchant-subtotal {
+  font-weight: $font-weight-bold;
+  font-size: $font-size-xl;
+  color: $primary-600;
+  white-space: nowrap;
+}
+
 .cart-item {
   display: flex;
   align-items: center;
@@ -88,7 +134,7 @@
   transition: all $transition-base;
 
   &:hover {
-    background: $neutral-50;
+    background: white;
     padding-left: $spacing-md;
     padding-right: $spacing-md;
     margin-left: -$spacing-md;

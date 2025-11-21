@@ -28,18 +28,13 @@ const formatDate = (dateString) => {
 };
 
 const getStatusText = (status) => {
-  const statusMap = {
-    Pending: "Pending",
-    Completed: "Completed",
-    Cancelled: "Cancelled",
-  };
-  return statusMap[status] || status;
+  return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 const getStatusColor = (status) => {
   const colorMap = {
     Pending: "warning",
-    Completed: "success",
+    Completedd: "success",
     Cancelled: "danger",
   };
   return colorMap[status] || "default";
@@ -49,14 +44,10 @@ const getStatusColor = (status) => {
 const getStatusTimeline = (currentStatus) => {
   const allSteps = [
     { key: "Pending", label: "Pending" },
-    { key: "Completed", label: "Completed" },
+    { key: "Completedd", label: "Completedd" },
   ];
 
-  if (
-    currentStatus === "Cancelled" ||
-    currentStatus === "Đã hủy" ||
-    currentStatus === "Hủy"
-  ) {
+  if (currentStatus === "Cancelled" || currentStatus === "Cancelled") {
     return [
       { key: "Pending", label: "Ordered", active: true },
       {
@@ -80,7 +71,7 @@ const getStatusTimeline = (currentStatus) => {
 function OrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -90,6 +81,7 @@ function OrderDetail() {
     let active = true;
 
     async function loadOrderDetail() {
+      if (authLoading) return; // Wait for auth to load
       if (!isAuthenticated || !user?.customer_id) {
         navigate("/login");
         return;
@@ -111,7 +103,7 @@ function OrderDetail() {
         // Verify this order belongs to the logged-in user
         if (data.customer_id !== user.customer_id) {
           toast.error("You do not have permission to view this order", {
-            duration: 3000,
+            duration: 2000,
           });
           navigate("/profile/order");
           return;
@@ -122,7 +114,7 @@ function OrderDetail() {
         if (!active) return;
         console.error("Load order detail error:", err);
         setError(err.message || "Cannot load order details");
-        toast.error("Cannot load order details", { duration: 3000 });
+        toast.error("Cannot load order details", { duration: 2000 });
       } finally {
         if (!active) return;
         setLoading(false);
@@ -134,7 +126,7 @@ function OrderDetail() {
     return () => {
       active = false;
     };
-  }, [id, user, isAuthenticated, navigate]);
+  }, [id, user, isAuthenticated, navigate, authLoading]);
 
   const handleBack = () => {
     navigate("/profile/onprocessorder");
@@ -148,9 +140,9 @@ function OrderDetail() {
     try {
       setCancelling(true);
       await cancelOrder({ orderId: order.order_id });
-      toast.success("Order cancelled successfully", { duration: 3000 });
+      toast.success("Order Cancelled successfully", { duration: 2000 });
 
-      // Update local state with cancelled status and refund payment status
+      // Update local state with Cancelled status and refund payment status
       setOrder((prev) => ({
         ...prev,
         order_status: "Cancelled",
@@ -158,13 +150,13 @@ function OrderDetail() {
       }));
     } catch (err) {
       console.error("Cancel order error:", err);
-      toast.error(err.message || "Cannot cancel order", { duration: 3000 });
+      toast.error(err.message || "Cannot cancel order", { duration: 2000 });
     } finally {
       setCancelling(false);
     }
   };
 
-  // Check if order can be cancelled (pending, processing, or shipping status)
+  // Check if order can be Cancelled (Pending, Processing, or shipping status)
   const canCancelOrder =
     order && ["Pending", "Processing"].includes(order.order_status);
 
@@ -230,7 +222,7 @@ function OrderDetail() {
                   className={cx("timeline-step", {
                     active: step.active,
                     current: step.current,
-                    cancelled: step.isCancelled,
+                    Cancelled: step.isCancelled,
                   })}
                 >
                   <div className={cx("timeline-marker")}>
@@ -258,18 +250,10 @@ function OrderDetail() {
                   className={cx(
                     "value",
                     "payment-status",
-                    order.payment_status === "Paid"
-                      ? "paid"
-                      : order.payment_status === "Refunded"
-                      ? "refunded"
-                      : "unpaid"
+                    order.payment_status === "Paid" ? "Paid" : "refunded"
                   )}
                 >
-                  {order.payment_status === "Paid"
-                    ? "Paid"
-                    : order.payment_status === "Refunded"
-                    ? "Refunded"
-                    : "Unpaid"}
+                  {order.payment_status === "Paid" ? "Paid" : "Refunded"}{" "}
                 </span>
               </div>
               <div className={cx("info-row")}>

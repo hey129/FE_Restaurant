@@ -4,7 +4,7 @@ A modern restaurant ordering and management system built with React and Supabase
 
 ## Overview
 
-FE_Restaurant is a full-stack restaurant application that allows customers to browse menus, place orders, and make payments online. The system uses Supabase for backend services (authentication, database, real-time updates) and a dedicated Node.js server for secure MoMo payment processing.
+FE_Restaurant is a full-stack restaurant application that allows customers to browse menus, place orders, and make payments online. The system uses Supabase for backend services (authentication, database, real-time updates) and a dedicated Node.js server for secure MoMo payment Processing.
 
 ## Features
 

@@ -1,0 +1,134 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.email {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.btn-logout {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 15px 30px;
+  background-color: white;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-x: auto;
+}
+
+.nav-tab {
+  padding: 10px 20px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: #666;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: #667eea;
+  }
+
+  &.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+  }
+}
+
+.content {
+  flex: 1;
+  padding: 20px 30px;
+  overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .header-left {
+    align-items: center;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: 24px;
+  }
+
+  .nav-tabs {
+    padding: 10px 15px;
+    gap: 5px;
+  }
+
+  .nav-tab {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+
+  .content {
+    padding: 15px 20px;
+  }
+}

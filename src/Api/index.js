@@ -10,7 +10,23 @@ export {
   cancelOrder,
   updateOrderStatus,
   getAllOrders,
+  getMerchantDashboard,
   getOrderItems,
 } from "./Order";
 export { createMomoPayment } from "./Payment";
 export { getMerchants, getMerchantById } from "./Merchant";
+export {
+  getMerchantCategories,
+  createMerchantCategory,
+  updateMerchantCategory,
+  deleteMerchantCategory,
+  getMerchantProducts,
+  createMerchantProduct,
+  updateMerchantProduct,
+  deleteMerchantProduct,
+  updateMerchantProductsStatus,
+  getMerchantProfile,
+  updateMerchantProfile,
+  getMerchantStats,
+  getMerchantTopProducts,
+} from "./MerchantManagement";

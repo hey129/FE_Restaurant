@@ -7,12 +7,8 @@ import { AuthProvider, CartProvider, CustomerProvider, useAuth } from "~/Api";
 // Wrapper component to get merchantId from useAuth and pass to CartProvider
 function CartProviderWrapper({ children }) {
   const { merchantId } = useAuth();
-  
-  return (
-    <CartProvider merchantId={merchantId}>
-      {children}
-    </CartProvider>
-  );
+
+  return <CartProvider merchantId={merchantId}>{children}</CartProvider>;
 }
 
 function AppRoutes() {

@@ -321,7 +321,7 @@ export async function handleIPN(req, res) {
     console.error("❌ IPN handler error:", error);
     return res.status(500).json({
       success: false,
-      message: "IPN processing failed",
+      message: "IPN Processing failed",
     });
   }
 }

@@ -14,7 +14,7 @@ import { supabase } from "./supabase";
  */
 export async function getProducts(merchantId, filters = {}, options = {}) {
   if (!merchantId) throw new Error("merchantId is required");
-  
+
   const { includeCategory = false } = options;
 
   // Select query based on whether we need category details

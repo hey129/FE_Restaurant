@@ -15,15 +15,15 @@ export default function MerchantSelector({ onMerchantSelect }) {
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let Cancelled = false;
 
     (async () => {
       try {
         setLoading(true);
         setError("");
         const data = await getMerchants();
-        
-        if (!cancelled) {
+
+        if (!Cancelled) {
           setMerchants(data || []);
           // Initialize with first merchant or current merchant
           if (data && data.length > 0) {
@@ -32,18 +32,18 @@ export default function MerchantSelector({ onMerchantSelect }) {
           }
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!Cancelled) {
           const errorMsg = e?.message || "Failed to load merchants";
           setError(errorMsg);
           console.error("Error loading merchants:", e);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!Cancelled) setLoading(false);
       }
     })();
 
     return () => {
-      cancelled = true;
+      Cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -57,9 +57,7 @@ export default function MerchantSelector({ onMerchantSelect }) {
   if (loading) {
     return (
       <div className={cx("selector")}>
-        <div className={cx("loading")}>
-          Đang tải danh sách nhà hàng...
-        </div>
+        <div className={cx("loading")}>Đang tải danh sách nhà hàng...</div>
       </div>
     );
   }
@@ -105,9 +103,7 @@ export default function MerchantSelector({ onMerchantSelect }) {
                 </div>
               )}
               {merchant.phone && (
-                <div className={cx("merchant-phone")}>
-                  📞 {merchant.phone}
-                </div>
+                <div className={cx("merchant-phone")}>📞 {merchant.phone}</div>
               )}
             </div>
             {selectedId === merchant.merchant_id && (

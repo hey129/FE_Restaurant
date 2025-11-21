@@ -29,7 +29,7 @@ function Star({ filled }) {
 
 function MenuCard({ product }) {
   const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, merchantId: currentMerchantId } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,7 +69,8 @@ function MenuCard({ product }) {
           image: product.img || "",
           category: product.category || null,
         },
-        1
+        1,
+        currentMerchantId
       );
       toast.success("Product added to cart!");
     } catch (e) {
@@ -127,7 +128,7 @@ export default function Menu({ filters, merchantId }) {
   const currentMerchantId = merchantId || authMerchantId;
 
   useEffect(() => {
-    let cancelled = false;
+    let Cancelled = false;
 
     (async () => {
       try {
@@ -154,16 +155,16 @@ export default function Menu({ filters, merchantId }) {
           category: r.category ?? r.category_id ?? null,
         }));
 
-        if (!cancelled) setProducts(normalized);
+        if (!Cancelled) setProducts(normalized);
       } catch (e) {
-        if (!cancelled) setError(e.message || "Unable to load products.");
+        if (!Cancelled) setError(e.message || "Unable to load products.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!Cancelled) setLoading(false);
       }
     })();
 
     return () => {
-      cancelled = true;
+      Cancelled = true;
     };
   }, [currentMerchantId, filters]); // Refetch when merchant changes or filters change
 

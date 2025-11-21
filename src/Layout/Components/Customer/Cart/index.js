@@ -1,5 +1,5 @@
 // src/Pages/Cart/Cart.jsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import classNames from "classnames/bind";
 import { useNavigate } from "react-router-dom";
 import styles from "./Cart.module.scss";
@@ -13,6 +13,7 @@ function Cart() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { items, updateQuantity, removeFromCart, subtotal } = useCart();
+  const [selectedMerchants, setSelectedMerchants] = useState(new Set());
 
   const vnd = (n) =>
     new Intl.NumberFormat("vi-VN", {
@@ -21,18 +22,55 @@ function Cart() {
       maximumFractionDigits: 0,
     }).format(Math.round(Number(n) || 0));
 
+  // Group items by merchant
+  const itemsByMerchant = useMemo(() => {
+    const grouped = new Map();
+    items.forEach((item) => {
+      const merchantId = item.merchant_id;
+      if (!grouped.has(merchantId)) {
+        grouped.set(merchantId, {
+          merchant_id: merchantId,
+          merchant_name: item.merchant_name,
+          items: [],
+          subtotal: 0,
+        });
+      }
+      const group = grouped.get(merchantId);
+      group.items.push(item);
+      group.subtotal += item.price * item.quantity;
+    });
+    return Array.from(grouped.values());
+  }, [items]);
+
   const totalPrice = useMemo(() => subtotal, [subtotal]);
 
-  const handleQuantityChange = (id, delta) => {
-    const current = items.find((x) => x.id === id)?.quantity || 1;
-    updateQuantity(id, current + delta);
+  const handleQuantityChange = (id, merchantId, delta) => {
+    const current =
+      items.find((x) => x.id === id && x.merchant_id === merchantId)
+        ?.quantity || 1;
+    updateQuantity(id, merchantId, current + delta);
   };
 
-  const handlePlaceOrder = () => {
-    if (items.length === 0) {
-      return; // Don't navigate if cart is empty
+  const toggleMerchant = (merchantId) => {
+    const newSelected = new Set(selectedMerchants);
+    if (newSelected.has(merchantId)) {
+      newSelected.delete(merchantId);
+    } else {
+      newSelected.add(merchantId);
     }
-    navigate("/createorder");
+    setSelectedMerchants(newSelected);
+  };
+
+  const canCheckout = selectedMerchants.size > 0;
+
+  const handlePlaceOrder = () => {
+    if (!canCheckout) {
+      return;
+    }
+    // Navigate with selected merchants
+    navigate("/createorder", {
+      state: { selectedMerchants: Array.from(selectedMerchants) },
+    });
   };
 
   if (!isAuthenticated) {
@@ -64,34 +102,68 @@ function Cart() {
             <p className={cx("empty")}>Your cart is empty.</p>
           )}
 
-          {items.map((item) => (
-            <div key={item.id} className={cx("cart-item")}>
-              <img
-                src={item.image}
-                alt={item.name}
-                className={cx("item-image")}
-              />
-              <div className={cx("item-details")}>
-                <span className={cx("item-name")}>{item.name}</span>
+          {/* Group items by merchant */}
+          {itemsByMerchant.map((merchantGroup) => (
+            <div
+              key={merchantGroup.merchant_id}
+              className={cx("merchant-group")}
+            >
+              <div className={cx("merchant-header")}>
+                <input
+                  type="checkbox"
+                  checked={selectedMerchants.has(merchantGroup.merchant_id)}
+                  onChange={() => toggleMerchant(merchantGroup.merchant_id)}
+                  className={cx("merchant-checkbox")}
+                />
+                <h3 className={cx("merchant-name")}>
+                  {merchantGroup.merchant_name}
+                </h3>
+                <span className={cx("merchant-subtotal")}>
+                  {vnd(merchantGroup.subtotal)}
+                </span>
               </div>
-              <div className={cx("quantity-stepper")}>
-                <button onClick={() => handleQuantityChange(item.id, -1)}>
-                  -
-                </button>
-                <input type="text" value={item.quantity} readOnly />
-                <button onClick={() => handleQuantityChange(item.id, 1)}>
-                  +
-                </button>
-              </div>
-              <span className={cx("item-price")}>
-                {vnd(item.price * item.quantity)}
-              </span>
-              <button
-                onClick={() => removeFromCart(item.id)}
-                className={cx("remove-btn")}
-              >
-                ×
-              </button>
+
+              {merchantGroup.items.map((item) => (
+                <div
+                  key={`${item.merchant_id}:${item.id}`}
+                  className={cx("cart-item")}
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className={cx("item-image")}
+                  />
+                  <div className={cx("item-details")}>
+                    <span className={cx("item-name")}>{item.name}</span>
+                  </div>
+                  <div className={cx("quantity-stepper")}>
+                    <button
+                      onClick={() =>
+                        handleQuantityChange(item.id, item.merchant_id, -1)
+                      }
+                    >
+                      -
+                    </button>
+                    <input type="text" value={item.quantity} readOnly />
+                    <button
+                      onClick={() =>
+                        handleQuantityChange(item.id, item.merchant_id, 1)
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className={cx("item-price")}>
+                    {vnd(item.price * item.quantity)}
+                  </span>
+                  <button
+                    onClick={() => removeFromCart(item.id, item.merchant_id)}
+                    className={cx("remove-btn")}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
           ))}
 
@@ -109,9 +181,10 @@ function Cart() {
               <Button
                 className={cx("register-btn")}
                 onClick={handlePlaceOrder}
-                disabled={items.length === 0}
+                disabled={!canCheckout}
               >
-                Place Order
+                Checkout ({selectedMerchants.size}{" "}
+                {selectedMerchants.size === 1 ? "store" : "stores"})
               </Button>
             </div>
           </div>

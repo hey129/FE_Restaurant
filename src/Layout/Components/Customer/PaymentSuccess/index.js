@@ -44,16 +44,16 @@ function PaymentSuccess() {
           amount,
           message,
         });
-        toast.success("Payment successful!", { duration: 3000 });
+        toast.success("Payment successful!", { duration: 2000 });
 
         // Redirect to order list after 3 seconds
         setTimeout(() => {
           navigate("/profile/onprocessorder");
         }, 3000);
       } else {
-        // Failed or cancelled
+        // Failed or Cancelled
         setStatus("failed");
-        toast.error(message || "Payment failed", { duration: 3000 });
+        toast.error(message || "Payment failed", { duration: 2000 });
 
         // Redirect to cart after 3 seconds
         setTimeout(() => {
@@ -119,7 +119,7 @@ function PaymentSuccess() {
               <div className={cx("icon", "failed-icon")}>✕</div>
               <h2>Payment Failed</h2>
               <p className={cx("message")}>
-                Transaction was unsuccessful or cancelled
+                Transaction was unsuccessful or Cancelled
               </p>
               <p className={cx("redirect")}>Returning to cart...</p>
               <button className={cx("btn")} onClick={() => navigate("/cart")}>

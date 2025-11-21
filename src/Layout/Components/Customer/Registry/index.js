@@ -9,7 +9,7 @@ import Button from "~/Layout/Components/Button";
 const cx = classNames.bind(styles);
 
 export default function Registry() {
-  const { registerCustomer } = useCustomer();
+  const { register } = useCustomer();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: "",
@@ -55,7 +55,7 @@ export default function Registry() {
     setSubmitting(true);
 
     try {
-      const result = await registerCustomer({
+      const result = await register({
         email: form.email,
         password: form.password,
         customer_name: form.customer_name,

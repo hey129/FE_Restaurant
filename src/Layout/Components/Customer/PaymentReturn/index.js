@@ -34,10 +34,10 @@ export default function PaymentReturn() {
         );
       }, 2000);
     } else if (resultCode === "1006") {
-      // User cancelled payment
-      setStatus("cancelled");
-      setMessage("❌ You cancelled the payment");
-      toast.error("Payment was cancelled");
+      // User Cancelled payment
+      setStatus("Cancelled");
+      setMessage("❌ You Cancelled the payment");
+      toast.error("Payment was Cancelled");
 
       setTimeout(() => {
         navigate("/");
@@ -91,7 +91,7 @@ export default function PaymentReturn() {
         </div>
       )}
 
-      {status === "cancelled" && (
+      {status === "Cancelled" && (
         <div>
           <div style={{ fontSize: "48px", marginBottom: "20px" }}>❌</div>
           <h2 style={{ color: "#ffc107" }}>{message}</h2>

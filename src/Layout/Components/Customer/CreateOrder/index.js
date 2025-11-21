@@ -18,8 +18,13 @@ export default function CreateOrder() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { user: profile, isAuthenticated } = useAuth();
-  const { items, subtotal, clearCart } = useCart();
+  const { user: profile, isAuthenticated, loading } = useAuth();
+  const { items, clearCartForMerchants } = useCart();
+
+  const selectedMerchants = useMemo(
+    () => location.state?.selectedMerchants || [],
+    [location.state?.selectedMerchants]
+  );
 
   const [ship, setShip] = useState(15000);
   const [useOtherAddress, setUseOtherAddress] = useState(false);
@@ -33,21 +38,26 @@ export default function CreateOrder() {
     paymentMethod: "MoMo",
   });
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (wait for auth to load first)
   useEffect(() => {
+    if (loading) return; // Wait for auth state to load
+
     if (!isAuthenticated) {
       const next = location.pathname + location.search + location.hash;
       navigate(`/login?next=${encodeURIComponent(next)}`);
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [loading, isAuthenticated, navigate, location]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty or no merchants selected
   useEffect(() => {
-    if (isAuthenticated && items.length === 0) {
-      toast.error("Cart is empty", { duration: 3000 });
+    if (
+      isAuthenticated &&
+      (items.length === 0 || selectedMerchants.length === 0)
+    ) {
+      toast.error("No items or stores selected", 2000);
       navigate("/cart");
     }
-  }, [isAuthenticated, items.length, navigate]);
+  }, [isAuthenticated, items.length, selectedMerchants.length, navigate]);
 
   // Load user profile data into form
   useEffect(() => {
@@ -61,7 +71,34 @@ export default function CreateOrder() {
     }
   }, [profile]);
 
-  const total = useMemo(() => subtotal + ship, [subtotal, ship]);
+  // Group selected items by merchant and calculate totals
+  const itemsByMerchant = useMemo(() => {
+    const grouped = new Map();
+    // Only include items from selected merchants
+    items.forEach((item) => {
+      if (selectedMerchants.includes(item.merchant_id)) {
+        if (!grouped.has(item.merchant_id)) {
+          grouped.set(item.merchant_id, {
+            merchant_id: item.merchant_id,
+            merchant_name: item.merchant_name,
+            items: [],
+          });
+        }
+        grouped.get(item.merchant_id).items.push(item);
+      }
+    });
+    const result = Array.from(grouped.values());
+    console.log("📦 itemsByMerchant groups:", result.length, result);
+    console.log("🎯 selectedMerchants:", selectedMerchants);
+    return result;
+  }, [items, selectedMerchants]);
+
+  const total = useMemo(() => {
+    const itemsTotal = items
+      .filter((x) => selectedMerchants.includes(x.merchant_id))
+      .reduce((sum, it) => sum + it.price * it.quantity, 0);
+    return itemsTotal + ship * itemsByMerchant.length; // shipping per merchant
+  }, [items, selectedMerchants, itemsByMerchant.length, ship]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -79,97 +116,175 @@ export default function CreateOrder() {
       return;
     }
 
-    if (!items.length) {
-      toast.error("Cart is empty", { duration: 3000 });
+    if (itemsByMerchant.length === 0) {
+      toast.error("No items to order", { duration: 2000 });
       return;
     }
 
     if (!profile?.customer_id) {
-      toast.error("User information not found", { duration: 3000 });
+      toast.error("User information not found", { duration: 2000 });
       return;
     }
 
     const deliveryAddress = useOtherAddress ? form.otherAddress : form.address;
 
     if (!deliveryAddress?.trim()) {
-      toast.error("Please enter delivery address", { duration: 3000 });
+      toast.error("Please enter delivery address", { duration: 2000 });
       return;
     }
 
     try {
       setSubmitting(true);
-      toast.loading("Processing order...", { duration: 3000 });
+      const loadingToastId = toast.loading(
+        `Processing ${itemsByMerchant.length} order(s)...`
+      );
 
-      // Handle MoMo payment
+      const orderIds = [];
+      const paymentUrls = [];
+
+      // Step 1: Create orders for each merchant
+      for (const merchantGroup of itemsByMerchant) {
+        console.log(
+          `🚀 Creating order for merchant ${merchantGroup.merchant_id}...`
+        );
+
+        const { orderId } = await createOrder({
+          customerId: profile.customer_id,
+          merchantId: merchantGroup.merchant_id,
+          items: merchantGroup.items,
+          shipping: ship,
+          deliveryAddress,
+          note: form.note,
+          paymentMethod: form.paymentMethod,
+        });
+
+        console.log(
+          `✅ Order created for ${merchantGroup.merchant_name}: ${orderId}`
+        );
+        orderIds.push({
+          orderId,
+          merchantId: merchantGroup.merchant_id,
+          merchantName: merchantGroup.merchant_name,
+        });
+      }
+
+      // Step 2: Handle payment for each order
       if (form.paymentMethod === "MoMo") {
-        try {
-          // Step 1: Create order first
-          console.log("🚀 Creating order...");
-          const { orderId } = await createOrder({
-            customerId: profile.customer_id,
-            items,
-            shipping: ship,
-            deliveryAddress,
-            note: form.note,
-            paymentMethod: form.paymentMethod,
-          });
-
-          console.log("✅ Order created:", orderId);
-
-          // Step 2: Create MoMo payment
-          toast.dismiss();
-          toast.loading("Connecting to MoMo...", { duration: 3000 });
-
-          const paymentResponse = await createMomoPayment({
-            orderId,
-            amount: total,
-            orderInfo: `Payment for order #${orderId}`,
-          });
-
-          console.log("💳 MoMo response:", paymentResponse);
-
-          // Step 3: Verify MoMo payment URL
-          if (!paymentResponse.success || !paymentResponse.payUrl) {
-            throw new Error(
-              paymentResponse.message ||
-                "Cannot connect to MoMo. Please try again later."
+        // Create MoMo payments for each order
+        for (const orderInfo of orderIds) {
+          try {
+            console.log(
+              `💳 Creating MoMo payment for order ${orderInfo.orderId}...`
             );
+
+            const paymentResponse = await createMomoPayment({
+              orderId: orderInfo.orderId,
+              amount:
+                items
+                  .filter((x) => x.merchant_id === orderInfo.merchantId)
+                  .reduce((sum, it) => sum + it.price * it.quantity, 0) + ship,
+              orderInfo: `Payment for order #${orderInfo.orderId} - ${orderInfo.merchantName}`,
+            });
+
+            console.log(
+              `💳 MoMo response for order ${orderInfo.orderId}:`,
+              paymentResponse
+            );
+
+            if (paymentResponse.success && paymentResponse.payUrl) {
+              paymentUrls.push(paymentResponse.payUrl);
+            } else {
+              throw new Error(
+                paymentResponse.message ||
+                  `Cannot connect to MoMo for order ${orderInfo.orderId}`
+              );
+            }
+          } catch (err) {
+            console.error(`Payment error for order ${orderInfo.orderId}:`, err);
+            throw err;
           }
+        }
 
-          // Step 4: Clear cart and redirect
-          console.log("✅ MoMo ready, clearing cart...");
-          await clearCart();
+        // Step 3: Clear cart for selected merchants
+        console.log("✅ All payments ready, clearing cart...");
+        const merchantIds = itemsByMerchant.map((m) => m.merchant_id);
+        await clearCartForMerchants(merchantIds);
 
-          toast.dismiss();
-          toast.success("Redirecting to MoMo payment page...", {
-            duration: 3000,
+        // Dismiss loading and show success
+        toast.dismiss(loadingToastId);
+        toast.success(
+          `${orderIds.length} order(s) created! Opening payment windows...`,
+          {
+            duration: 2000,
+          }
+        );
+
+        // Step 4: Handle payment redirects
+        if (paymentUrls.length > 0) {
+          console.log(
+            `🎉 Total payment URLs created: ${paymentUrls.length}`,
+            paymentUrls
+          );
+
+          // Store payment info in sessionStorage for multi-payment handling
+          sessionStorage.setItem(
+            "paymentQueue",
+            JSON.stringify({
+              urls: paymentUrls,
+              orderIds: orderIds,
+              currentIndex: 0,
+            })
+          );
+
+          // Open all payment windows with small delays to avoid popup blocker
+          paymentUrls.forEach((url, index) => {
+            console.log(
+              `🪟 Opening payment window ${index + 1}/${paymentUrls.length}`
+            );
+            // Use setTimeout to prevent popup blocker from blocking multiple opens
+            setTimeout(() => {
+              const opened = window.open(url, `_blank_payment_${index}`);
+              if (!opened) {
+                console.warn(
+                  `⚠️  Popup blocked for window ${index + 1}. URL: ${url}`
+                );
+                toast.error(
+                  `Payment window ${
+                    index + 1
+                  } was blocked by popup blocker. Please allow popups.`
+                );
+              } else {
+                console.log(
+                  `✅ Payment window ${index + 1} opened successfully`
+                );
+              }
+            }, index * 300); // 300ms delay between each popup
           });
 
-          // Redirect to MoMo payment page
+          // Navigate to orders page after a delay
           setTimeout(() => {
-            window.location.href = paymentResponse.payUrl;
-          }, 500);
-        } catch (paymentError) {
-          console.error("❌ Payment error:", paymentError);
-          toast.dismiss();
-          toast.error(
-            paymentError.message ||
-              "Cannot connect to MoMo. Your order has been created but not paid. Please contact support.",
-            { duration: 3000 }
-          );
-          setSubmitting(false);
+            setSubmitting(false);
+            navigate("/profile/order");
+          }, 2000);
         }
       } else {
-        toast.dismiss();
-        toast.error("Invalid payment method", { duration: 3000 });
+        // For COD, just clear cart and show success
+        const merchantIds = itemsByMerchant.map((m) => m.merchant_id);
+        await clearCartForMerchants(merchantIds);
+        toast.dismiss(loadingToastId);
+        toast.success(`${orderIds.length} order(s) created successfully!`, {
+          duration: 2000,
+        });
         setSubmitting(false);
+
+        setTimeout(() => {
+          navigate("/profile/order");
+        }, 1500);
       }
     } catch (err) {
       console.error("❌ Order creation error:", err);
       toast.dismiss();
-      toast.error(err.message || "Order creation failed. Please try again.", {
-        duration: 3000,
-      });
+      toast.error(err.message || "Order creation failed", { duration: 2000 });
       setSubmitting(false);
     }
   };
@@ -279,29 +394,40 @@ export default function CreateOrder() {
           <div className={cx("card")}>
             <h3 className={cx("title")}>Order Summary</h3>
             <div className={cx("summaryList")}>
-              {items.map((it) => (
-                <div key={it.id} className={cx("summaryItem")}>
-                  <div className={cx("info")}>
-                    <img src={it.image} alt={it.name} />
-                    <div>
-                      <div className={cx("name")}>{it.name}</div>
-                      <div className={cx("sub")}>x {it.quantity}</div>
+              {itemsByMerchant.flatMap((mg) =>
+                mg.items.map((it) => (
+                  <div
+                    key={`${it.merchant_id}:${it.id}`}
+                    className={cx("summaryItem")}
+                  >
+                    <div className={cx("info")}>
+                      <img src={it.image} alt={it.name} />
+                      <div>
+                        <div className={cx("name")}>{it.name}</div>
+                        <div className={cx("sub")}>x {it.quantity}</div>
+                      </div>
+                    </div>
+                    <div className={cx("price")}>
+                      {formatVND(it.price * it.quantity)}
                     </div>
                   </div>
-                  <div className={cx("price")}>
-                    {formatVND(it.price * it.quantity)}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <hr />
             <div className={cx("rowPrice")}>
               <span>Subtotal</span>
-              <strong>{formatVND(subtotal)}</strong>
+              <strong>
+                {formatVND(
+                  items
+                    .filter((x) => selectedMerchants.includes(x.merchant_id))
+                    .reduce((sum, it) => sum + it.price * it.quantity, 0)
+                )}
+              </strong>
             </div>
             <div className={cx("rowPrice")}>
               <span>Shipping Fee</span>
-              <strong>{formatVND(ship)}</strong>
+              <strong>{formatVND(ship * selectedMerchants.length)}</strong>
             </div>
             <div className={cx("rowPrice", "total")}>
               <span>Total</span>

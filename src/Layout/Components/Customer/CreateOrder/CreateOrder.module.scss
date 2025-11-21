@@ -24,7 +24,7 @@
   grid-template-columns: 1fr;
 
   @media (min-width: $breakpoint-lg) {
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 1fr 1.5fr;
   }
 }
 
@@ -229,6 +229,8 @@
   flex-direction: column;
   gap: $spacing-md;
   margin-bottom: $spacing-xl;
+  align-items: center;
+  text-align: center;
 }
 
 .summaryItem {
@@ -240,6 +242,7 @@
   border-radius: $radius-lg;
   border: 2px solid $neutral-100;
   transition: all $transition-base;
+  width: 100%;
 
   &:hover {
     background: white;
@@ -292,7 +295,7 @@
 }
 
 // Summary rows - Clear pricing
-.summaryRow {
+.rowPrice {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -304,11 +307,11 @@
     border-bottom: 1px solid $neutral-200;
   }
 
-  .label {
+  span {
     font-weight: $font-weight-medium;
   }
 
-  .value {
+  strong {
     font-weight: $font-weight-bold;
     color: $neutral-900;
   }
@@ -317,14 +320,15 @@
     padding: $spacing-lg 0;
     margin-top: $spacing-md;
     border-top: 3px solid $neutral-300;
+    border-bottom: none;
     font-size: $font-size-2xl;
 
-    .label {
+    span {
       font-weight: $font-weight-bold;
       color: $neutral-900;
     }
 
-    .value {
+    strong {
       font-weight: $font-weight-bold;
       background: linear-gradient(135deg, $primary-500, $primary-700);
       -webkit-background-clip: text;

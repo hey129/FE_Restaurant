@@ -19,7 +19,7 @@ export default function CreateOrder() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { user: profile, isAuthenticated } = useAuth();
+  const { user: profile, isAuthenticated, merchantId } = useAuth();
   const { items, subtotal, clearCart } = useCart();
 
   const [ship, setShip] = useState(15000);
@@ -45,7 +45,7 @@ export default function CreateOrder() {
   // Redirect if cart is empty
   useEffect(() => {
     if (isAuthenticated && items.length === 0) {
-      toast.error("Giỏ hàng trống");
+      toast.error("Giỏ hàng trống", 2000);
       navigate("/cart");
     }
   }, [isAuthenticated, items.length, navigate]);
@@ -81,12 +81,12 @@ export default function CreateOrder() {
     }
 
     if (!items.length) {
-      toast.error("Giỏ hàng trống");
+      toast.error("Giỏ hàng trống", 2000);
       return;
     }
 
     if (!profile?.customer_id) {
-      toast.error("Không tìm thấy thông tin người dùng");
+      toast.error("Không tìm thấy thông tin người dùng", 2000);
       return;
     }
 
@@ -101,9 +101,10 @@ export default function CreateOrder() {
       setSubmitting(true);
       console.log("🚀 Creating order with items:", items.length);
 
-      // Create order in database with pending payment status
+      // Create order in database with Pending payment status
       const { orderId } = await createOrder({
         customerId: profile.customer_id,
+        merchantId,
         items,
         shipping: ship,
         deliveryAddress,
@@ -156,7 +157,7 @@ export default function CreateOrder() {
         await clearCart();
         toast.success(`Đặt hàng thành công! Mã đơn hàng: #${orderId}`);
 
-        // Navigate to order processing page
+        // Navigate to order Processing page
         setTimeout(() => {
           navigate("/profile/onprocessorder");
         }, 1500);

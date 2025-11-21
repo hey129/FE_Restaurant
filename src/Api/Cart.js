@@ -19,19 +19,20 @@ export function CartProvider({ children, merchantId }) {
   const customerId = user?.customer_id || null; // Sử dụng customer_id từ profile
 
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(!!customerId && !!merchantId);
+  const [loading, setLoading] = useState(!!customerId);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      if (!customerId || !merchantId) {
+      if (!customerId) {
         setItems([]);
         setLoading(false);
         return;
       }
       setLoading(true);
+      // Load items from ALL merchants (not filtered by merchantId)
       const { data, error } = await supabase
-        .from("cart") // Sử dụng table 'cart'
+        .from("cart")
         .select(
           `
         cart_id,
@@ -48,33 +49,44 @@ export function CartProvider({ children, merchantId }) {
           image,
           price,        
           category_id
+        ),
+        merchant:merchant_id (
+          merchant_id,
+          merchant_name
         )
       `
         )
         .eq("customer_id", customerId)
-        .eq("merchant_id", merchantId)
-        .eq("status", "active") // Chỉ lấy active items
-        .order("added_at", { ascending: false });
+        .eq("status", "active");
 
       if (!active) return;
       if (error) {
+        console.error("❌ Cart load error:", error);
         setItems([]);
       } else {
-        // Consolidate duplicate products by summing quantities
+        console.log("✅ Cart items loaded:", data);
+        // Consolidate duplicate products by summing quantities (per merchant)
         const productMap = new Map();
         const duplicateCartIds = []; // Track cart_ids of duplicates to remove
 
         (data || []).forEach((d) => {
-          const productId = d.product_id;
-          if (productMap.has(productId)) {
-            // If product already exists, add to quantity and mark for removal
-            const existing = productMap.get(productId);
+          const key = `${d.merchant_id}:${d.product_id}`; // Key includes merchant
+          if (productMap.has(key)) {
+            // If product already exists for this merchant, add to quantity
+            const existing = productMap.get(key);
             existing.quantity = Math.min(99, existing.quantity + d.quantity);
             duplicateCartIds.push(d.cart_id); // Mark this duplicate for removal
           } else {
             // New product, add to map
-            productMap.set(productId, {
-              id: productId,
+            const merchantName =
+              d.merchant?.merchant_name || d.merchant_name || "Restaurant";
+            console.log(
+              `📦 Product: ${d.product?.product_name}, Merchant: ${merchantName}`
+            );
+            productMap.set(key, {
+              id: d.product_id,
+              merchant_id: d.merchant_id,
+              merchant_name: merchantName,
               cart_id: d.cart_id, // Store cart_id for updates
               quantity: d.quantity,
               price: Number(d.price) || 0,
@@ -118,7 +130,7 @@ export function CartProvider({ children, merchantId }) {
     return () => {
       active = false;
     };
-  }, [customerId, merchantId]);
+  }, [customerId]);
 
   const subtotal = useMemo(
     () => items.reduce((sum, it) => sum + it.price * it.quantity, 0),
@@ -126,8 +138,9 @@ export function CartProvider({ children, merchantId }) {
   );
 
   const addToCart = useCallback(
-    async (product, qty = 1) => {
+    async (product, qty = 1, merchantId) => {
       if (!customerId) throw new Error(AUTH_REQUIRED);
+      // If no merchantId provided, error
       if (!merchantId) throw new Error("NO_MERCHANT_ID");
 
       const normalized = {
@@ -139,12 +152,16 @@ export function CartProvider({ children, merchantId }) {
       };
 
       // Tính nextQty dựa trên state hiện tại (optimistic)
-      const current = items.find((x) => x.id === normalized.id);
+      const current = items.find(
+        (x) => x.id === normalized.id && x.merchant_id === merchantId
+      );
       const nextQty = Math.min(99, (current?.quantity || 0) + qty);
 
       // Optimistic update UI
       setItems((prev) => {
-        const i = prev.findIndex((x) => x.id === normalized.id);
+        const i = prev.findIndex(
+          (x) => x.id === normalized.id && x.merchant_id === merchantId
+        );
         if (i >= 0) {
           const next = [...prev];
           next[i] = { ...next[i], quantity: nextQty };
@@ -154,6 +171,8 @@ export function CartProvider({ children, merchantId }) {
           ...prev,
           {
             id: normalized.id,
+            merchant_id: merchantId,
+            merchant_name: "Loading...", // Will be filled from DB after insert
             price: normalized.price,
             quantity: nextQty,
             name: normalized.name,
@@ -257,22 +276,46 @@ export function CartProvider({ children, merchantId }) {
           );
           throw insErr;
         }
+
+        // Fetch merchant name and update the optimistic item
+        const { data: merchantData } = await supabase
+          .from("merchant")
+          .select("merchant_id, merchant_name")
+          .eq("merchant_id", merchantId)
+          .single();
+
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === normalized.id &&
+            item.merchant_id === merchantId &&
+            item.merchant_name === "Loading..."
+              ? {
+                  ...item,
+                  merchant_name: merchantData?.merchant_name || "Merchant",
+                }
+              : item
+          )
+        );
       }
     },
-    [customerId, merchantId, items]
+    [customerId, items]
   );
 
   // Tương tự sửa updateQuantity, removeFromCart (sử dụng customer_id, table 'cart')
   const updateQuantity = useCallback(
-    async (productId, qty) => {
+    async (productId, merchantId, qty) => {
       if (!customerId) throw new Error(AUTH_REQUIRED);
       if (!merchantId) throw new Error("NO_MERCHANT_ID");
       const clamped = Math.min(99, Math.max(1, qty));
       setItems((prev) =>
-        prev.map((x) => (x.id === productId ? { ...x, quantity: clamped } : x))
+        prev.map((x) =>
+          x.id === productId && x.merchant_id === merchantId
+            ? { ...x, quantity: clamped }
+            : x
+        )
       );
 
-      // Find all active cart items for this product
+      // Find all active cart items for this product in this merchant
       const { data: existingItems } = await supabase
         .from("cart")
         .select("cart_id")
@@ -302,14 +345,18 @@ export function CartProvider({ children, merchantId }) {
         }
       }
     },
-    [customerId, merchantId]
+    [customerId]
   );
 
   const removeFromCart = useCallback(
-    async (productId) => {
+    async (productId, merchantId) => {
       if (!customerId) throw new Error(AUTH_REQUIRED);
       if (!merchantId) throw new Error("NO_MERCHANT_ID");
-      setItems((prev) => prev.filter((x) => x.id !== productId));
+      setItems((prev) =>
+        prev.filter(
+          (x) => !(x.id === productId && x.merchant_id === merchantId)
+        )
+      );
       const { error } = await supabase
         .from("cart")
         .update({ status: "removed" }) // Soft delete thay vì delete thật
@@ -321,48 +368,69 @@ export function CartProvider({ children, merchantId }) {
         // Handle error silently
       }
     },
-    [customerId, merchantId]
+    [customerId]
   );
 
   const clearCart = useCallback(async () => {
     if (!customerId) throw new Error(AUTH_REQUIRED);
-    if (!merchantId) throw new Error("NO_MERCHANT_ID");
     setItems([]);
     const { error } = await supabase
       .from("cart")
       .update({ status: "removed" })
       .eq("customer_id", customerId)
-      .eq("merchant_id", merchantId)
       .eq("status", "active");
     if (error) {
       // Handle error silently
     }
-  }, [customerId, merchantId]);
+  }, [customerId]);
+
+  // Clear cart items for specific merchants
+  const clearCartForMerchants = useCallback(
+    async (merchantIds) => {
+      if (!customerId) throw new Error(AUTH_REQUIRED);
+      if (!merchantIds || merchantIds.length === 0) return;
+
+      setItems((prev) =>
+        prev.filter((x) => !merchantIds.includes(x.merchant_id))
+      );
+
+      const { error } = await supabase
+        .from("cart")
+        .update({ status: "removed" })
+        .eq("customer_id", customerId)
+        .in("merchant_id", merchantIds)
+        .eq("status", "active");
+
+      if (error) {
+        console.error("Error clearing cart:", error);
+      }
+    },
+    [customerId]
+  );
 
   // Cleanup function to consolidate duplicate entries in database
   const consolidateDuplicates = useCallback(async () => {
     if (!customerId) return;
-    if (!merchantId) return;
 
     try {
-      // Get all active cart items
+      // Get all active cart items for this customer (across all merchants)
       const { data: allItems } = await supabase
         .from("cart")
-        .select("cart_id, product_id, quantity")
+        .select("cart_id, product_id, merchant_id, quantity")
         .eq("customer_id", customerId)
-        .eq("merchant_id", merchantId)
         .eq("status", "active")
         .order("added_at", { ascending: true }); // Keep oldest first
 
       if (!allItems || allItems.length === 0) return;
 
-      // Group by product_id
+      // Group by (merchant_id, product_id)
       const productGroups = new Map();
       allItems.forEach((item) => {
-        if (!productGroups.has(item.product_id)) {
-          productGroups.set(item.product_id, []);
+        const key = `${item.merchant_id}:${item.product_id}`;
+        if (!productGroups.has(key)) {
+          productGroups.set(key, []);
         }
-        productGroups.get(item.product_id).push(item);
+        productGroups.get(key).push(item);
       });
 
       // Process each group
@@ -398,7 +466,7 @@ export function CartProvider({ children, merchantId }) {
     } catch (error) {
       console.error("Error consolidating duplicates:", error);
     }
-  }, [customerId, merchantId]);
+  }, [customerId]);
 
   const value = {
     loading,
@@ -408,6 +476,7 @@ export function CartProvider({ children, merchantId }) {
     updateQuantity,
     removeFromCart,
     clearCart,
+    clearCartForMerchants,
     consolidateDuplicates, // Expose for manual cleanup if needed
   };
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

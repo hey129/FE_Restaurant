@@ -81,8 +81,8 @@ create table if not exists orders (
   order_date timestamptz default now(),
   delivery_address text,
   total_amount numeric(12,2) not null default 0.00,
-  order_status text default 'pending', -- pending, preparing, delivered, cancelled
-  payment_status text default 'unpaid', -- unpaid, paid, refunded
+  order_status text default 'Pending', -- Pending, preparing, delivered, Cancelled
+  payment_status text default 'unPaid', -- unPaid, Paid, refunded
   staff_id int references staff(staff_id), -- ai xử lý đơn
   note text
 );

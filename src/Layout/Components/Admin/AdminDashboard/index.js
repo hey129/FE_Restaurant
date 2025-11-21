@@ -50,8 +50,8 @@ function AdminDashboard() {
     totalCustomers: 0,
     totalOrders: 0,
     totalRevenue: 0,
-    pendingOrders: 0,
-    completedOrders: 0,
+    PendingOrders: 0,
+    CompleteddOrders: 0,
     momoOrders: 0, // Add MoMo stats
     codOrders: 0, // Add COD stats
   });
@@ -123,20 +123,18 @@ function AdminDashboard() {
 
   const calculateStats = (ordersData) => {
     const totalOrders = ordersData.length;
-    const pendingOrders = ordersData.filter(
-      (o) => o.order_status === "Chờ xử lý"
+    const PendingOrders = ordersData.filter(
+      (o) => o.order_status === "Pending"
     ).length;
-    const completedOrders = ordersData.filter(
-      (o) => o.order_status === "Hoàn thành"
+    const CompleteddOrders = ordersData.filter(
+      (o) => o.order_status === "Completedd"
     ).length;
     const momoOrders = ordersData.filter(
       (o) => o.payment?.[0]?.method?.toLowerCase() === "momo"
     ).length;
-    const codOrders = ordersData.filter(
-      (o) => o.payment?.[0]?.method?.toLowerCase() === "cod"
-    ).length;
+
     const totalRevenue = ordersData
-      .filter((o) => o.order_status === "Hoàn thành")
+      .filter((o) => o.order_status === "Completedd")
       .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
 
     setStats({
@@ -145,10 +143,9 @@ function AdminDashboard() {
       totalCustomers: customers.length,
       totalOrders,
       totalRevenue,
-      pendingOrders,
-      completedOrders,
+      PendingOrders,
+      CompleteddOrders,
       momoOrders,
-      codOrders,
     });
   };
 
@@ -186,20 +183,22 @@ function AdminDashboard() {
   }, [orders, products, categories, customers]);
 
   const getStatusBadge = (status) => {
+    const capitalizeStatus = (str) =>
+      str.charAt(0).toUpperCase() + str.slice(1);
     const badges = {
-      pending: { text: "Chờ xử lý", class: "warning" },
-      completed: { text: "Hoàn thành", class: "success" },
-      cancelled: { text: "Đã hủy", class: "danger" },
+      Pending: { text: capitalizeStatus("Pending"), class: "warning" },
+      Completedd: { text: capitalizeStatus("Completedd"), class: "success" },
+      Cancelled: { text: capitalizeStatus("Cancelled"), class: "danger" },
     };
-    return badges[status] || { text: status, class: "default" };
+    return (
+      badges[status] || { text: capitalizeStatus(status), class: "default" }
+    );
   };
 
   const getPaymentBadge = (status) => {
     const badges = {
-      paid: { text: "Paid", class: "success" },
-      unpaid: { text: "Unpaid", class: "warning" },
-      pending: { text: "Processing", class: "info" },
-      Refund: { text: "Refund", class: "danger" },
+      Paid: { text: "Paid", class: "success" },
+      Refunded: { text: "Refunded", class: "danger" },
     };
     return badges[status] || { text: status, class: "default" };
   };
@@ -298,14 +297,14 @@ function AdminDashboard() {
               <div className={cx("stat-card", "yellow")}>
                 <div className={cx("stat-info")}>
                   <h3>Pending</h3>
-                  <p className={cx("stat-number")}>{stats.pendingOrders}</p>
+                  <p className={cx("stat-number")}>{stats.PendingOrders}</p>
                 </div>
               </div>
 
               <div className={cx("stat-card", "teal")}>
                 <div className={cx("stat-info")}>
-                  <h3>Completed</h3>
-                  <p className={cx("stat-number")}>{stats.completedOrders}</p>
+                  <h3>Completedd</h3>
+                  <p className={cx("stat-number")}>{stats.CompleteddOrders}</p>
                 </div>
               </div>
 
@@ -426,9 +425,7 @@ function AdminDashboard() {
                       <tr key={category.category_id}>
                         <td>{category.category_id}</td>
                         <td>
-                          <div className={cx("category-icon-cell")}>
-                            {category.icon_url || "📁"}
-                          </div>
+                          <div className={cx("category-icon-cell")}>📁</div>
                         </td>
                         <td className={cx("category-name")}>{category.name}</td>
                         <td>

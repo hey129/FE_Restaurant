@@ -27,30 +27,23 @@ const formatDate = (dateString) => {
 };
 
 const getStatusText = (status) => {
-  const statusMap = {
-    pending: "Chờ xác nhận",
-    processing: "Đang xử lý",
-    shipping: "Đang giao hàng",
-    delivered: "Đã giao hàng",
-    cancelled: "Đã hủy",
-  };
-  return statusMap[status] || status;
+  return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 const getStatusColor = (status) => {
   const colorMap = {
-    pending: "warning",
-    processing: "info",
+    Pending: "warning",
+    Processing: "info",
     shipping: "primary",
     delivered: "success",
-    cancelled: "danger",
+    Cancelled: "danger",
   };
   return colorMap[status] || "default";
 };
 
 function FinishedOrder() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, merchantId } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,7 +52,8 @@ function FinishedOrder() {
     let active = true;
 
     async function loadOrders() {
-      if (!isAuthenticated || !user?.customer_id) {
+      if (loading) return; // Wait for auth to load
+      if (!isAuthenticated || !user?.customer_id || !merchantId) {
         setLoading(false);
         return;
       }
@@ -68,10 +62,11 @@ function FinishedOrder() {
         setLoading(true);
         setError("");
 
-        // Get orders with status: delivered, cancelled
+        // Get orders with status: delivered, Cancelled
         const data = await getOrders({
           customerId: user.customer_id,
-          statuses: ["Đã giao", "Đã hủy"],
+          merchantId,
+          statuses: ["delivered", "Cancelled"],
         });
 
         if (!active) return;
@@ -92,11 +87,19 @@ function FinishedOrder() {
     return () => {
       active = false;
     };
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, merchantId, loading]);
 
   const handleOrderClick = (orderId) => {
     navigate(`/order/${orderId}`);
   };
+
+  if (loading) {
+    return (
+      <div className={cx("container")}>
+        <h2>Loading...</h2>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -166,18 +169,20 @@ function FinishedOrder() {
                     </span>
                   </div>
                   <div className={cx("info-row")}>
-                    <span className={cx("label")}>Trạng thái thanh toán:</span>
+                    <span className={cx("label")}>Payment Status:</span>
                     <span
                       className={cx(
                         "value",
-                        order.payment_status === "Đã thanh toán"
-                          ? "paid"
-                          : "unpaid"
+                        order.payment_status === "Paid" ||
+                          order.payment_status === "Paid"
+                          ? "Paid"
+                          : "refunded"
                       )}
                     >
-                      {order.payment_status === "Đã thanh toán"
-                        ? "Đã thanh toán"
-                        : "Chưa thanh toán"}
+                      {order.payment_status === "Paid" ||
+                      order.payment_status === "Paid"
+                        ? "Paid"
+                        : "Refunded"}
                     </span>
                   </div>
                   <div className={cx("info-row")}>

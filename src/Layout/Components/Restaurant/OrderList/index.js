@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import classNames from "classnames/bind";
 import styles from "./OrderList.module.scss";
-import { getAllOrders, getOrderItems, updateOrderStatus } from "~/Api";
+import { getOrderItems, updateOrderStatus, useAuth, getAllOrders } from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
 
 const cx = classNames.bind(styles);
@@ -28,24 +28,54 @@ const formatDate = (dateString) => {
   }
 };
 
-function OrderList() {
-  const [orders, setOrders] = useState([]);
+function OrderList({ merchant }) {
+  const { user } = useAuth();
+  const [orders, setOrders] = useState(() => {
+    // Initialize from localStorage
+    try {
+      const saved = localStorage.getItem("restaurant_orders");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, pending, processing, completed, cancelled
+  const [filter, setFilter] = useState("all"); // all, Pending, Processing, Completedd, Cancelled
   const [expandedOrder, setExpandedOrder] = useState(null);
-  const [processingAction, setProcessingAction] = useState(null);
+  const [ProcessingAction, setProcessingAction] = useState(null);
 
-  // Load orders
+  // Save orders to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("restaurant_orders", JSON.stringify(orders));
+  }, [orders]);
+
+  // Load orders for this merchant
   const loadOrders = async () => {
     try {
       setLoading(true);
 
-      const data = await getAllOrders({ status: filter });
+      // Get orders for current merchant
+      const merchantId = user?.merchant_id;
+      if (!merchantId) {
+        toast.error("Merchant ID not found");
+        return;
+      }
 
-      setOrders(data || []);
+      // Use API to get all orders, then filter locally
+      const allOrders = await getAllOrders({ merchantId, status: "all" });
+
+      // Filter by status
+      let filteredOrders = allOrders;
+      if (filter !== "all") {
+        filteredOrders = filteredOrders.filter(
+          (order) => order.order_status === filter
+        );
+      }
+
+      setOrders(filteredOrders);
     } catch (err) {
       console.error("Load orders error:", err);
-      toast.error("Cannot load order list", { duration: 3000 });
+      toast.error("Cannot load order list", { duration: 2000 });
     } finally {
       setLoading(false);
     }
@@ -53,8 +83,16 @@ function OrderList() {
 
   useEffect(() => {
     loadOrders();
+
+    // Poll for new orders every 5 seconds
+    const pollInterval = setInterval(() => {
+      console.log("🔄 Polling for new orders...");
+      loadOrders();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, user?.merchant_id]);
 
   // Load order items
   const loadOrderItems = async (orderId) => {
@@ -99,11 +137,11 @@ function OrderList() {
 
       // If cancelling and payment was made, set payment status to refund
       if (newStatus === "Cancelled" && refundPayment) {
-        updateParams.paymentStatus = "Refunded";
+        updateParams.paymentStatus = "refunded";
       }
 
-      // If completing, ensure payment is marked as paid
-      if (newStatus === "Completed") {
+      // If completing, ensure payment is marked as Paid
+      if (newStatus === "Completedd") {
         updateParams.paymentStatus = "Paid";
       }
 
@@ -117,20 +155,20 @@ function OrderList() {
       );
 
       const statusText = {
-        cancelled: "cancelled",
-        completed: "completed",
+        Cancelled: "Cancelled",
+        Completedd: "Completedd",
       };
 
       toast.success(`Order #${orderId} ${statusText[newStatus]}!`, {
-        duration: 3000,
+        duration: 2000,
       });
 
       if (refundPayment) {
-        toast.success("Payment status updated to Refunded", { duration: 3000 });
+        toast.success("Payment status updated to Refunded", { duration: 2000 });
       }
     } catch (err) {
       console.error("Update order status error:", err);
-      toast.error("Cannot update order status", { duration: 3000 });
+      toast.error("Cannot update order status", { duration: 2000 });
     } finally {
       setProcessingAction(null);
     }
@@ -144,8 +182,7 @@ function OrderList() {
         `Total: ${formatVND(order.total_amount)}\n` +
         `Payment Status: ${order.payment_status || "N/A"}\n\n` +
         `${
-          order.payment_status === "Paid" ||
-          order.payment_status === "Đã thanh toán"
+          order.payment_status === "Paid" || order.payment_status === "Paid"
             ? "⚠️ Paid order will be marked as refunded."
             : ""
         }`
@@ -153,96 +190,52 @@ function OrderList() {
 
     if (!confirmCancel) return;
 
-    // If payment was made (paid status), refund it
+    // If payment was made (Paid status), refund it
     const needsRefund =
-      order.payment_status === "Paid" ||
-      order.payment_status === "Đã thanh toán";
+      order.payment_status === "Paid" || order.payment_status === "Paid";
     await updateOrderStatusLocal(order.order_id, "Cancelled", needsRefund);
   };
 
-  // Handle complete order
-  const handleCompleteOrder = async (order) => {
-    const confirmComplete = window.confirm(
+  // Handle Completed order
+  const handleCompletedOrder = async (order) => {
+    const confirmCompleted = window.confirm(
       `Confirm completion of order #${order.order_id}?\n\n` +
         `Customer: ${order.customer?.customer_name || "N/A"}\n` +
         `Total: ${formatVND(order.total_amount)}`
     );
 
-    if (!confirmComplete) return;
+    if (!confirmCompleted) return;
 
-    await updateOrderStatusLocal(order.order_id, "Completed");
+    await updateOrderStatusLocal(order.order_id, "Completedd");
   };
 
   // Get status badge class
   const getStatusClass = (status) => {
     const statusMap = {
-      // Lowercase
-      pending: "warning",
-      processing: "info",
-      shipping: "primary",
-      completed: "success",
-      cancelled: "danger",
-      // Capitalized English
       Pending: "warning",
       Processing: "info",
-      Shipping: "primary",
-      Completed: "success",
+      shipping: "primary",
+      Completedd: "success",
       Cancelled: "danger",
-      // Vietnamese (legacy)
-      "Chờ xử lý": "warning",
-      "Đang xử lý": "info",
-      "Đang giao": "primary",
-      "Hoàn thành": "success",
-      "Đã hủy": "danger",
-      Hủy: "danger",
     };
     return statusMap[status] || "secondary";
   };
 
   const getPaymentStatusClass = (status) => {
     const statusMap = {
-      paid: "success",
-      unpaid: "warning",
-      pending: "info",
       Paid: "success",
-      Unpaid: "warning",
-      Refunded: "danger",
-      "Đã thanh toán": "success",
-      "Hoàn tiền": "danger",
+      Pending: "info",
+      refunded: "danger",
     };
     return statusMap[status] || "secondary";
   };
 
   const getStatusText = (status) => {
-    const textMap = {
-      pending: "Pending",
-      completed: "Completed",
-      cancelled: "Cancelled",
-      Pending: "Pending",
-      Processing: "Processing",
-      Shipping: "Shipping",
-      Completed: "Completed",
-      Cancelled: "Cancelled",
-      "Chờ xử lý": "Pending",
-      "Đang xử lý": "Processing",
-      "Đang giao": "Shipping",
-      "Hoàn thành": "Completed",
-      "Đã hủy": "Cancelled",
-    };
-    return textMap[status] || status;
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const getPaymentStatusText = (status) => {
-    const textMap = {
-      Paid: "Paid",
-      Unpaid: "Unpaid",
-      Refunded: "Refunded",
-      "Đã thanh toán": "Paid",
-      "Chưa thanh toán": "Unpaid",
-      "Chờ xử lý": "Processing",
-      "Hoàn tiền": "Refunded",
-    };
-    return textMap[status] || status;
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   if (loading) {
@@ -260,12 +253,15 @@ function OrderList() {
     <div className={cx("container")}>
       <Toaster position="top-right" />
 
-      {/* Header */}
+      {/* Header with Stats and Filters */}
       <div className={cx("header")}>
-        <h1 className={cx("title")}>Order Management</h1>
+        <div className={cx("header-left")}>
+          <h2 className={cx("title")}>📋 Orders</h2>
+          <p className={cx("subtitle")}>Manage and track orders</p>
+        </div>
         <div className={cx("stats")}>
           <div className={cx("stat-item")}>
-            <span className={cx("stat-label")}>Total Orders:</span>
+            <span className={cx("stat-label")}>Total:</span>
             <span className={cx("stat-value")}>{orders.length}</span>
           </div>
         </div>
@@ -286,10 +282,10 @@ function OrderList() {
           Pending
         </button>
         <button
-          className={cx("filter-btn", { active: filter === "Completed" })}
-          onClick={() => setFilter("Completed")}
+          className={cx("filter-btn", { active: filter === "Completedd" })}
+          onClick={() => setFilter("Completedd")}
         >
-          Completed
+          Completedd
         </button>
         <button
           className={cx("filter-btn", { active: filter === "Cancelled" })}
@@ -450,33 +446,30 @@ function OrderList() {
                     <div className={cx("action-buttons-end")}>
                       <button
                         className={cx("btn", "btn-success", "btn-xs")}
-                        onClick={() => handleCompleteOrder(order)}
-                        disabled={processingAction === order.order_id}
+                        onClick={() => handleCompletedOrder(order)}
+                        disabled={ProcessingAction === order.order_id}
                       >
-                        {processingAction === order.order_id
+                        {ProcessingAction === order.order_id
                           ? "Processing..."
-                          : "✓ Complete"}
+                          : "✓ Completed"}
                       </button>
                       <button
                         className={cx("btn", "btn-danger", "btn-xs")}
                         onClick={() => handleCancelOrder(order)}
-                        disabled={processingAction === order.order_id}
+                        disabled={ProcessingAction === order.order_id}
                       >
                         ✗ Cancel
                       </button>
                     </div>
                   )}
 
-                  {/* Status Message for Completed/Cancelled */}
-                  {(order.order_status === "Completed" ||
-                    order.order_status === "Cancelled" ||
-                    order.order_status === "Hoàn thành" ||
-                    order.order_status === "Hủy") && (
+                  {/* Status Message for Completedd/Cancelled */}
+                  {(order.order_status === "Completedd" ||
+                    order.order_status === "Cancelled") && (
                     <div className={cx("status-message")}>
-                      {order.order_status === "Completed" ||
-                      order.order_status === "Hoàn thành"
-                        ? "✓ Order completed"
-                        : "✗ Order cancelled"}
+                      {order.order_status === "Completedd"
+                        ? "✓ Order Completedd"
+                        : "✗ Order Cancelled"}
                     </div>
                   )}
                 </div>

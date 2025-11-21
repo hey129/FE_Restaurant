@@ -17,7 +17,7 @@ const cx = classNames.bind(styles);
 export default function ProductDetail({ productId: propId, initialProduct }) {
   const { id: routeId } = useParams();
   const { addToCart } = useCart();
-  const { isAuthenticated, merchantId } = useAuth();
+  const { isAuthenticated, merchantId, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,7 +40,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
   );
 
   useEffect(() => {
-    let cancelled = false;
+    let Cancelled = false;
 
     async function load() {
       if (!id || !merchantId || initialProduct) return;
@@ -74,18 +74,18 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
             }
           : null;
 
-        if (!cancelled) setProduct(normalized);
+        if (!Cancelled) setProduct(normalized);
       } catch (e) {
-        if (!cancelled) setError(e.message || "Cannot load product details.");
+        if (!Cancelled) setError(e.message || "Cannot load product details.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!Cancelled) setLoading(false);
       }
     }
 
     load();
 
     return () => {
-      cancelled = true;
+      Cancelled = true;
     };
   }, [id, initialProduct, merchantId]);
 
@@ -98,6 +98,10 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
 
   const handleAddToCart = async () => {
     try {
+      if (authLoading) {
+        toast.error("Loading...", { duration: 2000 });
+        return;
+      }
       if (!isAuthenticated) {
         const next = location.pathname + location.search + location.hash;
         navigate(`/login?next=${encodeURIComponent(next)}`);
@@ -113,7 +117,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
         },
         qty
       );
-      toast.success("Added to cart!", { duration: 3000 });
+      toast.success("Added to cart!", { duration: 2000 });
     } catch (e) {
       if (e?.message === AUTH_REQUIRED) {
         const next = location.pathname + location.search + location.hash;

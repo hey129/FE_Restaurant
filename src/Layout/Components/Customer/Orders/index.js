@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Orders.module.scss";
-import { useAuth, getOrders } from "~/Api";
+import { useAuth } from "~/Api";
+import { supabase } from "~/Api/supabase";
 import toast from "react-hot-toast";
 
 const cx = classNames.bind(styles);
@@ -27,30 +28,23 @@ const formatDate = (dateString) => {
 };
 
 const getStatusText = (status) => {
-  const statusMap = {
-    pending: "Chờ xác nhận",
-    processing: "Đang xử lý",
-    shipping: "Đang giao hàng",
-    delivered: "Đã giao hàng",
-    cancelled: "Đã hủy",
-  };
-  return statusMap[status] || status;
+  return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 const getStatusColor = (status) => {
   const colorMap = {
-    pending: "warning",
-    processing: "info",
+    Pending: "warning",
+    Processing: "info",
     shipping: "primary",
     delivered: "success",
-    cancelled: "danger",
+    Cancelled: "danger",
   };
   return colorMap[status] || "default";
 };
 
 function Orders() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,6 +53,7 @@ function Orders() {
     let active = true;
 
     async function loadOrders() {
+      if (authLoading) return; // Wait for auth to load
       if (!isAuthenticated || !user?.customer_id) {
         setLoading(false);
         return;
@@ -68,14 +63,33 @@ function Orders() {
         setLoading(true);
         setError("");
 
-        // Get ALL orders (no status filter)
-        const data = await getOrders({
-          customerId: user.customer_id,
-          statuses: [], // Empty array means all statuses
-        });
+        // Get ALL orders for customer (across all merchants, no status filter)
+        // Since we need to load from all merchants, we need to fetch from orders table directly
+        // OR we need a getAllOrders API function
+        const { data, error: err } = await supabase
+          .from("orders")
+          .select(
+            `
+            order_id,
+            customer_id,
+            merchant_id,
+            order_date,
+            delivery_address,
+            total_amount,
+            order_status,
+            payment_status,
+            note,
+            payment:payment!payment_order_id_fkey(method, transaction_id),
+            merchant:merchant_id (merchant_id, merchant_name)
+          `
+          )
+          .eq("customer_id", user.customer_id)
+          .order("order_date", { ascending: false });
+
+        if (err) throw err;
 
         if (!active) return;
-        setOrders(data);
+        setOrders(data || []);
       } catch (err) {
         if (!active) return;
         console.error("Load orders error:", err);
@@ -92,11 +106,19 @@ function Orders() {
     return () => {
       active = false;
     };
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, authLoading]);
 
   const handleOrderClick = (orderId) => {
     navigate(`/order/${orderId}`);
   };
+
+  if (loading) {
+    return (
+      <div className={cx("container")}>
+        <h2>Loading...</h2>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -143,6 +165,11 @@ function Orders() {
               <div className={cx("order-header")}>
                 <div className={cx("order-id")}>
                   <strong>Order #{order.order_id}</strong>
+                  {order.merchant?.merchant_name && (
+                    <span className={cx("merchant-name")}>
+                      {order.merchant.merchant_name}
+                    </span>
+                  )}
                   <span className={cx("order-date")}>
                     {formatDate(order.order_date)}
                   </span>
@@ -170,7 +197,7 @@ function Orders() {
                     <span
                       className={cx(
                         "value",
-                        order.payment_status === "Paid" ? "paid" : "refunded"
+                        order.payment_status === "Paid" ? "Paid" : "refunded"
                       )}
                     >
                       {order.payment_status === "Paid" ? "Paid" : "Refunded"}

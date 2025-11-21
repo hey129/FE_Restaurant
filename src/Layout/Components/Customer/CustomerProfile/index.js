@@ -108,10 +108,10 @@ export default function CustomerProfile() {
         ...form,
       });
       setProfile(updated);
-      toast.success("Profile updated!", { duration: 3000 });
+      toast.success("Profile updated!", { duration: 2000 });
     } catch (e) {
       console.error(e);
-      toast.error(e.message || "Update failed", { duration: 3000 });
+      toast.error(e.message || "Update failed", { duration: 2000 });
     }
   };
 
