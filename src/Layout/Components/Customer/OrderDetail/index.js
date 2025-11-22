@@ -1,9 +1,9 @@
-// src/Pages/Customer/OrderDetail/index.js
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./OrderDetail.module.scss";
 import { useAuth, getOrderDetail, cancelOrder } from "~/Api";
+import { supabase } from "~/Api/supabase";
 import toast from "react-hot-toast";
 import { MapComponent } from "~/Layout/Components/GPS/MapComponent";
 import { useDeliveryStatus } from "~/utils/hooks/useDeliveryStatus";
@@ -131,8 +131,31 @@ function OrderDetail() {
 
     loadOrderDetail();
 
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel(`order_detail_${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `order_id=eq.${id}`,
+        },
+        (payload) => {
+          if (!active) return;
+          console.log("Order updated (real-time):", payload.new);
+          setOrder((prevOrder) => ({
+            ...prevOrder,
+            ...payload.new,
+          }));
+        }
+      )
+      .subscribe();
+
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
   }, [id, user, isAuthenticated, navigate, authLoading]);
 
@@ -166,7 +189,7 @@ function OrderDetail() {
 
   // Check if order can be Cancelled (Pending, Processing, or shipping status)
   const canCancelOrder =
-    order && ["Pending", "Processing"].includes(order.order_status);
+    order && ["Pending", "Shipping"].includes(order.order_status);
 
   if (loading) {
     return (
@@ -307,9 +330,7 @@ function OrderDetail() {
                 <button
                   className={cx("btn-confirm")}
                   onClick={async () => {
-                    if (
-                      window.confirm("Have you received the order?")
-                    ) {
+                    if (window.confirm("Have you received the order?")) {
                       try {
                         const { updateOrderStatus } = await import("~/Api");
                         await updateOrderStatus({

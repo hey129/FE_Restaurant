@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "~/Api/supabase";
+import { useDeliveryStatus } from "~/utils/hooks/useDeliveryStatus";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -43,41 +44,68 @@ export function MapComponent({ orderId, customerAddress }) {
   const [customerLocation, setCustomerLocation] = useState(null);
   const [distance, setDistance] = useState(null);
   const [estimatedTime, setEstimatedTime] = useState(null);
-  const [orderStatus, setOrderStatus] = useState(null);
-  const [deliveryStartedAt, setDeliveryStartedAt] = useState(null);
-  const [deliveryProgress, setDeliveryProgress] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Geocode using OpenStreetMap Nominatim API (free, no key needed)
-  const geocodeAddress = async (address) => {
-    try {
-      console.log("Geocoding address:", address);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          address
-        )}&countrycodes=vn`
-      );
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        const location = data[0];
-        console.log("Geocoded location:", location);
-        return {
-          lat: parseFloat(location.lat),
-          lng: parseFloat(location.lon),
-        };
-      }
-      console.warn("No results from geocoding for address:", address);
-      return null;
-    } catch (err) {
-      console.error("Geocoding error:", err);
-      return null;
-    }
-  };
+  // Get drone location from delivery status hook
+  const { droneLocation, distance: deliveryDistance } =
+    useDeliveryStatus(orderId);
 
   // Fetch order and merchant details
   useEffect(() => {
     const fetchLocationData = async () => {
+      // Define geocodeAddress locally to avoid dependency issues
+      const geocodeAddress = async (address, retries = 3) => {
+        try {
+          console.log(
+            `🔍 [${new Date().toLocaleTimeString()}] Geocoding: "${address}"`
+          );
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+              address
+            )}&countrycodes=vn&limit=5`
+          );
+          const data = await response.json();
+
+          if (data && data.length > 0) {
+            const location = data[0];
+            console.log(
+              `✅ Geocoded "${address}" → [${location.lat}, ${location.lon}]`
+            );
+            return {
+              lat: parseFloat(location.lat),
+              lng: parseFloat(location.lon),
+            };
+          }
+
+          console.warn(
+            `⚠️ [${new Date().toLocaleTimeString()}] No results for: "${address}"`
+          );
+
+          // Retry with simplified address (remove district/city info)
+          if (retries > 1 && address.includes(",")) {
+            const simplifiedAddress = address.split(",")[0].trim();
+            if (simplifiedAddress !== address) {
+              console.log(
+                `🔄 Retry with simplified: "${simplifiedAddress}" (${
+                  retries - 1
+                } attempts left)`
+              );
+              return geocodeAddress(simplifiedAddress, retries - 1);
+            }
+          }
+
+          return null;
+        } catch (err) {
+          console.error(`❌ Geocoding error for "${address}":`, err.message);
+          if (retries > 1) {
+            console.log(`🔄 Retry ${4 - retries + 1}/${retries} after 1s...`);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            return geocodeAddress(address, retries - 1);
+          }
+          return null;
+        }
+      };
+
       try {
         // Get order with merchant info
         const { data: order, error: orderErr } = await supabase
@@ -90,12 +118,6 @@ export function MapComponent({ orderId, customerAddress }) {
 
         if (orderErr) throw orderErr;
 
-        // Set order status and delivery info
-        setOrderStatus(order.order_status);
-        if (order.delivery_started_at) {
-          setDeliveryStartedAt(new Date(order.delivery_started_at));
-        }
-
         // Get merchant address
         const { data: merchant, error: merchantErr } = await supabase
           .from("merchant")
@@ -104,6 +126,11 @@ export function MapComponent({ orderId, customerAddress }) {
           .single();
 
         if (merchantErr) throw merchantErr;
+
+        console.log(
+          `📍 Merchant: ${merchant.merchant_name} at "${merchant.address}"`
+        );
+        console.log(`📦 Delivery: "${order.delivery_address}"`);
 
         // Geocode merchant address
         if (merchant && merchant.address) {
@@ -115,9 +142,12 @@ export function MapComponent({ orderId, customerAddress }) {
               name: merchant.merchant_name,
               address: merchant.address,
             });
+            console.log(
+              `✅ Restaurant location set: [${merchantCoords.lat}, ${merchantCoords.lng}]`
+            );
           } else {
-            // Fallback: default location
-            console.log("Using fallback for restaurant");
+            // Fallback: default Ho Chi Minh location
+            console.warn("⚠️ Geocoding failed for restaurant - using fallback");
             setRestaurantLocation({
               lat: 10.7769,
               lng: 106.7009,
@@ -137,9 +167,12 @@ export function MapComponent({ orderId, customerAddress }) {
               name: "Delivery Address",
               address: order.delivery_address,
             });
+            console.log(
+              `✅ Customer location set: [${customerCoords.lat}, ${customerCoords.lng}]`
+            );
           } else {
-            // Fallback: default location
-            console.log("Using fallback for delivery");
+            // Fallback
+            console.warn("⚠️ Geocoding failed for delivery - using fallback");
             setCustomerLocation({
               lat: 10.785,
               lng: 106.715,
@@ -149,10 +182,9 @@ export function MapComponent({ orderId, customerAddress }) {
           }
         }
 
-        // Don't calculate distance here - will do in separate useEffect
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching location data:", err);
+        console.error("❌ Error fetching location data:", err);
         setLoading(false);
       }
     };
@@ -171,154 +203,129 @@ export function MapComponent({ orderId, customerAddress }) {
         customerLocation.lat,
         customerLocation.lng
       );
-      const time = estimateDeliveryTime(dist);
+      const estTime = estimateDeliveryTime(dist);
       setDistance(dist);
-      setEstimatedTime(time);
+      setEstimatedTime(estTime);
+
+      console.log(
+        `📏 Map distance calculated: ${dist.toFixed(2)} km ≈ ${estTime} minutes`
+      );
     }
   }, [restaurantLocation, customerLocation]);
 
+  // Render map
   useEffect(() => {
-    // Initialize map once locations are loaded
-    if (!mapRef.current || !restaurantLocation || !customerLocation || loading)
-      return;
+    if (!restaurantLocation || !customerLocation) return;
 
-    // Create map centered between two locations
+    if (mapInstance.current) {
+      mapInstance.current.remove();
+    }
+
+    // Initialize map centered between restaurant and customer
     const centerLat = (restaurantLocation.lat + customerLocation.lat) / 2;
     const centerLng = (restaurantLocation.lng + customerLocation.lng) / 2;
 
     mapInstance.current = L.map(mapRef.current).setView(
       [centerLat, centerLng],
-      13
+      12
     );
 
-    // Add OpenStreetMap tiles
+    // Add tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: "© OpenStreetMap contributors",
       maxZoom: 19,
     }).addTo(mapInstance.current);
 
-    // Restaurant marker (red)
-    L.marker([restaurantLocation.lat, restaurantLocation.lng], {
-      icon: L.icon({
-        iconUrl:
-          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-        shadowUrl:
-          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
+    // Drone marker (current position)
+    const droneLat = droneLocation?.lat || restaurantLocation.lat;
+    const droneLng = droneLocation?.lng || restaurantLocation.lng;
+
+    L.marker([droneLat, droneLng], {
+      title: "🚁 Drone",
+      icon: L.divIcon({
+        html: '<div style="font-size: 28px; text-align: center; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));">🚁</div>',
+        iconSize: [30, 30],
+        className: "drone-marker",
       }),
     })
+      .addTo(mapInstance.current)
+      .bindPopup(
+        `<strong>🚁 Drone</strong><br/>Distance to customer: ${
+          deliveryDistance?.toFixed(2) || "?"
+        }km`
+      );
+
+    // Restaurant marker (starting point)
+    L.marker([restaurantLocation.lat, restaurantLocation.lng], {
+      title: restaurantLocation.name,
+      icon: L.icon({
+        iconUrl:
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='red'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
+        iconSize: [25, 25],
+      }),
+    })
+      .addTo(mapInstance.current)
       .bindPopup(
         `<strong>${restaurantLocation.name}</strong><br/>${restaurantLocation.address}`
-      )
-      .addTo(mapInstance.current);
+      );
 
-    // Delivery marker (blue)
+    // Customer marker
     L.marker([customerLocation.lat, customerLocation.lng], {
+      title: customerLocation.name,
       icon: L.icon({
         iconUrl:
-          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
-        shadowUrl:
-          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='green'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
+        iconSize: [25, 25],
       }),
     })
+      .addTo(mapInstance.current)
       .bindPopup(
         `<strong>${customerLocation.name}</strong><br/>${customerLocation.address}`
-      )
-      .addTo(mapInstance.current);
+      );
 
     // Draw route line
     const latlngs = [
       [restaurantLocation.lat, restaurantLocation.lng],
       [customerLocation.lat, customerLocation.lng],
     ];
-    L.polyline(latlngs, {
-      color: "#4a90e2",
-      weight: 3,
-      opacity: 0.8,
-    }).addTo(mapInstance.current);
+    L.polyline(latlngs, { color: "blue", weight: 3 }).addTo(
+      mapInstance.current
+    );
 
-    // Drone marker (at restaurant location)
-    const dronePopupText = `<strong> Drone Delivering</strong><br/>
-      Distance: ${distance ? distance.toFixed(2) : "N/A"} km<br/>
-      Est. Time: ${estimatedTime ? estimatedTime + " mins" : "N/A"}`;
-
-    L.marker([restaurantLocation.lat, restaurantLocation.lng], {
-      icon: L.divIcon({
-        html: `<div style="font-size: 24px;">🚁</div>`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -15],
-      }),
-    })
-      .bindPopup(dronePopupText)
-      .addTo(mapInstance.current);
-
-    // Adjust map bounds
-    const group = new L.featureGroup([
-      L.marker([restaurantLocation.lat, restaurantLocation.lng]),
-      L.marker([customerLocation.lat, customerLocation.lng]),
+    // Fit bounds
+    const bounds = L.latLngBounds([
+      [restaurantLocation.lat, restaurantLocation.lng],
+      [customerLocation.lat, customerLocation.lng],
     ]);
-    mapInstance.current.fitBounds(group.getBounds().pad(0.1));
+    mapInstance.current.fitBounds(bounds.pad(0.1));
+  }, [restaurantLocation, customerLocation, droneLocation, deliveryDistance]);
 
-    // Cleanup
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantLocation, customerLocation, loading]);
+  if (loading) {
+    return (
+      <div ref={mapRef} style={{ height: "400px", background: "#f0f0f0" }}>
+        Loading map...
+      </div>
+    );
+  }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        borderRadius: "8px",
-        marginTop: "10px",
-      }}
-    >
-      <div
-        ref={mapRef}
-        style={{
-          width: "100%",
-          height: "400px",
-          borderRadius: "8px",
-        }}
-      />
-      {restaurantLocation && customerLocation && (
-        <div style={{ marginTop: "10px" }}>
+    <div>
+      <div ref={mapRef} style={{ height: "400px", borderRadius: "8px" }} />
+      {distance && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            background: "#f9f9f9",
+            borderRadius: "4px",
+          }}
+        >
           <p>
-            <strong>From:</strong> {restaurantLocation.address}
+            <strong>Distance:</strong> {distance.toFixed(2)} km
           </p>
           <p>
-            <strong>To:</strong> {customerLocation.address}
+            <strong>Est. Delivery Time:</strong> ~{estimatedTime} minutes
           </p>
-          {distance && estimatedTime && (
-            <div
-              style={{
-                backgroundColor: "#f0f4ff",
-                padding: "10px",
-                borderRadius: "4px",
-                marginTop: "10px",
-              }}
-            >
-              <p style={{ margin: "5px 0" }}>
-                <strong> Distance:</strong> {distance.toFixed(2)} km
-              </p>
-              <p style={{ margin: "5px 0" }}>
-                <strong>⏱ Estimated Time:</strong> {estimatedTime} minutes
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>
