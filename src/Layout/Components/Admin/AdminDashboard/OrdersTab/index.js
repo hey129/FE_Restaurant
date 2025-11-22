@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import styles from "../AdminDashboard.module.scss";
 import { getOrderItems, getAllOrdersAdmin, getMerchants } from "~/Api";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -50,6 +51,17 @@ function OrdersTab() {
     loadAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Listen for real-time changes
+  useRealtimeData("orders", () => {
+    console.log("[OrdersTab] Order data changed, reloading...");
+    loadOrders();
+  });
+
+  useRealtimeData("merchant", () => {
+    console.log("[OrdersTab] Merchant data changed, reloading...");
+    loadMerchants();
+  });
 
   const loadOrders = async () => {
     try {

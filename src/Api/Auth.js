@@ -84,6 +84,96 @@ async function getCurrentUserFn() {
 }
 
 /**
+ * Login customer
+ */
+async function loginCustomerFn({ email, password }) {
+  try {
+    // Authenticate with Supabase
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+    if (authError) throw authError;
+    if (!authData.user) throw new Error("Authentication failed");
+
+    console.log("✅ Auth successful for customer:", email);
+    const authUserId = authData.user.id;
+
+    // Find in customer table
+    const { data: customerData } = await supabase
+      .from("customer")
+      .select("customer_id, customer_name, email, phone, address, status")
+      .eq("customer_id", authUserId)
+      .maybeSingle();
+
+    if (customerData) {
+      console.log("✅ Found customer profile:", customerData.customer_name);
+      return {
+        user: authData.user,
+        profile: {
+          ...customerData,
+          userType: "customer",
+        },
+        client: "customer",
+      };
+    }
+
+    throw new Error(`Customer profile not found for ${email}`);
+  } catch (error) {
+    console.error("❌ Customer login error:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Login restaurant (merchant)
+ */
+async function loginRestaurantFn({ email, password }) {
+  try {
+    // Authenticate with Supabase
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+    if (authError) throw authError;
+    if (!authData.user) throw new Error("Authentication failed");
+
+    console.log("✅ Auth successful for restaurant:", email);
+    const authUserId = authData.user.id;
+
+    // Find in merchant table
+    const { data: merchantData } = await supabase
+      .from("merchant")
+      .select(
+        "merchant_id, merchant_name, email, phone, address, status, user_id"
+      )
+      .eq("user_id", authUserId)
+      .maybeSingle();
+
+    if (merchantData) {
+      console.log("✅ Found merchant profile:", merchantData.merchant_name);
+      return {
+        user: authData.user,
+        profile: {
+          ...merchantData,
+          userType: "merchant",
+        },
+        client: "merchant",
+      };
+    }
+
+    throw new Error(`Restaurant profile not found for ${email}`);
+  } catch (error) {
+    console.error("❌ Restaurant login error:", error.message);
+    throw error;
+  }
+}
+
+/**
  * Login user (customer or merchant)
  */
 async function loginUserFn({ email, password, userType = null }) {
@@ -228,6 +318,31 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginCustomer = async ({ email, password }) => {
+    try {
+      const data = await loginCustomerFn({ email, password });
+      setUser(data.profile);
+      return data;
+    } catch (error) {
+      console.error("Customer login error:", error);
+      throw error;
+    }
+  };
+
+  const loginRestaurant = async ({ email, password }) => {
+    try {
+      const data = await loginRestaurantFn({ email, password });
+      setUser(data.profile);
+      if (data.profile.userType === "merchant") {
+        setMerchantId(data.profile.merchant_id);
+      }
+      return data;
+    } catch (error) {
+      console.error("Restaurant login error:", error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await logoutUserFn();
@@ -261,6 +376,8 @@ export function AuthProvider({ children }) {
     isMerchant: user?.userType === "merchant",
     isCustomer: user?.userType === "customer",
     login,
+    loginCustomer,
+    loginRestaurant,
     logout,
     changePassword,
     switchMerchant,
@@ -273,3 +390,5 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
+export { loginCustomerFn, loginRestaurantFn, loginUserFn };

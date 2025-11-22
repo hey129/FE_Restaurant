@@ -8,6 +8,7 @@ import {
   deleteMerchantCategory,
 } from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -28,6 +29,12 @@ function CategoryManagement({ merchant }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [merchantId]);
+
+  // Listen for real-time changes in category table
+  useRealtimeData("category", () => {
+    console.log("[CategoryManagement] Category data changed, reloading...");
+    loadCategories();
+  });
 
   const loadCategories = async () => {
     try {

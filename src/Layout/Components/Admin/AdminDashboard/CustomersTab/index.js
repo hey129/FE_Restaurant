@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import styles from "../AdminDashboard.module.scss";
 import { getCustomers, getAllOrdersAdmin } from "~/Api";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -36,6 +37,17 @@ function CustomersTab() {
     };
     loadAllData();
   }, []);
+
+  // Listen for real-time changes
+  useRealtimeData("customer", () => {
+    console.log("[CustomersTab] Customer data changed, reloading...");
+    loadCustomers();
+  });
+
+  useRealtimeData("orders", () => {
+    console.log("[CustomersTab] Order data changed, reloading...");
+    loadOrders();
+  });
 
   const loadCustomers = async () => {
     try {

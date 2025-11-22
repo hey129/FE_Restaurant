@@ -8,6 +8,7 @@ import {
   getCustomers,
   getAllOrdersAdmin,
 } from "~/Api";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -36,6 +37,32 @@ function OverviewTab() {
   useEffect(() => {
     loadStats();
   }, []);
+
+  // Listen for real-time changes in all tables
+  useRealtimeData("merchant", () => {
+    console.log("[OverviewTab] Merchant data changed, reloading stats...");
+    loadStats();
+  });
+
+  useRealtimeData("product", () => {
+    console.log("[OverviewTab] Product data changed, reloading stats...");
+    loadStats();
+  });
+
+  useRealtimeData("category", () => {
+    console.log("[OverviewTab] Category data changed, reloading stats...");
+    loadStats();
+  });
+
+  useRealtimeData("customer", () => {
+    console.log("[OverviewTab] Customer data changed, reloading stats...");
+    loadStats();
+  });
+
+  useRealtimeData("orders", () => {
+    console.log("[OverviewTab] Order data changed, reloading stats...");
+    loadStats();
+  });
 
   const loadStats = async () => {
     try {

@@ -4,6 +4,7 @@ import classNames from "classnames/bind";
 import styles from "./OrderList.module.scss";
 import { getOrderItems, updateOrderStatus, useAuth, getAllOrders } from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -231,11 +232,13 @@ function OrderList({ merchant }) {
   };
 
   const getStatusText = (status) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (!status) return "N/A";
+    return String(status).charAt(0).toUpperCase() + String(status).slice(1);
   };
 
   const getPaymentStatusText = (status) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (!status) return "N/A";
+    return String(status).charAt(0).toUpperCase() + String(status).slice(1);
   };
 
   if (loading) {

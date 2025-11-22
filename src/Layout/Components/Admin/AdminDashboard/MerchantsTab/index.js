@@ -8,6 +8,7 @@ import {
   updateMerchant,
   deleteMerchant,
 } from "~/Api";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -29,6 +30,12 @@ function MerchantsTab() {
   useEffect(() => {
     loadMerchants();
   }, []);
+
+  // Listen for real-time changes in merchant table
+  useRealtimeData("merchant", () => {
+    console.log("[MerchantsTab] Merchant data changed, reloading...");
+    loadMerchants();
+  });
 
   const loadMerchants = async () => {
     try {

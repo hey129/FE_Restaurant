@@ -10,6 +10,7 @@ import {
   deleteMerchantProduct,
 } from "~/Api";
 import toast from "react-hot-toast";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -48,6 +49,24 @@ function ProductsTab() {
     };
     loadAllData();
   }, []);
+
+  // Listen for real-time changes in product table
+  useRealtimeData("product", () => {
+    console.log("[ProductsTab] Product data changed, reloading...");
+    loadProducts();
+  });
+
+  // Listen for real-time changes in category table
+  useRealtimeData("category", () => {
+    console.log("[ProductsTab] Category data changed, reloading...");
+    loadCategories();
+  });
+
+  // Listen for real-time changes in merchant table
+  useRealtimeData("merchant", () => {
+    console.log("[ProductsTab] Merchant data changed, reloading...");
+    loadMerchants();
+  });
 
   const loadProducts = async () => {
     try {

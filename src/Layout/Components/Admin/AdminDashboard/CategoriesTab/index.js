@@ -10,6 +10,7 @@ import {
   deleteMerchantCategory,
 } from "~/Api";
 import toast from "react-hot-toast";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -51,6 +52,22 @@ function CategoriesTab() {
     };
     loadAllData();
   }, []);
+
+  // Listen for real-time changes
+  useRealtimeData("category", () => {
+    console.log("[CategoriesTab] Category data changed, reloading...");
+    loadCategories();
+  });
+
+  useRealtimeData("merchant", () => {
+    console.log("[CategoriesTab] Merchant data changed, reloading...");
+    loadMerchants();
+  });
+
+  useRealtimeData("product", () => {
+    console.log("[CategoriesTab] Product data changed, reloading...");
+    loadProducts();
+  });
 
   const loadCategories = async () => {
     try {

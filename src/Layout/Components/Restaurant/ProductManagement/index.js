@@ -9,6 +9,7 @@ import {
   getMerchantCategories,
 } from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
+import { useRealtimeData } from "~/hooks/useRealtimeData";
 
 const cx = classNames.bind(styles);
 
@@ -35,6 +36,18 @@ function ProductManagement({ merchant }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [merchantId]);
+
+  // Listen for real-time changes in product table
+  useRealtimeData("product", () => {
+    console.log("[ProductManagement] Product data changed, reloading...");
+    loadProducts();
+  });
+
+  // Listen for real-time changes in category table
+  useRealtimeData("category", () => {
+    console.log("[ProductManagement] Category data changed, reloading...");
+    loadCategories();
+  });
 
   const loadCategories = async () => {
     try {
