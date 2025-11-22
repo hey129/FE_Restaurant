@@ -208,8 +208,6 @@ function Orders() {
                     <span className={cx("value", "payment-method")}>
                       {order.payment?.[0]?.method?.toLowerCase() === "momo"
                         ? "MoMo"
-                        : order.payment?.[0]?.method?.toLowerCase() === "cod"
-                        ? "💵 COD"
                         : order.payment?.[0]?.method || "N/A"}
                     </span>
                   </div>

@@ -2,10 +2,13 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import paymentRoutes from "./routes/payment.js";
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from root .env
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -82,12 +85,8 @@ app.listen(PORT, () => {
   // Check Supabase configuration
   const hasSupabaseUrl = !!process.env.SUPABASE_URL;
   const hasSupabaseKey = !!process.env.SUPABASE_ANON_KEY;
-  console.log(
-    ` Supabase URL: ${hasSupabaseUrl ? "✓ Configured" : "✗ Missing"}`
-  );
-  console.log(
-    ` Supabase Key: ${hasSupabaseKey ? "✓ Configured" : "✗ Missing"}`
-  );
+  console.log(` Supabase URL: ${hasSupabaseUrl ? " Configured" : " Missing"}`);
+  console.log(` Supabase Key: ${hasSupabaseKey ? " Configured" : " Missing"}`);
 
   console.log("");
   console.log("Available routes:");

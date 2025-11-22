@@ -5,6 +5,7 @@ import classNames from "classnames/bind";
 import styles from "./OrderDetail.module.scss";
 import { useAuth, getOrderDetail, cancelOrder } from "~/Api";
 import toast from "react-hot-toast";
+import { MapComponent } from "~/Layout/Components/GPS/MapComponent";
 
 const cx = classNames.bind(styles);
 
@@ -261,8 +262,6 @@ function OrderDetail() {
                 <span className={cx("value")}>
                   {order.payment?.[0]?.method?.toLowerCase() === "momo"
                     ? "MoMo E-Wallet"
-                    : order.payment?.[0]?.method?.toLowerCase() === "cod"
-                    ? "Cash on Delivery (COD)"
                     : order.payment?.[0]?.method || "Unknown"}
                 </span>
               </div>
@@ -315,7 +314,20 @@ function OrderDetail() {
           </div>
         </div>
 
-        {/* Order Items Card */}
+        {/* Delivery Route Map */}
+        {order.delivery_address && (
+          <div className={cx("card")}>
+            <div className={cx("card-header")}>
+              <h3>Delivery Route</h3>
+            </div>
+            <div className={cx("card-body")}>
+              <MapComponent
+                orderId={order.order_id}
+                customerAddress={order.delivery_address}
+              />
+            </div>
+          </div>
+        )}
         <div className={cx("card", "items-card")}>
           <div className={cx("card-header")}>
             <h3>Products ({order.items.length})</h3>

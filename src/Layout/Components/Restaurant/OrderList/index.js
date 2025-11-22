@@ -4,7 +4,7 @@ import classNames from "classnames/bind";
 import styles from "./OrderList.module.scss";
 import { getOrderItems, updateOrderStatus, useAuth, getAllOrders } from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
-import { useRealtimeData } from "~/hooks/useRealtimeData";
+import { MapComponent } from "~/Layout/Components/GPS/MapComponent";
 
 const cx = classNames.bind(styles);
 
@@ -84,14 +84,6 @@ function OrderList({ merchant }) {
 
   useEffect(() => {
     loadOrders();
-
-    // Poll for new orders every 5 seconds
-    const pollInterval = setInterval(() => {
-      console.log("🔄 Polling for new orders...");
-      loadOrders();
-    }, 5000);
-
-    return () => clearInterval(pollInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, user?.merchant_id]);
 
@@ -141,8 +133,8 @@ function OrderList({ merchant }) {
         updateParams.paymentStatus = "refunded";
       }
 
-      // If completing, ensure payment is marked as Paid
-      if (newStatus === "Completed") {
+      // If shipping, ensure payment is marked as Paid
+      if (newStatus === "Shipping") {
         updateParams.paymentStatus = "Paid";
       }
 
@@ -158,6 +150,7 @@ function OrderList({ merchant }) {
       const statusText = {
         Cancelled: "Cancelled",
         Completed: "Completed",
+        Shipping: "Shipping",
       };
 
       toast.success(`Order #${orderId} ${statusText[newStatus]}!`, {
@@ -197,17 +190,17 @@ function OrderList({ merchant }) {
     await updateOrderStatusLocal(order.order_id, "Cancelled", needsRefund);
   };
 
-  // Handle Completed order
+  // Handle Shipping order
   const handleCompletedOrder = async (order) => {
-    const confirmCompleted = window.confirm(
-      `Confirm completion of order #${order.order_id}?\n\n` +
+    const confirmShipping = window.confirm(
+      `Confirm order #${order.order_id} for shipping?\n\n` +
         `Customer: ${order.customer?.customer_name || "N/A"}\n` +
         `Total: ${formatVND(order.total_amount)}`
     );
 
-    if (!confirmCompleted) return;
+    if (!confirmShipping) return;
 
-    await updateOrderStatusLocal(order.order_id, "Completed");
+    await updateOrderStatusLocal(order.order_id, "Shipping");
   };
 
   // Get status badge class
@@ -336,8 +329,6 @@ function OrderList({ merchant }) {
                   <div className={cx("payment-method-badge")}>
                     {order.payment?.[0]?.method?.toLowerCase() === "momo" ? (
                       <span className={cx("badge", "momo")}>MoMo</span>
-                    ) : order.payment?.[0]?.method?.toLowerCase() === "cod" ? (
-                      <span className={cx("badge", "cod")}>💵 COD</span>
                     ) : (
                       <span className={cx("badge", "unknown")}>
                         {order.payment?.[0]?.method || "N/A"}
@@ -382,6 +373,17 @@ function OrderList({ merchant }) {
                     <h4>Delivery Address</h4>
                     <p>{order.delivery_address || "No address"}</p>
                   </div>
+
+                  {/* Delivery Map */}
+                  {order.delivery_address && (
+                    <div className={cx("detail-section")}>
+                      <h4>Delivery Route</h4>
+                      <MapComponent
+                        orderId={order.order_id}
+                        customerAddress={order.delivery_address}
+                      />
+                    </div>
+                  )}
 
                   {/* Transaction ID */}
                   {order.payment?.[0]?.transaction_id && (
@@ -435,7 +437,6 @@ function OrderList({ merchant }) {
                       </div>
                     </div>
                   )}
-
                   {/* Note */}
                   {order.note && (
                     <div className={cx("detail-section")}>
@@ -454,25 +455,26 @@ function OrderList({ merchant }) {
                       >
                         {ProcessingAction === order.order_id
                           ? "Processing..."
-                          : "Completed"}
+                          : "Shipping"}
                       </button>
                       <button
                         className={cx("btn", "btn-danger", "btn-xs")}
                         onClick={() => handleCancelOrder(order)}
                         disabled={ProcessingAction === order.order_id}
                       >
-                        ✗ Cancel
+                        Cancel
                       </button>
                     </div>
                   )}
 
-                  {/* Status Message for Completed/Cancelled */}
+                  {/* Status Message for Completed/Cancelled/Failed */}
                   {(order.order_status === "Completed" ||
-                    order.order_status === "Cancelled") && (
+                    order.order_status === "Cancelled" ||
+                    order.order_status === "Failed") && (
                     <div className={cx("status-message")}>
                       {order.order_status === "Completed"
                         ? "Order Completed"
-                        : "✗ Order Cancelled"}
+                        : " Order Cancelled"}
                     </div>
                   )}
                 </div>

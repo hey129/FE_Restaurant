@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
  * @param {number} params.shipping - shipping fee (VND)
  * @param {string} [params.deliveryAddress] - delivery address (can be different from profile)
  * @param {string} [params.note] - order note
- * @param {string} [params.paymentMethod] - payment method ("cod", "bank", ...)
+ * @param {string} [params.paymentMethod] - payment method ("momo", "bank", ...)
  * @returns {Promise<{orderId:number}>}
  */
 export async function createOrder({
@@ -20,7 +20,7 @@ export async function createOrder({
   shipping,
   deliveryAddress,
   note,
-  paymentMethod = "momo", // Default to COD
+  paymentMethod = "momo",
 }) {
   if (!customerId) throw new Error("NO_CUSTOMER");
   if (!merchantId) throw new Error("NO_MERCHANT_ID");
