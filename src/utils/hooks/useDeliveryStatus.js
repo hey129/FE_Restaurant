@@ -75,6 +75,18 @@ export function useDeliveryStatus(orderId) {
   useEffect(() => {
     if (!orderId) return;
 
+    // If order is already completed/failed/cancelled, stop all logic
+    if (
+      orderStatus === "Completed" ||
+      orderStatus === "Failed" ||
+      orderStatus === "Cancelled"
+    ) {
+      console.log(
+        `[${new Date().toLocaleTimeString()}] ⏹️  Order #${orderId} is ${orderStatus} - stopping tracking`
+      );
+      return;
+    }
+
     const fetchDeliveryStatus = async () => {
       try {
         // Get order details
@@ -89,6 +101,39 @@ export function useDeliveryStatus(orderId) {
         if (orderErr) throw orderErr;
 
         setOrderStatus(order.order_status);
+
+        // Auto-fail check: if order is Shipping and delivery_updated_at > 1 hour ago
+        if (order.order_status === "Shipping") {
+          const deliveryUpdateTime = new Date(order.delivery_updated_at);
+          const timeSinceLastUpdate =
+            (new Date() - deliveryUpdateTime) / 1000 / 60; // minutes
+
+          if (timeSinceLastUpdate > 60) {
+            console.warn(
+              `⏰ Order #${orderId} has no update for ${timeSinceLastUpdate.toFixed(
+                1
+              )} min (> 1 hour) - auto-failing order`
+            );
+            // Auto-fail the order
+            const { error } = await supabase
+              .from("orders")
+              .update({
+                order_status: "Failed",
+                delivery_updated_at: new Date().toISOString(),
+              })
+              .eq("order_id", orderId);
+
+            if (error) {
+              console.error(`❌ Error auto-failing order #${orderId}:`, error);
+            } else {
+              console.log(
+                `✅ Order #${orderId} auto-failed after 1 hour inactivity`
+              );
+              setOrderStatus("Failed");
+              return; // Exit early, don't process further
+            }
+          }
+        }
 
         // Only calculate distance if order is Shipping
         if (order.order_status === "Shipping" && order.delivery_address) {
@@ -149,6 +194,39 @@ export function useDeliveryStatus(orderId) {
             // Drone arrived if distance < 0.5 km (500m)
             const arrived = remainingDistance < 0.5;
             setDroneArrived(arrived);
+
+            // If drone reached 100% distance but customer hasn't received, auto-fail after 1 hour
+            if (travelRatio === 1.0) {
+              // Check from delivery_updated_at (last update time) + 1 hour
+              const timeSinceLastUpdate =
+                (new Date() - deliveryUpdateTime) / 1000 / 60; // minutes
+
+              if (timeSinceLastUpdate > 60) {
+                console.warn(
+                  `⏰ Order #${orderId} reached destination but no completion for ${timeSinceLastUpdate.toFixed(
+                    1
+                  )} min (> 1 hour) - auto-failing order`
+                );
+                // Auto-fail the order
+                const { error } = await supabase
+                  .from("orders")
+                  .update({
+                    order_status: "Failed",
+                    delivery_updated_at: new Date().toISOString(),
+                  })
+                  .eq("order_id", orderId);
+
+                if (error) {
+                  console.error(
+                    `❌ Error auto-failing order #${orderId}:`,
+                    error
+                  );
+                } else {
+                  console.log(`✅ Order #${orderId} auto-failed after 1 hour`);
+                  setOrderStatus("Failed");
+                }
+              }
+            }
 
             console.log(
               `[${new Date().toLocaleTimeString()}] 📍 Order #${orderId}:`
@@ -235,7 +313,7 @@ export function useDeliveryStatus(orderId) {
         `[${new Date().toLocaleTimeString()}] ❌ Stopped tracking order #${orderId}`
       );
     };
-  }, [orderId]);
+  }, [orderId, orderStatus]);
 
   return { distance, droneArrived, orderStatus, loading, droneLocation };
 }

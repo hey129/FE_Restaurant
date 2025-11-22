@@ -33,10 +33,10 @@ const getStatusText = (status) => {
 const getStatusColor = (status) => {
   const colorMap = {
     Pending: "warning",
-    Processing: "info",
-    shipping: "primary",
-    delivered: "success",
+    Shipping: "primary",
+    Completed: "success",
     Cancelled: "danger",
+    Failed: "danger",
   };
   return colorMap[status] || "default";
 };

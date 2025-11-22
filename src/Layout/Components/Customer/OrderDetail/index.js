@@ -81,6 +81,7 @@ function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   // Get delivery status (distance and arrival detection)
   const { droneArrived } = useDeliveryStatus(id);
@@ -224,7 +225,18 @@ function OrderDetail() {
   return (
     <div className={cx("container")}>
       <div className={cx("header")}>
-        <h1 className={cx("title")}>Order Detail #{order.order_id}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <h1 className={cx("title")}>Order #{order.order_id}</h1>
+          <span
+            className={cx(
+              "status-badge",
+              "large",
+              getStatusColor(order.order_status)
+            )}
+          >
+            <span>{getStatusText(order.order_status)}</span>
+          </span>
+        </div>
       </div>
 
       <div className={cx("content")}>
@@ -332,19 +344,27 @@ function OrderDetail() {
                   onClick={async () => {
                     if (window.confirm("Have you received the order?")) {
                       try {
+                        setCompleting(true);
                         const { updateOrderStatus } = await import("~/Api");
                         await updateOrderStatus({
                           orderId: order.order_id,
                           orderStatus: "Completed",
                         });
                         toast.success("Order completed successfully!");
-                        setTimeout(() => navigate("/customer/orders"), 1500);
+                        // Update local state first before navigating
+                        setOrder((prev) => ({
+                          ...prev,
+                          order_status: "Completed",
+                        }));
+                        setTimeout(() => navigate("/profile/order"), 1500);
                       } catch (err) {
                         console.error("Error completing order:", err);
                         toast.error("Failed to complete order");
+                        setCompleting(false);
                       }
                     }
                   }}
+                  disabled={completing}
                   style={{
                     backgroundColor: "#4CAF50",
                     color: "white",
@@ -354,7 +374,7 @@ function OrderDetail() {
                     cursor: "pointer",
                   }}
                 >
-                  Complete Order
+                  {completing ? "Completing..." : "Complete Order"}
                 </button>
               </div>
             )}

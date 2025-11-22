@@ -207,8 +207,8 @@ function OrderList({ merchant }) {
   const getStatusClass = (status) => {
     const statusMap = {
       Pending: "warning",
-      Processing: "info",
-      shipping: "primary",
+      Failed: "warning",
+      Shipping: "primary",
       Completed: "success",
       Cancelled: "danger",
     };

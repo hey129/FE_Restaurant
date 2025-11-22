@@ -215,89 +215,99 @@ export function MapComponent({ orderId, customerAddress }) {
 
   // Render map
   useEffect(() => {
-    if (!restaurantLocation || !customerLocation) return;
+    if (!restaurantLocation || !customerLocation || !mapRef.current) return;
 
+    // Cleanup previous map instance
     if (mapInstance.current) {
       mapInstance.current.remove();
+      mapInstance.current = null;
     }
 
-    // Initialize map centered between restaurant and customer
-    const centerLat = (restaurantLocation.lat + customerLocation.lat) / 2;
-    const centerLng = (restaurantLocation.lng + customerLocation.lng) / 2;
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      // Double check mapRef still exists
+      if (!mapRef.current) return;
 
-    mapInstance.current = L.map(mapRef.current).setView(
-      [centerLat, centerLng],
-      12
-    );
+      // Initialize map centered between restaurant and customer
+      const centerLat = (restaurantLocation.lat + customerLocation.lat) / 2;
+      const centerLng = (restaurantLocation.lng + customerLocation.lng) / 2;
 
-    // Add tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(mapInstance.current);
-
-    // Drone marker (current position)
-    const droneLat = droneLocation?.lat || restaurantLocation.lat;
-    const droneLng = droneLocation?.lng || restaurantLocation.lng;
-
-    L.marker([droneLat, droneLng], {
-      title: "🚁 Drone",
-      icon: L.divIcon({
-        html: '<div style="font-size: 28px; text-align: center; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));">🚁</div>',
-        iconSize: [30, 30],
-        className: "drone-marker",
-      }),
-    })
-      .addTo(mapInstance.current)
-      .bindPopup(
-        `<strong>🚁 Drone</strong><br/>Distance to customer: ${
-          deliveryDistance?.toFixed(2) || "?"
-        }km`
+      mapInstance.current = L.map(mapRef.current).setView(
+        [centerLat, centerLng],
+        12
       );
 
-    // Restaurant marker (starting point)
-    L.marker([restaurantLocation.lat, restaurantLocation.lng], {
-      title: restaurantLocation.name,
-      icon: L.icon({
-        iconUrl:
-          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='red'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
-        iconSize: [25, 25],
-      }),
-    })
-      .addTo(mapInstance.current)
-      .bindPopup(
-        `<strong>${restaurantLocation.name}</strong><br/>${restaurantLocation.address}`
+      // Add tile layer
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(mapInstance.current);
+
+      // Drone marker (current position)
+      const droneLat = droneLocation?.lat || restaurantLocation.lat;
+      const droneLng = droneLocation?.lng || restaurantLocation.lng;
+
+      L.marker([droneLat, droneLng], {
+        title: "🚁 Drone",
+        icon: L.divIcon({
+          html: '<div style="font-size: 28px; text-align: center; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));">🚁</div>',
+          iconSize: [30, 30],
+          className: "drone-marker",
+        }),
+      })
+        .addTo(mapInstance.current)
+        .bindPopup(
+          `<strong>🚁 Drone</strong><br/>Distance to customer: ${
+            deliveryDistance?.toFixed(2) || "?"
+          }km`
+        );
+
+      // Restaurant marker (starting point)
+      L.marker([restaurantLocation.lat, restaurantLocation.lng], {
+        title: restaurantLocation.name,
+        icon: L.icon({
+          iconUrl:
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='red'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
+          iconSize: [25, 25],
+        }),
+      })
+        .addTo(mapInstance.current)
+        .bindPopup(
+          `<strong>${restaurantLocation.name}</strong><br/>${restaurantLocation.address}`
+        );
+
+      // Customer marker
+      L.marker([customerLocation.lat, customerLocation.lng], {
+        title: customerLocation.name,
+        icon: L.icon({
+          iconUrl:
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='green'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
+          iconSize: [25, 25],
+        }),
+      })
+        .addTo(mapInstance.current)
+        .bindPopup(
+          `<strong>${customerLocation.name}</strong><br/>${customerLocation.address}`
+        );
+
+      // Draw route line
+      const latlngs = [
+        [restaurantLocation.lat, restaurantLocation.lng],
+        [customerLocation.lat, customerLocation.lng],
+      ];
+      L.polyline(latlngs, { color: "blue", weight: 3 }).addTo(
+        mapInstance.current
       );
 
-    // Customer marker
-    L.marker([customerLocation.lat, customerLocation.lng], {
-      title: customerLocation.name,
-      icon: L.icon({
-        iconUrl:
-          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='green'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
-        iconSize: [25, 25],
-      }),
-    })
-      .addTo(mapInstance.current)
-      .bindPopup(
-        `<strong>${customerLocation.name}</strong><br/>${customerLocation.address}`
-      );
+      // Fit bounds
+      const bounds = L.latLngBounds([
+        [restaurantLocation.lat, restaurantLocation.lng],
+        [customerLocation.lat, customerLocation.lng],
+      ]);
+      mapInstance.current.fitBounds(bounds.pad(0.1));
+    }, 100);
 
-    // Draw route line
-    const latlngs = [
-      [restaurantLocation.lat, restaurantLocation.lng],
-      [customerLocation.lat, customerLocation.lng],
-    ];
-    L.polyline(latlngs, { color: "blue", weight: 3 }).addTo(
-      mapInstance.current
-    );
-
-    // Fit bounds
-    const bounds = L.latLngBounds([
-      [restaurantLocation.lat, restaurantLocation.lng],
-      [customerLocation.lat, customerLocation.lng],
-    ]);
-    mapInstance.current.fitBounds(bounds.pad(0.1));
+    return () => clearTimeout(timer);
   }, [restaurantLocation, customerLocation, droneLocation, deliveryDistance]);
 
   if (loading) {
