@@ -43,6 +43,9 @@ export function MapComponent({ orderId, customerAddress }) {
   const [customerLocation, setCustomerLocation] = useState(null);
   const [distance, setDistance] = useState(null);
   const [estimatedTime, setEstimatedTime] = useState(null);
+  const [orderStatus, setOrderStatus] = useState(null);
+  const [deliveryStartedAt, setDeliveryStartedAt] = useState(null);
+  const [deliveryProgress, setDeliveryProgress] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Geocode using OpenStreetMap Nominatim API (free, no key needed)
@@ -79,11 +82,19 @@ export function MapComponent({ orderId, customerAddress }) {
         // Get order with merchant info
         const { data: order, error: orderErr } = await supabase
           .from("orders")
-          .select("order_id, merchant_id, delivery_address")
+          .select(
+            "order_id, merchant_id, delivery_address, order_status, delivery_started_at"
+          )
           .eq("order_id", orderId)
           .single();
 
         if (orderErr) throw orderErr;
+
+        // Set order status and delivery info
+        setOrderStatus(order.order_status);
+        if (order.delivery_started_at) {
+          setDeliveryStartedAt(new Date(order.delivery_started_at));
+        }
 
         // Get merchant address
         const { data: merchant, error: merchantErr } = await supabase
@@ -234,15 +245,12 @@ export function MapComponent({ orderId, customerAddress }) {
       opacity: 0.8,
     }).addTo(mapInstance.current);
 
-    // Drone marker (in the middle of route)
-    const droneLat = (restaurantLocation.lat + customerLocation.lat) / 2;
-    const droneLng = (restaurantLocation.lng + customerLocation.lng) / 2;
-
-    const dronePopupText = `<strong>🚁 Drone Delivering</strong><br/>
+    // Drone marker (at restaurant location)
+    const dronePopupText = `<strong> Drone Delivering</strong><br/>
       Distance: ${distance ? distance.toFixed(2) : "N/A"} km<br/>
       Est. Time: ${estimatedTime ? estimatedTime + " mins" : "N/A"}`;
 
-    L.marker([droneLat, droneLng], {
+    L.marker([restaurantLocation.lat, restaurantLocation.lng], {
       icon: L.divIcon({
         html: `<div style="font-size: 24px;">🚁</div>`,
         iconSize: [30, 30],
@@ -304,10 +312,10 @@ export function MapComponent({ orderId, customerAddress }) {
               }}
             >
               <p style={{ margin: "5px 0" }}>
-                <strong>📍 Distance:</strong> {distance.toFixed(2)} km
+                <strong> Distance:</strong> {distance.toFixed(2)} km
               </p>
               <p style={{ margin: "5px 0" }}>
-                <strong>⏱️ Estimated Time:</strong> {estimatedTime} minutes
+                <strong>⏱ Estimated Time:</strong> {estimatedTime} minutes
               </p>
             </div>
           )}

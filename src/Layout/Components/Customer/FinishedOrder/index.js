@@ -190,8 +190,6 @@ function FinishedOrder() {
                     <span className={cx("value", "payment-method")}>
                       {order.payment?.[0]?.method?.toLowerCase() === "momo"
                         ? "MoMo"
-                        : null
-                        ? "💵 COD"
                         : order.payment?.[0]?.method || "N/A"}
                     </span>
                   </div>

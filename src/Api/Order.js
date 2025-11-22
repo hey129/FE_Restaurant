@@ -43,6 +43,7 @@ export async function createOrder({
       order_status: "Pending",
       payment_status: "Paid",
       note: note || null,
+      delivery_updated_at: new Date().toISOString(),
     })
     .select("order_id")
     .single();
@@ -224,7 +225,13 @@ export async function updateOrderStatus({
 
   const updateData = {
     order_status: orderStatus,
+    delivery_updated_at: new Date().toISOString(),
   };
+
+  // Set delivery_started_at when status changes to "Shipping"
+  if (orderStatus === "Shipping") {
+    updateData.delivery_started_at = new Date().toISOString();
+  }
 
   if (paymentStatus) {
     updateData.payment_status = paymentStatus;
@@ -425,6 +432,48 @@ export async function getAllOrdersAdmin() {
     return data || [];
   } catch (err) {
     console.error("Get all orders error:", err);
+    throw err;
+  }
+}
+
+/**
+ * Auto-fail orders that are in "Shipping" state for more than 1 hour
+ * Call this periodically (e.g., every 10 minutes from backend)
+ */
+export async function autoFailExpiredOrders() {
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    const { data: expiredOrders, error: fetchErr } = await supabase
+      .from("orders")
+      .select("order_id, delivery_started_at")
+      .eq("order_status", "Shipping")
+      .lt("delivery_started_at", oneHourAgo);
+
+    if (fetchErr) throw fetchErr;
+
+    if (!expiredOrders || expiredOrders.length === 0) {
+      console.log("No expired orders to auto-fail");
+      return [];
+    }
+
+    // Update expired orders to Failed
+    const expiredOrderIds = expiredOrders.map((o) => o.order_id);
+    const { data: updatedOrders, error: updateErr } = await supabase
+      .from("orders")
+      .update({
+        order_status: "Failed",
+        delivery_updated_at: new Date().toISOString(),
+      })
+      .in("order_id", expiredOrderIds)
+      .select();
+
+    if (updateErr) throw updateErr;
+
+    console.log(`Auto-failed ${updatedOrders.length} expired orders`);
+    return updatedOrders;
+  } catch (err) {
+    console.error("Auto-fail orders error:", err);
     throw err;
   }
 }

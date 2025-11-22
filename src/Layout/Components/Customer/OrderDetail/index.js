@@ -6,6 +6,7 @@ import styles from "./OrderDetail.module.scss";
 import { useAuth, getOrderDetail, cancelOrder } from "~/Api";
 import toast from "react-hot-toast";
 import { MapComponent } from "~/Layout/Components/GPS/MapComponent";
+import { useDeliveryStatus } from "~/utils/hooks/useDeliveryStatus";
 
 const cx = classNames.bind(styles);
 
@@ -35,8 +36,10 @@ const getStatusText = (status) => {
 const getStatusColor = (status) => {
   const colorMap = {
     Pending: "warning",
+    Shipping: "info",
     Completed: "success",
     Cancelled: "danger",
+    Failed: "danger",
   };
   return colorMap[status] || "default";
 };
@@ -45,15 +48,16 @@ const getStatusColor = (status) => {
 const getStatusTimeline = (currentStatus) => {
   const allSteps = [
     { key: "Pending", label: "Pending" },
+    { key: "Shipping", label: "Shipping" },
     { key: "Completed", label: "Completed" },
   ];
 
-  if (currentStatus === "Cancelled" || currentStatus === "Cancelled") {
+  if (currentStatus === "Cancelled" || currentStatus === "Failed") {
     return [
       { key: "Pending", label: "Ordered", active: true },
       {
-        key: "Cancelled",
-        label: "Cancelled",
+        key: currentStatus,
+        label: currentStatus,
         active: true,
         isCancelled: true,
       },
@@ -77,6 +81,9 @@ function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
+
+  // Get delivery status (distance and arrival detection)
+  const { droneArrived } = useDeliveryStatus(id);
 
   useEffect(() => {
     let active = true;
@@ -287,6 +294,46 @@ function OrderDetail() {
                   disabled={cancelling}
                 >
                   {cancelling ? "Cancelling..." : "Cancel Order"}
+                </button>
+              </div>
+            )}
+
+            {/* Complete Button - Show when order is Shipping and drone arrived */}
+            {order.order_status === "Shipping" && droneArrived && (
+              <div className={cx("cancel-section")}>
+                <p className={cx("cancel-note")}>
+                  Your order has arrived! Click Complete to confirm delivery.
+                </p>
+                <button
+                  className={cx("btn-confirm")}
+                  onClick={async () => {
+                    if (
+                      window.confirm("Have you received the order?")
+                    ) {
+                      try {
+                        const { updateOrderStatus } = await import("~/Api");
+                        await updateOrderStatus({
+                          orderId: order.order_id,
+                          orderStatus: "Completed",
+                        });
+                        toast.success("Order completed successfully!");
+                        setTimeout(() => navigate("/customer/orders"), 1500);
+                      } catch (err) {
+                        console.error("Error completing order:", err);
+                        toast.error("Failed to complete order");
+                      }
+                    }
+                  }}
+                  style={{
+                    backgroundColor: "#4CAF50",
+                    color: "white",
+                    padding: "10px 20px",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Complete Order
                 </button>
               </div>
             )}

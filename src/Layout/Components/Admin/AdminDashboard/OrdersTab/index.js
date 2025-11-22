@@ -177,14 +177,6 @@ function OrdersTab() {
           >
             MoMo ({stats.momoOrders})
           </button>
-          <button
-            className={cx("filter-btn", {
-              active: paymentFilter === "cod",
-            })}
-            onClick={() => setPaymentFilter("cod")}
-          >
-            COD ({stats.codOrders})
-          </button>
         </div>
       </div>
 
@@ -243,9 +235,6 @@ function OrdersTab() {
                         {order.payment?.[0]?.method?.toLowerCase() ===
                         "momo" ? (
                           <span className={cx("badge", "momo")}>MoMo</span>
-                        ) : order.payment?.[0]?.method?.toLowerCase() ===
-                          "cod" ? (
-                          <span className={cx("badge", "cod")}>COD</span>
                         ) : (
                           <span className={cx("badge", "unknown")}>
                             {order.payment?.[0]?.method || "N/A"}
