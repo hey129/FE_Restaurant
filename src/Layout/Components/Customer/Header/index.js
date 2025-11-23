@@ -2,7 +2,7 @@ import classNames from "classnames/bind";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./Header.module.scss";
 import Button from "~/Layout/Components/Button";
-import { useAuth } from "~/Api"; // 1. Import hook useAuth
+import { useAuth } from "~/Api";
 
 const cx = classNames.bind(styles);
 
@@ -45,7 +45,6 @@ function Header() {
           {/* Links desktop */}
           <div className={cx("nav-links")}>
             <Link to="/">MENU</Link>
-            <Link to="/cart">CART</Link>
           </div>
 
           {/* Actions */}

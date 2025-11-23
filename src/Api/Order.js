@@ -44,6 +44,7 @@ export async function createOrder({
       payment_status: "Paid",
       note: note || null,
       delivery_updated_at: new Date().toISOString(),
+      delivery_started_at: null,
     })
     .select("order_id")
     .single();

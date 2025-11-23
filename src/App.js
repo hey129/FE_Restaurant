@@ -2,14 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { publicRoutes, privateRoutes } from "./Routes";
 import { DefaultLayout } from "~/Layout";
 import { Fragment } from "react";
-import { AuthProvider, CartProvider, CustomerProvider, useAuth } from "~/Api";
-
-// Wrapper component to get merchantId from useAuth and pass to CartProvider
-function CartProviderWrapper({ children }) {
-  const { merchantId } = useAuth();
-
-  return <CartProvider merchantId={merchantId}>{children}</CartProvider>;
-}
+import { AuthProvider, CartProvider, CustomerProvider } from "~/Api";
 
 function AppRoutes() {
   return (
@@ -80,9 +73,9 @@ function App() {
   return (
     <CustomerProvider>
       <AuthProvider>
-        <CartProviderWrapper>
+        <CartProvider>
           <AppRoutes />
-        </CartProviderWrapper>
+        </CartProvider>
       </AuthProvider>
     </CustomerProvider>
   );

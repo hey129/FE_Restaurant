@@ -51,7 +51,7 @@ function MenuCard({ product }) {
       e.stopPropagation();
       return;
     }
-    navigate(`/product/${id}`);
+    navigate(`/product/${id}?merchant=${currentMerchantId}`);
   };
 
   const handleAddToCart = async () => {
@@ -59,6 +59,10 @@ function MenuCard({ product }) {
       if (!isAuthenticated) {
         const next = location.pathname + location.search + location.hash;
         navigate(`/login?next=${encodeURIComponent(next)}`);
+        return;
+      }
+      if (!currentMerchantId) {
+        toast.error("Merchant ID not found");
         return;
       }
       await addToCart(
@@ -79,7 +83,7 @@ function MenuCard({ product }) {
         navigate(`/login?next=${encodeURIComponent(next)}`);
       } else {
         console.error(e);
-        // hiện toast nếu muốn
+        toast.error(e?.message || "Failed to add to cart");
       }
     }
   };
@@ -123,9 +127,22 @@ export default function Menu({ filters, merchantId }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // Use prop merchantId if provided, otherwise fall back to auth context
   const { merchantId: authMerchantId } = useAuth();
+  const { items } = useCart();
+  const navigate = useNavigate();
   const currentMerchantId = merchantId || authMerchantId;
+
+  // Count items for current merchant
+  const cartCount = useMemo(() => {
+    return items.filter((item) => item.merchant_id === currentMerchantId)
+      .length;
+  }, [items, currentMerchantId]);
+
+  const handleCartClick = () => {
+    navigate("/cart", {
+      state: { currentMerchantId },
+    });
+  };
 
   useEffect(() => {
     let Cancelled = false;
@@ -190,14 +207,73 @@ export default function Menu({ filters, merchantId }) {
   }
 
   return (
-    <section className={cx("section")}>
-      <div className={cx("container")}>
-        <div className={cx("grid")}>
-          {products.map((p) => (
-            <MenuCard key={p.id} product={p} />
-          ))}
-        </div>
+    <>
+      {/* Cart Button - Fixed Bottom Right */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "30px",
+          right: "30px",
+          zIndex: 999,
+        }}
+      >
+        <button
+          onClick={handleCartClick}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "12px 24px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            border: "none",
+            backgroundColor: "#007bff",
+            color: "white",
+            borderRadius: "50px",
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(0, 123, 255, 0.3)",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = "#0056b3";
+            e.target.style.transform = "translateY(-2px)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = "#007bff";
+            e.target.style.transform = "translateY(0)";
+          }}
+        >
+          🛒 Cart
+          {cartCount > 0 && (
+            <span
+              style={{
+                backgroundColor: "#fff",
+                color: "#007bff",
+                borderRadius: "50%",
+                width: "28px",
+                height: "28px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
+              {cartCount}
+            </span>
+          )}
+        </button>
       </div>
-    </section>
+
+      <section className={cx("section")}>
+        <div className={cx("container")}>
+          <div className={cx("grid")}>
+            {products.map((p) => (
+              <MenuCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

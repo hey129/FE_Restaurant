@@ -1,7 +1,7 @@
 // src/Pages/Cart/Cart.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import classNames from "classnames/bind";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import styles from "./Cart.module.scss";
 import Return from "../../Button/Return";
 import { useCart, useAuth } from "~/Api";
@@ -11,9 +11,19 @@ const cx = classNames.bind(styles);
 
 function Cart() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const { items, updateQuantity, removeFromCart, subtotal } = useCart();
-  const [selectedMerchants, setSelectedMerchants] = useState(new Set());
+  const { items, updateQuantity, removeFromCart } = useCart();
+
+  // Get currentMerchantId from location state (passed from Header/Menu)
+  const currentMerchantId = location.state?.currentMerchantId;
+
+  // If no merchantId, redirect back
+  React.useEffect(() => {
+    if (!currentMerchantId) {
+      navigate("/merchants");
+    }
+  }, [currentMerchantId, navigate]);
 
   const vnd = (n) =>
     new Intl.NumberFormat("vi-VN", {
@@ -22,10 +32,15 @@ function Cart() {
       maximumFractionDigits: 0,
     }).format(Math.round(Number(n) || 0));
 
-  // Group items by merchant
+  // Filter items to show only current merchant
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => item.merchant_id === currentMerchantId);
+  }, [items, currentMerchantId]);
+
+  // Group items by merchant (will only have one merchant now)
   const itemsByMerchant = useMemo(() => {
     const grouped = new Map();
-    items.forEach((item) => {
+    filteredItems.forEach((item) => {
       const merchantId = item.merchant_id;
       if (!grouped.has(merchantId)) {
         grouped.set(merchantId, {
@@ -40,9 +55,14 @@ function Cart() {
       group.subtotal += item.price * item.quantity;
     });
     return Array.from(grouped.values());
-  }, [items]);
+  }, [filteredItems]);
 
-  const totalPrice = useMemo(() => subtotal, [subtotal]);
+  const totalPrice = useMemo(() => {
+    return filteredItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  }, [filteredItems]);
 
   const handleQuantityChange = (id, merchantId, delta) => {
     const current =
@@ -51,25 +71,13 @@ function Cart() {
     updateQuantity(id, merchantId, current + delta);
   };
 
-  const toggleMerchant = (merchantId) => {
-    const newSelected = new Set(selectedMerchants);
-    if (newSelected.has(merchantId)) {
-      newSelected.delete(merchantId);
-    } else {
-      newSelected.add(merchantId);
-    }
-    setSelectedMerchants(newSelected);
-  };
-
-  const canCheckout = selectedMerchants.size > 0;
-
   const handlePlaceOrder = () => {
-    if (!canCheckout) {
+    if (filteredItems.length === 0) {
       return;
     }
-    // Navigate with selected merchants
+    // Navigate with only current merchant
     navigate("/createorder", {
-      state: { selectedMerchants: Array.from(selectedMerchants) },
+      state: { selectedMerchants: [currentMerchantId] },
     });
   };
 
@@ -94,11 +102,13 @@ function Cart() {
         <div className={cx("cart-items")}>
           <div className={cx("header")}>
             <h1 className={cx("title")}>Shopping Cart</h1>
-            <span className={cx("item-count")}>{items.length} items</span>
+            <span className={cx("item-count")}>
+              {filteredItems.length} items
+            </span>
           </div>
           <hr className={cx("divider")} />
 
-          {items.length === 0 && (
+          {filteredItems.length === 0 && (
             <p className={cx("empty")}>Your cart is empty.</p>
           )}
 
@@ -109,12 +119,6 @@ function Cart() {
               className={cx("merchant-group")}
             >
               <div className={cx("merchant-header")}>
-                <input
-                  type="checkbox"
-                  checked={selectedMerchants.has(merchantGroup.merchant_id)}
-                  onChange={() => toggleMerchant(merchantGroup.merchant_id)}
-                  className={cx("merchant-checkbox")}
-                />
                 <h3 className={cx("merchant-name")}>
                   {merchantGroup.merchant_name}
                 </h3>
@@ -181,10 +185,9 @@ function Cart() {
               <Button
                 className={cx("register-btn")}
                 onClick={handlePlaceOrder}
-                disabled={!canCheckout}
+                disabled={filteredItems.length === 0}
               >
-                Checkout ({selectedMerchants.size}{" "}
-                {selectedMerchants.size === 1 ? "store" : "stores"})
+                Checkout
               </Button>
             </div>
           </div>

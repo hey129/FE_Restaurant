@@ -16,12 +16,29 @@ const cx = classNames.bind(styles);
 
 export default function ProductDetail({ productId: propId, initialProduct }) {
   const { id: routeId } = useParams();
-  const { addToCart } = useCart();
+  const { addToCart, items } = useCart();
   const { isAuthenticated, merchantId, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const id = propId ?? routeId; // ✅ Ưu tiên prop, fallback dùng URL param
+  const id = propId ?? routeId;
+
+  // Get merchantId from query params
+  const queryParams = new URLSearchParams(location.search);
+  const merchantFromQuery = queryParams.get("merchant");
+  const currentMerchantId = merchantFromQuery || merchantId;
+
+  // Count items for current merchant
+  const cartCount = useMemo(() => {
+    return items.filter((item) => item.merchant_id === currentMerchantId)
+      .length;
+  }, [items, currentMerchantId]);
+
+  const handleCartClick = () => {
+    navigate("/cart", {
+      state: { currentMerchantId },
+    });
+  }; // ✅ Ưu tiên prop, fallback dùng URL param
 
   const [product, setProduct] = useState(initialProduct || null);
   const [loading, setLoading] = useState(!initialProduct);
@@ -107,6 +124,10 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
         navigate(`/login?next=${encodeURIComponent(next)}`);
         return;
       }
+      if (!merchantId) {
+        toast.error("Merchant ID not found", { duration: 2000 });
+        return;
+      }
       await addToCart(
         {
           id: product.id,
@@ -115,7 +136,8 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
           image: product.images?.[activeIdx] || product.images?.[0] || "",
           category: product.category,
         },
-        qty
+        qty,
+        merchantId
       );
       toast.success("Added to cart!", { duration: 2000 });
     } catch (e) {
@@ -124,7 +146,7 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
         navigate(`/login?next=${encodeURIComponent(next)}`);
       } else {
         console.error(e);
-        // hiện toast nếu muốn
+        toast.error(e?.message || "Failed to add to cart", { duration: 2000 });
       }
     }
   };
@@ -270,6 +292,63 @@ export default function ProductDetail({ productId: propId, initialProduct }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Cart Button - Fixed Bottom Right */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "30px",
+          right: "30px",
+          zIndex: 999,
+        }}
+      >
+        <button
+          onClick={handleCartClick}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "12px 24px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            border: "none",
+            backgroundColor: "#007bff",
+            color: "white",
+            borderRadius: "50px",
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(0, 123, 255, 0.3)",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = "#0056b3";
+            e.target.style.transform = "translateY(-2px)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = "#007bff";
+            e.target.style.transform = "translateY(0)";
+          }}
+        >
+          🛒 Cart
+          {cartCount > 0 && (
+            <span
+              style={{
+                backgroundColor: "#fff",
+                color: "#007bff",
+                borderRadius: "50%",
+                width: "28px",
+                height: "28px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
+              {cartCount}
+            </span>
+          )}
+        </button>
       </div>
     </section>
   );

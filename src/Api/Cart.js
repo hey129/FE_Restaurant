@@ -31,6 +31,7 @@ export function CartProvider({ children, merchantId }) {
       }
       setLoading(true);
       // Load items from ALL merchants (not filtered by merchantId)
+      // Cart shows products from all merchants, user can select which merchant to checkout
       const { data, error } = await supabase
         .from("cart")
         .select(
