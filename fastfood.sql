@@ -1,189 +1,402 @@
--- ==========================
--- Schema: Food / Restaurant
--- Supabase + Auth compatible
--- ==========================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 1) category
-create table if not exists category (
-  category_id serial primary key,
-  name text not null unique,
-  icon_url text,
-  status boolean default true, -- ẩn/hiện danh mục
-  created_at timestamptz default now()
+-- merchant table
+CREATE TABLE merchant (
+  merchant_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_name text NOT NULL,
+  address text,
+  phone text,
+  email text,
+  status boolean DEFAULT true,
+  user_id uuid REFERENCES auth.users(id),
+  created_at timestamptz DEFAULT now()
 );
 
--- 2) product
-create table if not exists product (
-  product_id serial primary key,
-  product_name text not null,
-  category_id int references category(category_id) on delete set null,
-  price numeric(10,2) not null default 0.00,
+-- category
+CREATE TABLE category (
+  category_id serial PRIMARY KEY,
+  name text NOT NULL,
+  icon_url text,
+  status boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  merchant_id uuid REFERENCES merchant(merchant_id) ON DELETE CASCADE
+);
+
+-- product
+CREATE TABLE product (
+  product_id serial PRIMARY KEY,
+  product_name text NOT NULL,
+  category_id int REFERENCES category(category_id) ON DELETE SET NULL,
+  price numeric(10,2) NOT NULL DEFAULT 0.00,
   image text,
   description text,
   rating numeric(3,1),
-  status boolean not null default true, -- available / unavailable
-  created_at timestamptz default now()
+  status boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  merchant_id uuid REFERENCES merchant(merchant_id) ON DELETE CASCADE
 );
 
-create index if not exists idx_product_category on product(category_id);
+CREATE INDEX idx_product_category ON product(category_id);
 
--- 3) customer
--- Dùng hệ thống đăng nhập của Supabase (auth.users)
--- Không lưu mật khẩu ở đây — chỉ tham chiếu tới auth.users.id
-
-create table if not exists customer (
-  customer_id uuid primary key references auth.users(id) on delete cascade,
-  customer_name text not null,
+-- customer
+CREATE TABLE customer (
+  customer_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  customer_name text NOT NULL,
   phone text,
   address text,
-  status boolean default true,
-  created_at timestamptz default now()
+  status boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
 );
 
-
-
--- 6) cart
-create table if not exists cart (
-  cart_id serial primary key,
-  customer_id uuid references customer(customer_id) on delete cascade,
-  product_id int references product(product_id) on delete set null,
-  quantity int not null default 1,
-  price numeric(10,2) not null, -- snapshot tại thời điểm thêm vào giỏ
-  added_at timestamptz default now(),
-  status text default 'active' -- active, checked_out, saved...
+-- cart
+CREATE TABLE cart (
+  cart_id serial PRIMARY KEY,
+  customer_id uuid REFERENCES customer(customer_id) ON DELETE CASCADE,
+  product_id int REFERENCES product(product_id) ON DELETE SET NULL,
+  quantity int NOT NULL DEFAULT 1,
+  price numeric(10,2) NOT NULL,
+  added_at timestamptz DEFAULT now(),
+  status text DEFAULT 'active',
+  merchant_id uuid REFERENCES merchant(merchant_id) ON DELETE CASCADE
 );
 
-create index if not exists idx_cart_customer on cart(customer_id);
+CREATE INDEX idx_cart_customer ON cart(customer_id);
 
--- 7) orders
-create table if not exists orders (
-  order_id serial primary key,
-  customer_id uuid references customer(customer_id) on delete set null,
-  order_date timestamptz default now(),
+-- orders
+CREATE TABLE orders (
+  order_id serial PRIMARY KEY,
+  customer_id uuid REFERENCES customer(customer_id) ON DELETE SET NULL,
+  order_date timestamptz DEFAULT now(),
   delivery_address text,
-  total_amount numeric(12,2) not null default 0.00,
-  order_status text default 'pending', -- pending, preparing, delivered, cancelled
-  payment_status text default 'unpaid', -- unpaid, paid, refunded
-  staff_id int references staff(staff_id), -- ai xử lý đơn
+  total_amount numeric(12,2) NOT NULL DEFAULT 0.00,
+  order_status text DEFAULT 'pending',
+  payment_status text DEFAULT 'unpaid',
+  note text,
+  merchant_id uuid REFERENCES merchant(merchant_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+
+-- order_detail
+CREATE TABLE order_detail (
+  order_detail_id serial PRIMARY KEY,
+  order_id int REFERENCES orders(order_id) ON DELETE CASCADE,
+  product_id int REFERENCES product(product_id) ON DELETE SET NULL,
+  quantity int NOT NULL DEFAULT 1,
+  price numeric(10,2) NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_order_detail_order ON order_detail(order_id);
+
+-- payment
+CREATE TABLE payment (
+  payment_id serial PRIMARY KEY,
+  order_id int REFERENCES orders(order_id) ON DELETE CASCADE,
+  payment_date timestamptz DEFAULT now(),
+  amount numeric(12,2) NOT NULL,
+  method text,
+  transaction_id text,
   note text
 );
 
-create index if not exists idx_orders_customer on orders(customer_id);
+CREATE INDEX idx_payment_order ON payment(order_id);
 
--- 😎 order_detail
-create table if not exists order_detail (
-  order_detail_id serial primary key,
-  order_id int references orders(order_id) on delete cascade,
-  product_id int references product(product_id) on delete set null,
-  quantity int not null default 1,
-  price numeric(10,2) not null, -- đơn giá tại thời điểm order
-  created_at timestamptz default now()
-);
+------------------------------------------------------------
+-- SEED DATA
+------------------------------------------------------------
 
-create index if not exists idx_order_detail_order on order_detail(order_id);
+-- Seed merchants
+INSERT INTO merchant (merchant_name, address, phone, email) VALUES
+  ('Phở Hà Nội', NULL, NULL, NULL),
+  ('Cà Phê Sài Gòn', NULL, NULL, NULL),
+  ('Seoul BBQ House', NULL, NULL, NULL),
+  ('KFC', NULL, NULL, NULL),
+  ('Jollibee', NULL, NULL, NULL),
+  ('McDonald''s', NULL, NULL, NULL),
+  ('Phúc Long', NULL, NULL, NULL),
+  ('Katinat', NULL, NULL, NULL),
+  ('Busan Korean Street Food', NULL, NULL, NULL),
+  ('Cơm Tấm Phúc Lộc Thọ', NULL, NULL, NULL);
 
--- 9) payment
-create table if not exists payment (
-  payment_id serial primary key,
-  order_id int references orders(order_id) on delete cascade,
-  payment_date timestamptz default now(),
-  amount numeric(12,2) not null,
-  method text, -- 'card', 'cash', 'stripe', 'wallet'
-  transaction_id text, -- optional từ cổng thanh toán
-  note text
-);
+-- Seed categories
+INSERT INTO category (name, merchant_id) SELECT 'Bánh Mì', merchant_id FROM merchant WHERE merchant_name='Phở Hà Nội';
+INSERT INTO category (name, merchant_id) SELECT 'Bún', merchant_id FROM merchant WHERE merchant_name='Phở Hà Nội';
+INSERT INTO category (name, merchant_id) SELECT 'Phở', merchant_id FROM merchant WHERE merchant_name='Phở Hà Nội';
 
-create index if not exists idx_payment_order on payment(order_id);
+INSERT INTO category (name, merchant_id) SELECT 'Cà phê', merchant_id FROM merchant WHERE merchant_name='Cà Phê Sài Gòn';
+INSERT INTO category (name, merchant_id) SELECT 'Trà', merchant_id FROM merchant WHERE merchant_name='Cà Phê Sài Gòn';
+INSERT INTO category (name, merchant_id) SELECT 'Đá xay', merchant_id FROM merchant WHERE merchant_name='Cà Phê Sài Gòn';
+
+INSERT INTO category (name, merchant_id) SELECT 'BBQ', merchant_id FROM merchant WHERE merchant_name='Seoul BBQ House';
+INSERT INTO category (name, merchant_id) SELECT 'Món phụ', merchant_id FROM merchant WHERE merchant_name='Seoul BBQ House';
+INSERT INTO category (name, merchant_id) SELECT 'Soup', merchant_id FROM merchant WHERE merchant_name='Seoul BBQ House';
+
+INSERT INTO category (name, merchant_id) SELECT 'Burger', merchant_id FROM merchant WHERE merchant_name='KFC';
+INSERT INTO category (name, merchant_id) SELECT 'Combo', merchant_id FROM merchant WHERE merchant_name='KFC';
+INSERT INTO category (name, merchant_id) SELECT 'Gà Rán', merchant_id FROM merchant WHERE merchant_name='KFC';
+
+INSERT INTO category (name, merchant_id) SELECT 'Gà Rán', merchant_id FROM merchant WHERE merchant_name='Jollibee';
+INSERT INTO category (name, merchant_id) SELECT 'Mỳ Ý', merchant_id FROM merchant WHERE merchant_name='Jollibee';
+INSERT INTO category (name, merchant_id) SELECT 'Tráng Miệng', merchant_id FROM merchant WHERE merchant_name='Jollibee';
+INSERT INTO category (name, merchant_id) SELECT 'Đồ Uống', merchant_id FROM merchant WHERE merchant_name='Jollibee';
+
+INSERT INTO category (name, merchant_id) SELECT 'Burger', merchant_id FROM merchant WHERE merchant_name='McDonald''s';
+INSERT INTO category (name, merchant_id) SELECT 'Khoai & Ăn vặt', merchant_id FROM merchant WHERE merchant_name='McDonald''s';
+INSERT INTO category (name, merchant_id) SELECT 'Đồ Uống', merchant_id FROM merchant WHERE merchant_name='McDonald''s';
+
+INSERT INTO category (name, merchant_id) SELECT 'Bánh ngọt', merchant_id FROM merchant WHERE merchant_name='Phúc Long';
+INSERT INTO category (name, merchant_id) SELECT 'Trà', merchant_id FROM merchant WHERE merchant_name='Phúc Long';
+INSERT INTO category (name, merchant_id) SELECT 'Trà Sữa', merchant_id FROM merchant WHERE merchant_name='Phúc Long';
+INSERT INTO category (name, merchant_id) SELECT 'Đá Xay', merchant_id FROM merchant WHERE merchant_name='Phúc Long';
+
+INSERT INTO category (name, merchant_id) SELECT 'Bánh ngọt', merchant_id FROM merchant WHERE merchant_name='Katinat';
+INSERT INTO category (name, merchant_id) SELECT 'Cà phê', merchant_id FROM merchant WHERE merchant_name='Katinat';
+INSERT INTO category (name, merchant_id) SELECT 'Trà', merchant_id FROM merchant WHERE merchant_name='Katinat';
+INSERT INTO category (name, merchant_id) SELECT 'Đá xay', merchant_id FROM merchant WHERE merchant_name='Katinat';
+
+INSERT INTO category (name, merchant_id) SELECT 'Kimbap', merchant_id FROM merchant WHERE merchant_name='Busan Korean Street Food';
+INSERT INTO category (name, merchant_id) SELECT 'Mì Hàn', merchant_id FROM merchant WHERE merchant_name='Busan Korean Street Food';
+INSERT INTO category (name, merchant_id) SELECT 'Tokbokki', merchant_id FROM merchant WHERE merchant_name='Busan Korean Street Food';
+INSERT INTO category (name, merchant_id) SELECT 'Đồ Uống', merchant_id FROM merchant WHERE merchant_name='Busan Korean Street Food';
+
+INSERT INTO category (name, merchant_id) SELECT 'Canh', merchant_id FROM merchant WHERE merchant_name='Cơm Tấm Phúc Lộc Thọ';
+INSERT INTO category (name, merchant_id) SELECT 'Cơm Tấm', merchant_id FROM merchant WHERE merchant_name='Cơm Tấm Phúc Lộc Thọ';
+INSERT INTO category (name, merchant_id) SELECT 'Nước giải khát', merchant_id FROM merchant WHERE merchant_name='Cơm Tấm Phúc Lộc Thọ';
+
+------------------------------------------------------------
+-- SEED PRODUCTS (NO SIZE, MIN PRICE)
+------------------------------------------------------------
+
+-- Products for Phở Hà Nội
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Phở' AS category_name, 'Phở Bò' AS product_name, 55000 AS price,
+         'Phở Bò tại Phở Hà Nội.' AS description,
+         'https://images.unsplash.com/photo-1579866997815-ecbb27a4dd43' AS image
+  UNION ALL SELECT 'Phở', 'Phở Gà', 50000,
+         'Phở Gà tại Phở Hà Nội.',
+         'https://images.unsplash.com/photo-1579866997815-ecbb27a4dd43'
+  UNION ALL SELECT 'Bún', 'Bún Chả', 60000,
+         'Bún Chả tại Phở Hà Nội.',
+         'https://images.unsplash.com/photo-1594020293008-5f99f60bd4d7'
+  UNION ALL SELECT 'Bánh Mì', 'Bánh Mì Thịt Nướng', 30000,
+         'Bánh Mì Thịt Nướng tại Phở Hà Nội.',
+         'https://images.unsplash.com/photo-1524062008239-962eb6d3383d'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Phở Hà Nội';
+
+-- Products for Cà Phê Sài Gòn
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Cà phê' AS category_name, 'Cà Phê Đen Đá' AS product_name, 15000 AS price,
+         'Cà Phê Đen Đá tại Cà Phê Sài Gòn.' AS description,
+         'https://images.unsplash.com/photo-1569315095807-995e6e3ba320' AS image
+  UNION ALL SELECT 'Cà phê', 'Cà Phê Sữa Đá', 20000,
+         'Cà Phê Sữa Đá tại Cà Phê Sài Gòn.',
+         'https://images.unsplash.com/photo-1569315095807-995e6e3ba320'
+  UNION ALL SELECT 'Trà', 'Trà Đào Cam Sả', 30000,
+         'Trà Đào Cam Sả tại Cà Phê Sài Gòn.',
+         'https://images.unsplash.com/photo-1513639725746-c5d3e861f32a'
+  UNION ALL SELECT 'Đá xay', 'Cookie Đá Xay', 40000,
+         'Cookie Đá Xay tại Cà Phê Sài Gòn.',
+         'https://images.unsplash.com/photo-1509042239860-f550ce710b93'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Cà Phê Sài Gòn';
+
+-- Products for Seoul BBQ House
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'BBQ' AS category_name, 'Ba Chỉ Heo Nướng' AS product_name, 175000 AS price,
+         'Ba Chỉ Heo Nướng tại Seoul BBQ House.' AS description,
+         'https://images.unsplash.com/photo-1604908176997-1251884b08a3' AS image
+  UNION ALL SELECT 'BBQ', 'Sườn Bò Nướng', 245000,
+         'Sườn Bò Nướng tại Seoul BBQ House.',
+         'https://images.unsplash.com/photo-1604908176997-1251884b08a3'
+  UNION ALL SELECT 'Soup', 'Kimchi Jjigae', 115000,
+         'Kimchi Jjigae tại Seoul BBQ House.',
+         'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f'
+  UNION ALL SELECT 'Món phụ', 'Cơm Trắng', 10000,
+         'Cơm Trắng tại Seoul BBQ House.',
+         'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Seoul BBQ House';
+
+-- Products for KFC
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Gà Rán' AS category_name, 'Gà Rán Giòn Cay' AS product_name, 54000 AS price,
+         'Gà Rán Giòn Cay tại KFC.' AS description,
+         'https://images.unsplash.com/photo-1608038509085-7bb9d5e595b4' AS image
+  UNION ALL SELECT 'Gà Rán', 'Gà Rán Truyền Thống', 50000,
+         'Gà Rán Truyền Thống tại KFC.',
+         'https://images.unsplash.com/photo-1608038509085-7bb9d5e595b4'
+  UNION ALL SELECT 'Burger', 'Burger Gà Quay', 64000,
+         'Burger Gà Quay tại KFC.',
+         'https://images.unsplash.com/photo-1550547660-d9450f859349'
+  UNION ALL SELECT 'Combo', 'Combo Gà 3 Miếng', 94000,
+         'Combo Gà 3 Miếng tại KFC.',
+         'https://images.unsplash.com/photo-1604908176997-1251884b08a3'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'KFC';
+
+-- Products for Jollibee
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Gà Rán' AS category_name, 'Gà Giòn Vui Vẻ' AS product_name, 54000 AS price,
+         'Gà Giòn Vui Vẻ tại Jollibee.' AS description,
+         'https://images.unsplash.com/photo-1608038509085-7bb9d5e595b4' AS image
+  UNION ALL SELECT 'Mỳ Ý', 'Mỳ Ý Sốt Bò Bằm', 50000,
+         'Mỳ Ý Sốt Bò Bằm tại Jollibee.',
+         'https://images.unsplash.com/photo-1525755662778-989d0524087e'
+  UNION ALL SELECT 'Tráng Miệng', 'Kem Ly Jollibee', 14000,
+         'Kem Ly Jollibee tại Jollibee.',
+         'https://images.unsplash.com/photo-1505253216365-3b315a505c53'
+  UNION ALL SELECT 'Đồ Uống', 'Pepsi', 14000,
+         'Pepsi tại Jollibee.',
+         'https://images.unsplash.com/photo-1542744173-8e7e53415bb0'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Jollibee';
+
+-- Products for McDonald's
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Burger' AS category_name, 'Big Mac' AS product_name, 84000 AS price,
+         'Big Mac tại McDonald''s.' AS description,
+         'https://images.unsplash.com/photo-1550547660-d9450f859349' AS image
+  UNION ALL SELECT 'Burger', 'Cheeseburger', 74000,
+         'Cheeseburger tại McDonald''s.',
+         'https://images.unsplash.com/photo-1550547660-d9450f859349'
+  UNION ALL SELECT 'Khoai & Ăn vặt', 'Khoai Tây Chiên', 34000,
+         'Khoai Tây Chiên tại McDonald''s.',
+         'https://images.unsplash.com/photo-1482049016688-2d3e1b311543'
+  UNION ALL SELECT 'Đồ Uống', 'Coca-Cola', 14000,
+         'Coca-Cola tại McDonald''s.',
+         'https://images.unsplash.com/photo-1542744173-8e7e53415bb0'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'McDonald''s';
+
+-- Products for Phúc Long
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Trà' AS category_name, 'Trà Oolong' AS product_name, 40000 AS price,
+         'Trà Oolong tại Phúc Long.' AS description,
+         'https://images.unsplash.com/photo-1513639725746-c5d3e861f32a' AS image
+  UNION ALL SELECT 'Trà Sữa', 'Trà Sữa Truyền Thống', 44000,
+         'Trà Sữa Truyền Thống tại Phúc Long.',
+         'https://images.unsplash.com/photo-1544787219-7f47ccb76574'
+  UNION ALL SELECT 'Đá Xay', 'Matcha Đá Xay', 54000,
+         'Matcha Đá Xay tại Phúc Long.',
+         'https://images.unsplash.com/photo-1509042239860-f550ce710b93'
+  UNION ALL SELECT 'Bánh ngọt', 'Bánh Mousse Trà Xanh', 30000,
+         'Bánh Mousse Trà Xanh tại Phúc Long.',
+         'https://images.unsplash.com/photo-1542838132-92c53300491e'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Phúc Long';
+
+-- Products for Katinat
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Cà phê' AS category_name, 'Cold Brew' AS product_name, 50000 AS price,
+         'Cold Brew tại Katinat.' AS description,
+         'https://images.unsplash.com/photo-1569315095807-995e6e3ba320' AS image
+  UNION ALL SELECT 'Trà', 'Trà Nhài Sữa', 44000,
+         'Trà Nhài Sữa tại Katinat.',
+         'https://images.unsplash.com/photo-1513639725746-c5d3e861f32a'
+  UNION ALL SELECT 'Đá xay', 'Matcha Latte Đá Xay', 54000,
+         'Matcha Latte Đá Xay tại Katinat.',
+         'https://images.unsplash.com/photo-1509042239860-f550ce710b93'
+  UNION ALL SELECT 'Bánh ngọt', 'Croissant Bơ', 27000,
+         'Croissant Bơ tại Katinat.',
+         'https://images.unsplash.com/photo-1542838132-92c53300491e'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Katinat';
+
+-- Products for Busan Korean Street Food
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Tokbokki' AS category_name, 'Tokbokki Phô Mai' AS product_name, 60000 AS price,
+         'Tokbokki Phô Mai tại Busan Korean Street Food.' AS description,
+         'https://images.unsplash.com/photo-1597905043337-e9b4b1548c07' AS image
+  UNION ALL SELECT 'Kimbap', 'Kimbap Truyền Thống', 44000,
+         'Kimbap Truyền Thống tại Busan Korean Street Food.',
+         'https://images.unsplash.com/photo-1583623025817-d180a2221d0a'
+  UNION ALL SELECT 'Mì Hàn', 'Mì Lạnh Hàn Quốc', 70000,
+         'Mì Lạnh Hàn Quốc tại Busan Korean Street Food.',
+         'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56'
+  UNION ALL SELECT 'Đồ Uống', 'Sữa Chuối Hàn Quốc', 30000,
+         'Sữa Chuối Hàn Quốc tại Busan Korean Street Food.',
+         'https://images.unsplash.com/photo-1542744173-8e7e53415bb0'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Busan Korean Street Food';
+
+-- Products for Cơm Tấm Phúc Lộc Thọ
+INSERT INTO product (merchant_id, category_id, product_name, price, description, image)
+SELECT m.merchant_id, c.category_id, v.product_name, v.price, v.description, v.image
+FROM merchant m
+JOIN (
+  SELECT 'Cơm Tấm' AS category_name, 'Cơm Tấm Sườn Bì Chả' AS product_name, 64000 AS price,
+         'Cơm Tấm Sườn Bì Chả tại Cơm Tấm Phúc Lộc Thọ.' AS description,
+         'https://images.unsplash.com/photo-1584270354949-c26b0caa5bdb' AS image
+  UNION ALL SELECT 'Cơm Tấm', 'Cơm Tấm Sườn Trứng', 60000,
+         'Cơm Tấm Sườn Trứng tại Cơm Tấm Phúc Lộc Thọ.',
+         'https://images.unsplash.com/photo-1584270354949-c26b0caa5bdb'
+  UNION ALL SELECT 'Canh', 'Canh Chua Cá Lóc', 30000,
+         'Canh Chua Cá Lóc tại Cơm Tấm Phúc Lộc Thọ.',
+         'https://images.unsplash.com/photo-1540337706094-67563e43c4ea'
+  UNION ALL SELECT 'Nước giải khát', 'Nước Sâm', 10000,
+         'Nước Sâm tại Cơm Tấm Phúc Lộc Thọ.',
+         'https://images.unsplash.com/photo-1542744173-8e7e53415bb0'
+) v ON TRUE
+JOIN category c ON c.merchant_id = m.merchant_id AND c.name = v.category_name
+WHERE m.merchant_name = 'Cơm Tấm Phúc Lộc Thọ';
+
+
 
 -- ==========================
 -- 10) View tiện cho frontend
 -- ==========================
 create or replace view v_product_with_category as
 select
-  p.product_id,
-  p.product_name,
-  p.price,
-  p.image,
-  p.description,
-  p.rating,
-  p.status,
-  c.category_id,
-  c.name as category_name,
-  c.icon_url
+       p.product_id,
+       p.product_name,
+       p.price,
+       p.image,
+       p.description,
+       p.rating,
+       p.status,
+       p.merchant_id,
+       m.merchant_name,
+       c.category_id,
+       c.name as category_name,
+       c.icon_url
 from product p
+left join merchant m on m.merchant_id = p.merchant_id
 left join category c on c.category_id = p.category_id;
-
-
-insert into category (category_id, name, icon_url, status) values
-(1, 'Rolls', 'https://cdn-icons-png.flaticon.com/512/706/706195.png', true),
-(2, 'Burgers', 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png', true),
-(3, 'Bar B Q', 'https://cdn-icons-png.flaticon.com/512/4341/4341053.png', true),
-(4, 'Handi & Biryani', 'https://cdn-icons-png.flaticon.com/512/3364/3364826.png', true),
-(5, 'Karhai', 'https://cdn-icons-png.flaticon.com/512/3082/3082031.png', true),
-(6, 'Fish', 'https://cdn-icons-png.flaticon.com/512/135/135620.png', true),
-(7, 'Daal & Sabzi', 'https://cdn-icons-png.flaticon.com/512/599/599120.png', true),
-(8, 'Paratha', 'https://cdn-icons-png.flaticon.com/512/3174/3174888.png', true),
-(9, 'Sandwiches', 'https://cdn-icons-png.flaticon.com/512/1046/1046784.png', true),
-(10, 'Snacks / Fries', 'https://cdn-icons-png.flaticon.com/512/859/859270.png', true),
-(11, 'Drinks', 'https://cdn-icons-png.flaticon.com/512/2738/2738730.png', true);
-
-INSERT INTO product (product_name, category_id, price, image, description, rating, status) VALUES
-('Aloo Paratha', 8, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FParatha%2Faloo%20paratha.png?alt=media&token=4a3f32e0-9e4d-4d49-80eb-f46a2fb9fd5d', 'Aloo Paratha is a popular whole wheat flatbread stuffed with spicy potato filling. Best enjoyed with yogurt and butter!', 4.8, true),
-('Aloo Paratha Cheese', 8, 200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FParatha%2Faloo%20paratha%20cheese.png?alt=media&token=578caaf7-0498-458a-a8dd-b8abf40c2030', 'Aloo Paratha cheese is a popular whole wheat flatbread stuffed with spicy potato and cheese filling.', 3.3, true),
-('Bar B Q Cheese Club Sandwich', 9, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FSandwiches%2Fbarbq%20cheese%20sandwich.png?alt=media&token=7fae9795-a6db-4588-9b54-0e27d5b5f44a', 'Bar B Q Cheese Club Sandwich is a three slices of bread with two layers of BarBQ, cheese and tomato.', 4.0, true),
-('Bar B Q Club Sandwich', 9, 300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FSandwiches%2Fbarbq%20club%20sandwich.png?alt=media&token=a4029193-2f73-41d1-aece-e5b120be8afc', 'Bar B Q Club Sandwich is a three slices of bread with two layers of BarBQ, lettuce, tomato and mayonnaise.', 4.3, true),
-('Buddy Pack', 11, 50.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FDrinks%2Fbuddy%20pack.png?alt=media&token=f05bfb2c-bca1-4e5c-b732-50654a150ea7', 'Cold Drinks of 345ml', 3.9, true),
-('Chicken Bar B Q Sauce Roll', 1, 130.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fch-barbq-roll.png?alt=media&token=a34a71c1-7c60-4bf2-807b-cd3ee6faa0ee', 'Roll with Bar B Q, mayonnaise and sauce', 4.4, true),
-('Chicken Boti Plate', 3, 300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fch-boti-plate.png?alt=media&token=7b1bdd90-feae-4e26-a41b-844428b16ca7', 'Chicken Boti that is made with marinated boneless pieces of chicken that are skewered & cooked until just tender & juicy', 3.4, true),
-('Chicken Broast Roll', 1, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fbroast-roll.png?alt=media&token=f45b0662-0648-4ff1-a6f3-fd96d2506c9c', 'Roll with broast and ketchup', 3.9, true),
-('Chicken Burger', 2, 180.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBurgers%2Fch-burger.png?alt=media&token=6f5f0b09-8c0b-4ed4-9d9d-2c5e7a1e23f1', 'Burger with kabab and ketchup', 3.5, true),
-('Chicken Chatni Roll', 1, 120.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fch-chatni-roll.png?alt=media&token=8cbeaecc-e66e-4ef0-850c-6de09f3d4345', 'Roll with yogurt marinated chicken and lemon juice mixture', 3.7, true),
-('Chicken Cheese Burger', 2, 250.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBurgers%2Fch-cheese-burger.png?alt=media&token=abad140a-7716-4f9a-87bf-e5f9151f7fcd', 'Burger with kabab and cheese', 3.8, true),
-('Chicken Cheese Roll', 1, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fch-cheese-roll.png?alt=media&token=bb883a25-7a34-4d33-be3f-773aaf09f7ef', 'Roll with yogurt marinated chicken and cheese', 3.3, true),
-('Chicken Cheese Zinger Burger', 2, 250.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBurgers%2Fch-zinger-cheese-burger.png?alt=media&token=c0e77c22-1eba-485c-b958-25cd0856d54c', 'Burger with crispy chicken, lettuce and cheese', 4.9, true),
-('Chicken Gola Kabab Plate', 3, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fgola-kabab.png?alt=media&token=c872d5a4-7336-44a0-a399-2903ed0b3d0f', 'Chicken Gola Kabab are melt in the mouth, oval-shaped kababs that are seasoned with Pakistani spices and are incredibly juicy. They are traditionally grilled over charcoal', 3.2, true),
-('Chicken Green Boti Plate', 3, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fgreen-boti-plate.png?alt=media&token=1c1ce9fa-82c5-4ed6-acaf-3d37ace7adc7', 'Chicken Green Boti that is made with marinated boneless pieces of chicken that are skewered & cooked with green chatni until just tender & juicy', 4.5, true),
-('Chicken Green Tikka', 3, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fch%20tikka%20green.png?alt=media&token=5328a45f-26c1-4e78-a097-40ea1d82f4e3', 'Chicken Green Tikka is made with marinated pieces of chicken that are skewered & cooked with green chatni until just tender & juicy', 4.9, true),
-('Chicken Handi Briyani (Full)', 4, 1000.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fhandi%20biryani.png?alt=media&token=17ff27a6-903b-487f-a005-bf58e35a89f2', 'Chicken Handi Briyani is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful', 4.3, true),
-('Chicken Handi Briyani (Half)', 4, 500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fhandi%20biryani.png?alt=media&token=17ff27a6-903b-487f-a005-bf58e35a89f2', 'Chicken Handi Briyani is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful', 3.9, true),
-('Chicken Karhai Achari', 5, 1300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2Fkarhai%20achari.png?alt=media&token=07451d23-523d-4721-9e4a-698d98f01dc5', 'Chicken Karhai Achari is tangy just like achar and has a reddish appearance. Traditionally, spices are mixed with lemon juice to form a thick paste.', 4.0, true),
-('Chicken Karhai Balochi', 5, 1300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2Fbalochi%20karahai.png?alt=media&token=f00a59db-fee3-44ec-a99e-8e881a21fe62', 'The taste of this Balochi style Chicken Karhai is a burst of tangy spiciness in the mouth. The fried chicken and fried garlic taste amazing.', 4.7, true),
-('Chicken Karhai Brown', 5, 1200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2Fbrown%20karhai.png?alt=media&token=d0e921ad-41c5-4109-a492-3382a05d19fb', 'Chicken Karhai Brown is cooked in a yogurt and black pepper based sauce, freshly crushed black pepper (kali mirch) for maximum taste', 3.9, true),
-('Chicken Karhai Green', 5, 1300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2FChicken-Green-Karahi.png?alt=media&token=a7d8690d-af9b-4d4d-a51b-5151e82758db', 'Chicken Green Karhai is popular for its aromatic green chilli spice with light hints of black Pepper', 3.4, true),
-('Chicken Karhai Red', 5, 1200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2Fred%20karhai.png?alt=media&token=1d8b0821-ad74-41e4-9e85-2ffcef7cbad9', 'Chicken karhai red distinguishing features are its rich, tomatoey base and a fragrant finishing of green chili peppers, cilantro, and slivers of ginger.', 3.8, true),
-('Chicken Karhai White', 5, 1300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2F-White-Karahi.png?alt=media&token=f44304d6-8fa0-4193-a760-78553caa5cbc', 'Chicken White Karhai is creamy, savoury and just super delicious. It is a spicy, creamy chicken curry, what’s there not to like? 🙂', 3.0, true),
-('Chicken Makhni Handi (Full)', 4, 1500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fmakhni%20handi.png?alt=media&token=88a34836-1685-4e37-b468-4cb222a5d3d8', 'Chicken Makhni Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.2, true),
-('Chicken Makhni Handi (Half)', 4, 800.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fmakhni%20handi.png?alt=media&token=88a34836-1685-4e37-b468-4cb222a5d3d8', 'Chicken Makhni Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.5, true),
-('Chicken Malai Boti Plate', 3, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fmalai%20boti.png?alt=media&token=6916d5a7-e56c-4db4-a328-a56c31e0c344', 'Chicken Malai Boti is made with cream marinated boneless pieces of chicken that are skewered & cooked until just tender & juicy', 3.8, true),
-('Chicken Malai Boti Roll', 1, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fmalai%20boti%20roll.png?alt=media&token=658dd7f1-29a9-43c2-941c-50aacca81a74', 'Roll with yogurt, garlic, ginger, cream and mint chatni marinated chicken and mayonnaise', 3.6, true),
-('Chicken Malai Tikka', 3, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fchicken-malai-tikka.png?alt=media&token=f2373c26-708e-4f85-af28-34dfa6097246', 'Chicken Malai Tikka is made with cream marinated pieces of chicken that are skewered & cooked until just tender & juicy', 3.8, true),
-('Chicken Mayo Roll', 1, 120.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fch-mayo-roll.png?alt=media&token=1847c264-f1ac-4f30-a4d6-9fe180fd9314', 'Roll with yogurt marinated chicken and mayonnaise', 3.1, true),
-('Chicken Paneeri Handi (Full)', 4, 1500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fch-paneeri%20handi.png?alt=media&token=7d191254-24a3-4aea-8f61-09f745037993', 'Chicken Paneeri Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.3, true),
-('Chicken Paneeri Handi (Half)', 4, 800.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fch-paneeri%20handi.png?alt=media&token=7d191254-24a3-4aea-8f61-09f745037993', 'Chicken Paneeri Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.1, true),
-('Chicken Paratha', 8, 200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FParatha%2Fchicken%20paratha.png?alt=media&token=3e1de6a0-b0f9-49c9-ac6e-cc41732a689a', 'Chicken Paratha is a popular whole wheat flatbread stuffed with spicy chicken filling. Best enjoyed with yogurt and butter!', 3.8, true),
-('Chicken Paratha Cheese', 8, 250.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FParatha%2FChicken-Cheese-Paratha.png?alt=media&token=435f3490-1a65-40b9-ad72-ea8d5cb77685', 'Chicken Paratha cheese is a popular whole wheat flatbread stuffed with spicy chicken and cheese filling. Best enjoyed with yogurt and butter!', 3.3, true),
-('Chicken Qorma', 5, 200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FKarhai%2Fch%20qorma.png?alt=media&token=89e5db09-e5ec-457e-bce5-b5ada74a1e68', 'Chicken Qorma is a dry preparation that can be enjoyed as an appetizer, with Rotis and white rice.', 4.2, true),
-('Chicken Red Handi (Full)', 4, 1500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fred-handi.png?alt=media&token=a7e94b71-b81e-4ce8-be04-55cb45410a52', 'Chicken Red Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.2, true),
-('Chicken Red Handi (Half)', 4, 800.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fred-handi.png?alt=media&token=a7e94b71-b81e-4ce8-be04-55cb45410a52', 'Chicken Red Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 4.4, true),
-('Chicken Reshmi Kabab Plate', 3, 300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fch-reshmi-kabab-plate.png?alt=media&token=b808d586-cb10-4fde-8d96-9e8595131051', 'Chicken Reshmi Kabab is made with Pieces of Boneless Chicken, marinated in juicy mixture of Curd, Cream, & Spices', 4.5, true),
-('Chicken Reshmi Kabab Roll', 1, 120.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fch-reshmi-kabab-roll.png?alt=media&token=5c0eeea4-79ae-4429-81d3-158b0190c2fe', 'Roll with chicken and reshmi kabab masaala', 3.5, true),
-('Chicken Spicy Roll', 1, 120.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FRolls%2Fch-spicy-roll.png?alt=media&token=d9119c7e-b2d2-41c2-b41b-7296d2354b9d', 'Roll with yogurt marinated chicken and spices', 4.2, true),
-('Chicken Tikka', 3, 250.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBar%20B%20Q%2Fch-tikka.png?alt=media&token=80b85b1d-26f7-4b92-ae58-7cfa201051be', 'Chicken Tikka that is made with marinated pieces of chicken that are skewered & cooked until just tender & juicy', 3.0, true),
-('Chicken White Handi (Full)', 4, 1500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fwhite-handi.png?alt=media&token=5661523c-69f0-422e-9007-98e9164eaf90', 'Chicken White Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.6, true),
-('Chicken White Handi (Half)', 4, 800.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2Fwhite-handi.png?alt=media&token=5661523c-69f0-422e-9007-98e9164eaf90', 'Chicken White Handi is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful chicken curry', 3.8, true),
-('Chicken Zinger Burger', 2, 200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FBurgers%2Fzinger-burger.png?alt=media&token=26ebcca7-5197-482c-aff2-65aa057e564b', 'Burger with crispy chicken, lettuce and ketchup', 4.3, true),
-('Club Cheese Sandwich', 9, 350.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FSandwiches%2Fclub%20cheese%20sandwich.png?alt=media&token=fb75e97f-6cd6-47de-ae58-d41f148b7e66', 'Club Cheese Sandwich is a three slices of bread with two layers of meat and cheese with tomato and mayonnaise.', 3.4, true),
-('Club Sandwich', 9, 300.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FSandwiches%2Fclub%20sandwich.png?alt=media&token=cf30dcc4-5c5d-41da-94d8-bebf38e03c72', 'Club Sandwich is a three slices of bread with two layers of meat and lettuce, tomato and mayonnaise.', 5.0, true),
-('Cold Drinks (1.5Ltr)', 11, 130.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FDrinks%2Fcold%20drinks%201.5ltr.png?alt=media&token=d717712c-6109-4a7c-bdf3-dbbff1200cdf', 'Cold Drinks of 1.5 litre', 3.2, true),
-('Daal Chana', 7, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FDal%20Sabzi%2Fdal%20channa.png?alt=media&token=548991c0-9dc9-451b-a6fb-1abc84de0216', 'Daal Chana a spicy and tempting curry prepared from white chickpeas (kabuli chana), tomatoes, onion', 3.7, true),
-('Daal Mung', 7, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FDal%20Sabzi%2Fdal%20mung.png?alt=media&token=26d638ce-a935-4e3b-97e9-0e7b53eee9af', 'Daal Mung is a healthy comfort food prepared from yellow split lentil (green split gram without skin) and many spices.', 3.2, true),
-('Fish BBQ - (6 Pieces)', 6, 700.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FFish%2Fbbq%20Fish.png?alt=media&token=7cc5b8dc-9354-41ba-95de-fbf021c40fad', 'Fish BBQ is a perfect treat for seafood lovers. It is a perfect fusion of sea food with Desi Barbeque flavor that blends well to bring out a unique dish', 4.1, true),
-('Fish Fry', 6, 1200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FFish%2Ffish%20fry.png?alt=media&token=3b3a4ff6-bcc9-4c91-8b27-a2d6f6f23165', 'Fish Fry is a mouth-watering and very tempting fried fish recipe made using fresh fish pieces coming out straight from freshwater.', 3.4, true),
-('Fish Karhai', 6, 1500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FFish%2Ffish_karhai.png?alt=media&token=9ffa5f8c-52f2-42b9-93b0-5c6d5b61bf10', 'Fish Karhai is a semi-dry spicy fish recipe cooked in the tomato puree.', 4.5, true),
-('French Fries Plate Full', 10, 100.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FFrench%20Fries%2Ffries.png?alt=media&token=7bb88b3a-d409-4f38-b409-638072c6b041', 'A thin strip of potato, usually cut 3 to 4 inches in length that are deep fried until they are golden brown and crisp textured on the outside', 4.1, true),
-('Makhni Handi Daal (Full)', 4, 900.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2FDal-Makhani%20handi.png?alt=media&token=a5e98701-8c1b-4df3-b6c3-e0f75954e293', 'Makhni Handi Daal is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful', 4.1, true),
-('Makhni Handi Daal (Half)', 4, 500.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FHandi%2FDal-Makhani%20handi.png?alt=media&token=a5e98701-8c1b-4df3-b6c3-e0f75954e293', 'Makhni Handi Daal is traditionally cooked in a clay pot. It is a mild and creamy and oh so flavourful', 3.4, true),
-('Mayo French Fries Plate Full', 10, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FFrench%20Fries%2Fmayo_fries.png?alt=media&token=31ae9584-8ee3-4fed-b45c-12b19a5a3112', 'Fries are served with mayonnaise', 4.2, true),
-('Mix Vegetable', 7, 150.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FDal%20Sabzi%2FMix-Vegetable.png?alt=media&token=05e50485-ad77-4b9f-83ca-cea0ef53d666', 'Mix vegetable curry is made by cooking a mixture of vegetables together in a traditional onion-tomato gravy. The dish is characterized by multiple flavors.', 3.8, true),
-('Sada Paratha', 8, 30.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FParatha%2FPlain-Paratha.png?alt=media&token=f1cf4796-402c-48ef-83f5-430395b70276', 'Sada Paratha is yummy triangle shaped flat-bread made of whole-wheat flour.', 4.4, true),
-('Vegetable Paratha', 8, 200.00, 'https://firebasestorage.googleapis.com/v0/b/bm-restaurant.appspot.com/o/Menu%20images%2FParatha%2Fveg%20paratha.png?alt=media&token=8f2ccd3a-860e-40f9-a1c0-124be739b384', 'Vegetables Paratha is a popular whole wheat flatbread stuffed with spicy vegetables filling. Best enjoyed with yogurt and butter!', 4.1, true);

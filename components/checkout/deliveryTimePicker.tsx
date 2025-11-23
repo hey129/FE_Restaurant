@@ -1,5 +1,12 @@
 import React from "react";
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { COLORS } from "../../constants/app";
 import { sharedStyles } from "../../constants/sharedStyles";
 
@@ -36,36 +43,63 @@ export default function DeliveryTimePicker({
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
 
-  const availableHours = Array.from({ length: 24 }, (_, i) => i).filter(h => h >= currentHour);
-  const availableMinutes = selectedHour === currentHour 
-    ? Array.from({ length: 60 }, (_, i) => i).filter(m => m > currentMinute)
-    : Array.from({ length: 60 }, (_, i) => i);
+  const availableHours = Array.from({ length: 24 }, (_, i) => i).filter(
+    (h) => h >= currentHour
+  );
+  const availableMinutes =
+    selectedHour === currentHour
+      ? Array.from({ length: 60 }, (_, i) => i).filter(
+          (m) => m > currentMinute
+        )
+      : Array.from({ length: 60 }, (_, i) => i);
 
   return (
     <>
       <View style={sharedStyles.section}>
         <Text style={sharedStyles.sectionTitle}>Thời gian giao hàng</Text>
+
         <View style={styles.timeOptions}>
           <TouchableOpacity
-            style={[styles.timeOption, deliveryTime === "now" && styles.timeOptionActive]}
+            style={[
+              styles.timeOption,
+              deliveryTime === "now" && styles.timeOptionActive,
+            ]}
             onPress={() => onDeliveryTimeChange("now")}
           >
-            <Text style={[styles.timeOptionText, deliveryTime === "now" && styles.timeOptionTextActive]}>
+            <Text
+              style={[
+                styles.timeOptionText,
+                deliveryTime === "now" && styles.timeOptionTextActive,
+              ]}
+            >
               Giao ngay
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.timeOption, deliveryTime === "scheduled" && styles.timeOptionActive]}
+            style={[
+              styles.timeOption,
+              deliveryTime === "scheduled" && styles.timeOptionActive,
+            ]}
             onPress={onShowTimePicker}
           >
-            <Text style={[styles.timeOptionText, deliveryTime === "scheduled" && styles.timeOptionTextActive]}>
+            <Text
+              style={[
+                styles.timeOptionText,
+                deliveryTime === "scheduled" &&
+                  styles.timeOptionTextActive,
+              ]}
+            >
               Chọn thời gian
             </Text>
           </TouchableOpacity>
         </View>
-        {deliveryTime === "scheduled" && scheduledTime && (
+
+        {deliveryTime === "scheduled" && scheduledTime !== "" && (
           <View style={styles.selectedTime}>
-            <Text style={styles.selectedTimeText}>Thời gian: {scheduledTime}</Text>
+            <Text style={styles.selectedTimeText}>
+              Thời gian: {scheduledTime}
+            </Text>
             <TouchableOpacity onPress={onShowTimePicker}>
               <Text style={styles.editBtn}>Đổi</Text>
             </TouchableOpacity>
@@ -73,42 +107,77 @@ export default function DeliveryTimePicker({
         )}
       </View>
 
-      <Modal visible={showTimePicker} transparent animationType="slide" onRequestClose={onHideTimePicker}>
+      {/* MODAL CHỌN GIỜ */}
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={onHideTimePicker}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Chọn thời gian giao hàng</Text>
-            
+            <Text style={styles.modalTitle}>
+              Chọn thời gian giao hàng
+            </Text>
+
             <View style={styles.pickerContainer}>
+              {/* GIỜ */}
               <View style={styles.pickerColumn}>
                 <Text style={styles.pickerLabel}>Giờ</Text>
-                <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={styles.pickerScroll}
+                  showsVerticalScrollIndicator={false}
+                >
                   {availableHours.map((h) => (
                     <TouchableOpacity
                       key={h}
-                      style={[styles.pickerItem, selectedHour === h && styles.pickerItemActive]}
+                      style={[
+                        styles.pickerItem,
+                        selectedHour === h && styles.pickerItemActive,
+                      ]}
                       onPress={() => onHourChange(h)}
                     >
-                      <Text style={[styles.pickerItemText, selectedHour === h && styles.pickerItemTextActive]}>
-                        {h.toString().padStart(2, '0')}
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          selectedHour === h &&
+                            styles.pickerItemTextActive,
+                        ]}
+                      >
+                        {h.toString().padStart(2, "0")}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
-              
+
               <Text style={styles.timeSeparator}>:</Text>
-              
+
+              {/* PHÚT */}
               <View style={styles.pickerColumn}>
                 <Text style={styles.pickerLabel}>Phút</Text>
-                <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={styles.pickerScroll}
+                  showsVerticalScrollIndicator={false}
+                >
                   {availableMinutes.map((m) => (
                     <TouchableOpacity
                       key={m}
-                      style={[styles.pickerItem, selectedMinute === m && styles.pickerItemActive]}
+                      style={[
+                        styles.pickerItem,
+                        selectedMinute === m &&
+                          styles.pickerItemActive,
+                      ]}
                       onPress={() => onMinuteChange(m)}
                     >
-                      <Text style={[styles.pickerItemText, selectedMinute === m && styles.pickerItemTextActive]}>
-                        {m.toString().padStart(2, '0')}
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          selectedMinute === m &&
+                            styles.pickerItemTextActive,
+                        ]}
+                      >
+                        {m.toString().padStart(2, "0")}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -116,11 +185,18 @@ export default function DeliveryTimePicker({
               </View>
             </View>
 
+            {/* ACTIONS */}
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancelButton} onPress={onHideTimePicker}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={onHideTimePicker}
+              >
                 <Text style={styles.modalCancelText}>Hủy</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalConfirmButton} onPress={onTimeConfirm}>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={onTimeConfirm}
+              >
                 <Text style={styles.modalConfirmText}>Xác nhận</Text>
               </TouchableOpacity>
             </View>
@@ -141,7 +217,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E5E5",
     backgroundColor: COLORS.background,
@@ -149,7 +225,7 @@ const styles = StyleSheet.create({
   },
   timeOptionActive: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + "15",
+    backgroundColor: COLORS.primary + "20",
   },
   timeOptionText: {
     fontSize: 14,
@@ -158,7 +234,7 @@ const styles = StyleSheet.create({
   },
   timeOptionTextActive: {
     color: COLORS.primary,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   selectedTime: {
     flexDirection: "row",
@@ -168,7 +244,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: COLORS.primary + "10",
-    borderRadius: 8,
+    borderRadius: 10,
   },
   selectedTimeText: {
     fontSize: 14,
@@ -182,16 +258,16 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 32,
   },
   modalTitle: {
     fontSize: 18,
@@ -204,26 +280,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 20,
+    gap: 18,
     marginBottom: 20,
   },
-  pickerColumn: {
-    alignItems: "center",
-  },
+  pickerColumn: { alignItems: "center" },
   pickerLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.text.secondary,
     marginBottom: 10,
   },
-  pickerScroll: {
-    height: 200,
-    width: 80,
-  },
+  pickerScroll: { height: 200, width: 80 },
   pickerItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     marginBottom: 8,
     backgroundColor: COLORS.background,
     alignItems: "center",
@@ -249,11 +320,12 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: "row",
     gap: 12,
+    marginTop: 8,
   },
   modalCancelButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E5E5",
     alignItems: "center",
@@ -266,7 +338,7 @@ const styles = StyleSheet.create({
   modalConfirmButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: COLORS.primary,
     alignItems: "center",
   },
