@@ -1,4 +1,3 @@
-
 # FE_Mobile
 
 ## Overview
@@ -8,6 +7,7 @@ A cross-platform mobile food delivery application built with React Native and Ex
 ## Installation
 
 Clone the repository and switch to the `mobile` branch:
+
 
 ```bash
 ### Option 1: Clone the repo and then checkout the mobile branch
