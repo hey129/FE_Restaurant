@@ -1,5 +1,6 @@
 import { Slot, useRouter } from "expo-router";
 import React, { useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler"; // <-- THÊM
 import { OnboardingSimple } from "./auth/_onboarding";
 import { CartProvider } from "./context/_cartContext";
 
@@ -15,12 +16,18 @@ export default function RootLayout() {
   };
 
   if (showOnboarding) {
-    return <OnboardingSimple onFinish={handleFinishOnboarding} />;
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <OnboardingSimple onFinish={handleFinishOnboarding} />
+      </GestureHandlerRootView>
+    );
   }
 
   return (
-    <CartProvider>
-      <Slot />
-    </CartProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>    
+      <CartProvider>
+        <Slot />
+      </CartProvider>
+    </GestureHandlerRootView>
   );
 }

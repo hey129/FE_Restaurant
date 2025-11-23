@@ -12,10 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import AccountModal from "../../components/account/accountModal";
-import CartModal from "../../components/cart/cart";
 import { COLORS, PAGINATION } from "../../constants/app";
-import Menu from "../screen/menu";
+import Menu from "../screen/home";
+import { useRouter } from "expo-router";
 
 const HeaderComponent = React.memo(function Header({
   searchText,
@@ -66,28 +67,31 @@ const HeaderComponent = React.memo(function Header({
   );
 });
 
-// ------------------ HomePage ------------------
-export default function HomePage({ navigation }: any) {
-  const [cartVisible, setCartVisible] = useState(false);
+export default function HomePage() {
   const [accountVisible, setAccountVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  const router = useRouter();
   const dummyData = useMemo(() => [{}], []);
   const flatListRef = useRef<FlatList>(null);
 
   const onChange = useCallback((t: string) => setSearchText(t), []);
-  const openCart = useCallback(() => setCartVisible(true), []);
+
   const openAccount = useCallback(() => setAccountVisible(true), []);
+
+  const openCart = useCallback(() => {
+    router.push("/screen/cartList");   // ← Mở màn hình giỏ hàng theo Grab
+  }, []);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
     setShowScrollTop(y > PAGINATION.SCROLL_THRESHOLD);
   };
 
-  const scrollToTop = useCallback(() => {
+  const scrollToTop = () => {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, []);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -114,13 +118,15 @@ export default function HomePage({ navigation }: any) {
       </View>
 
       {showScrollTop && (
-        <TouchableOpacity style={styles.scrollTopBtn} activeOpacity={0.8} onPress={scrollToTop}>
+        <TouchableOpacity style={styles.scrollTopBtn} onPress={scrollToTop}>
           <Text style={styles.scrollTopIcon}>↑</Text>
         </TouchableOpacity>
       )}
 
-      <CartModal visible={cartVisible} onClose={() => setCartVisible(false)} />
-      <AccountModal visible={accountVisible} onClose={() => setAccountVisible(false)} />
+      <AccountModal
+        visible={accountVisible}
+        onClose={() => setAccountVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -176,11 +182,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
   },
   scrollTopIcon: { color: COLORS.white, fontSize: 22, fontWeight: "700" },
 });

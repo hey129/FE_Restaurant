@@ -4,26 +4,31 @@ import {
   Animated,
   Dimensions,
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context"; // FIX S1874
+
+import AppHeader from "../../components/header/appHeader";
 import { getMenuItems, MenuItem } from "../../services/menuService";
 import { CartItem, useCart } from "../context/_cartContext";
 
 const { width } = Dimensions.get("window");
+
 const ACCENT = "#E95322";
 const BG_LIGHT = "#F5CB58";
 const MIN_QTY = 1;
 const TOAST_DURATION = 1500;
-const SPACING = { headerTop: 60, headerLeft: 30, footerBottom: 30 };
+
+/* ======================= TOAST HOOK ======================= */
 
 function useToast() {
   const [msg, setMsg] = useState("");
-  const opacity = useState(new Animated.Value(0))[0];
+  const [opacity] = useState(new Animated.Value(0)); // FIX S6754
 
   const showToast = (text: string) => {
     setMsg(text);
@@ -45,18 +50,24 @@ function useToast() {
   return { msg, opacity, showToast };
 }
 
+/* ======================= FETCH ITEM ======================= */
 async function fetchItemById(id: string) {
   const all = await getMenuItems();
   return all.find((i) => String(i.id) === id) ?? null;
 }
 
+/* ======================= MAIN COMPONENT ======================= */
+
 export default function ProductDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, merchantId } =
+    useLocalSearchParams<{ id: string; merchantId: string }>();
+
   const router = useRouter();
   const { addToCart } = useCart();
 
   const [item, setItem] = useState<MenuItem | null>(null);
   const [qty, setQty] = useState(MIN_QTY);
+
   const { msg: toastMsg, opacity: toastOpacity, showToast } = useToast();
 
   useEffect(() => {
@@ -64,9 +75,14 @@ export default function ProductDetail() {
     fetchItemById(id).then(setItem);
   }, [id]);
 
-  if (!item) return <Text style={{ padding: 20 }}>Đang tải...</Text>;
+  if (!item)
+    return (
+      <SafeAreaView style={{ padding: 20 }}>
+        <Text>Đang tải...</Text>
+      </SafeAreaView>
+    );
 
-  const formattedPrice = `${item.price.toFixed(3)} VND`;
+  const formattedPrice = `${item.price.toLocaleString("vi-VN")} VND`;
 
   const handleAddToCart = () => {
     const payload: CartItem = {
@@ -76,42 +92,37 @@ export default function ProductDetail() {
       img: item.img,
       quantity: qty,
     };
-    addToCart(payload, qty);
-    showToast(`Đã thêm ${qty} món ăn vào giỏ hàng`);
+
+    addToCart(merchantId, payload, qty);
+    showToast(`Đã thêm ${qty} món vào giỏ hàng`);
     setQty(MIN_QTY);
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <View style={{ marginLeft: 12, flex: 1 }}>
-          <Text style={styles.title}>{item.name}</Text>
-          <View style={styles.ratingWrapper}>
-            <Text style={styles.ratingText}>⭐ {item.rating ?? "4.5"} / 5</Text>
-          </View>
-        </View>
-      </View>
+    <View style={styles.screen}>
+      <AppHeader title={item.name} onBack={() => router.back()} />
 
-      <View style={styles.content}>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
+      <View style={styles.contentWrapper}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 160 }}>
           <Image source={{ uri: item.img }} style={styles.productImage} />
 
-          <View style={styles.rowWrapper}>
-            <View style={styles.row}>
-              <Text style={styles.price}>{formattedPrice}</Text>
-              <View style={styles.qtyWrapper}>
-                <TouchableOpacity onPress={() => setQty((q) => Math.max(MIN_QTY, q - 1))}>
-                  <Text style={styles.qtyBtn}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.qtyText}>{qty}</Text>
-                <TouchableOpacity onPress={() => setQty((q) => q + 1)}>
-                  <Text style={styles.qtyBtn}>+</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={{ marginTop: 20 }}>
+            <Text style={styles.price}>{formattedPrice}</Text>
+
+            <View style={styles.qtyWrapper}>
+              <TouchableOpacity
+                onPress={() => setQty((q) => Math.max(MIN_QTY, q - 1))}
+              >
+                <Text style={styles.qtyBtn}>−</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.qtyText}>{qty}</Text>
+
+              <TouchableOpacity onPress={() => setQty((q) => q + 1)}>
+                <Text style={styles.qtyBtn}>+</Text>
+              </TouchableOpacity>
             </View>
+
             <View style={styles.divider} />
           </View>
 
@@ -119,12 +130,14 @@ export default function ProductDetail() {
         </ScrollView>
       </View>
 
+      {/* FOOTER BUTTON */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.cartBtn} onPress={handleAddToCart}>
           <Text style={styles.cartText}>Thêm vào giỏ hàng</Text>
         </TouchableOpacity>
       </View>
 
+      {/* TOAST */}
       {toastMsg ? (
         <Animated.View
           style={[
@@ -145,78 +158,91 @@ export default function ProductDetail() {
           <Text style={styles.toastText}>{toastMsg}</Text>
         </Animated.View>
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG_LIGHT },
+/* ======================= STYLES ======================= */
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: SPACING.headerLeft,
-    paddingRight: SPACING.headerLeft,
-    paddingTop: SPACING.headerTop,
-    paddingBottom: 20,
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
     backgroundColor: BG_LIGHT,
   },
-  backButton: {
-    padding: 8,
-  },
-  backIcon: {
-    fontSize: 28,
-    color: "#000",
-    fontWeight: "400",
-  },
-  title: { fontSize: 22, fontWeight: "700", color: "#391713" },
 
-  ratingWrapper: {
-    backgroundColor: ACCENT,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-    marginTop: 4,
-  },
-  ratingText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-
-  content: {
+  contentWrapper: {
     flex: 1,
     backgroundColor: "#fff",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: -10,
+    marginTop: -6,
   },
 
   productImage: {
     width: width - 80,
     height: (width - 80) * 0.6,
     borderRadius: 16,
-    marginBottom: 16,
     alignSelf: "center",
-    marginTop: 30,
+    marginBottom: 20,
+    marginTop: 20,
   },
 
-  rowWrapper: { marginTop: 40, marginBottom: 20 },
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  divider: { height: 1, backgroundColor: "#EAEAEA", marginTop: 16 },
+  price: {
+    fontSize: 22,
+    color: ACCENT,
+    fontWeight: "800",
+  },
 
-  price: { fontSize: 20, fontWeight: "700", color: ACCENT },
-  qtyWrapper: { flexDirection: "row", alignItems: "center" },
-  qtyBtn: { fontSize: 24, marginHorizontal: 12, color: ACCENT, fontWeight: "700" },
-  qtyText: { fontSize: 16, fontWeight: "700" },
-  description: { fontSize: 14, color: "#676767", lineHeight: 20 },
+  qtyWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
 
-  footer: { position: "absolute", bottom: SPACING.footerBottom, left: 20, right: 20 },
+  qtyBtn: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: ACCENT,
+    paddingHorizontal: 12,
+  },
+
+  qtyText: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#e9e9e9",
+    marginVertical: 20,
+  },
+
+  description: {
+    fontSize: 14,
+    color: "#676767",
+    lineHeight: 20,
+  },
+
+  footer: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+  },
+
   cartBtn: {
     backgroundColor: ACCENT,
+    borderRadius: 30,
     height: 52,
-    borderRadius: 26,
     justifyContent: "center",
     alignItems: "center",
   },
-  cartText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+
+  cartText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 16,
+  },
 
   toast: {
     position: "absolute",
@@ -229,5 +255,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
   },
-  toastText: { color: "#fff", fontWeight: "700" },
+
+  toastText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
 });

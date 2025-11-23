@@ -1,256 +1,149 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../../constants/app";
 
-interface OrderItem {
-  product_name: string;
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  order_id: number;
-  created_at: string;
-  total_amount: number;
-  order_status: string;
-  payment_status?: string;
-  delivery_address: string;
-  items: OrderItem[];
-}
-
 interface OrderCardProps {
-  order: Order;
-  onCancelOrder: (orderId: number) => void;
+  order: any;
+  onPress: (order: any) => void;
+  onCancelOrder: (id: number) => void;
+  onConfirmReceived: (id: number) => void;
 }
 
-export const OrderCard: React.FC<OrderCardProps> = ({ order, onCancelOrder }) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+export const OrderCard: React.FC<OrderCardProps> = ({
+  order,
+  onPress,
+  onCancelOrder,
+  onConfirmReceived,
+}) => {
+
+  const [droneArrived, setDroneArrived] = useState(false);
+
+  /* Load trạng thái drone */
+  useEffect(() => {
+    const checkArrived = async () => {
+      const arrived = await AsyncStorage.getItem(
+        `drone-arrived-${order.order_id}`
+      );
+      if (arrived === "true") setDroneArrived(true);
+    };
+    checkArrived();
+  }, [order.order_id]);
+
+  /* Trạng thái */
+  const status = order.order_status;
+
+  const STATUS_COLOR: Record<string, string> = {
+    Pending: "#FFA726",
+    Completed: "#66BB6A",
+    Canceled: "#EF5350",
   };
 
-  const formatCurrency = (amount: number) => {
-    return `${amount.toFixed(3)} VND`;
+  const STATUS_TEXT: Record<string, string> = {
+    Pending: "Đang xử lý",
+    Completed: "Hoàn thành",
+    Canceled: "Đã hủy",
   };
 
-  const getStatusBadgeStyle = (status: string) => {
-    switch (status) {
-      case 'Chờ xử lý':
-      case 'Đang xử lý':
-        return { backgroundColor: '#FFA726' };
-      case 'Hoàn thành':
-        return { backgroundColor: '#66BB6A' };
-      case 'Đã hủy':
-        return { backgroundColor: '#EF5350' };
-      default:
-        return { backgroundColor: '#BDBDBD' };
-    }
-  };
-
-  const getStatusTextVi = (status: string) => {
-    switch (status) {
-      case 'Chờ xử lý':
-      case 'pending':
-      case 'Đang xử lý':
-        return 'Đang xử lý';
-      case 'Hoàn thành':
-        return 'Hoàn thành';
-      case 'Đã hủy':
-      case 'Hủy':
-        return 'Đã hủy';
-      default:
-        return status;
-    }
-  };
-
-  const getPaymentBadgeStyle = (status?: string) => {
-    const s = (status || '').toString().trim().toLowerCase();
-    switch (s) {
-      case 'chưa thanh toán':
-      case 'unpaid':
-      case 'un-paid':
-      case 'not paid':
-        return { backgroundColor: '#FF7043' };
-      case 'đã thanh toán':
-      case 'paid':
-      case 'success':
-        return { backgroundColor: '#66BB6A' };
-      case 'đã hoàn tiền':
-      case 'hoàn tiền':
-      case 'refunded':
-      case 'refunded_partial':
-      case 'refund':
-        return { backgroundColor: '#29B6F6' };
-      default:
-        return { backgroundColor: '#BDBDBD' };
-    }
-  };
-
-  const getPaymentTextVi = (status?: string) => {
-    const s = (status || '').toString().trim().toLowerCase();
-    if (!s) return 'Chưa thanh toán';
-    switch (s) {
-      case 'chưa thanh toán':
-      case 'unpaid':
-      case 'not paid':
-      case 'un-paid':
-        return 'Chưa thanh toán';
-      case 'đã thanh toán':
-      case 'paid':
-      case 'success':
-        return 'Đã thanh toán';
-      case 'đã hoàn tiền':
-      case 'hoàn tiền':
-      case 'refunded':
-      case 'refund':
-      case 'refunded_partial':
-        return 'Đã hoàn tiền';
-      default:
-        return status || 'Chưa thanh toán';
-    }
-  };
+  /* Logic nút */
+  const showConfirmButton = status === "Pending" && droneArrived;
+  const showCancelButton = status === "Pending" && !droneArrived;
 
   return (
-    <View style={styles.orderCard}>
-      <View style={styles.orderHeader}>
-        <View>
-          <Text style={styles.orderId}>Đơn hàng #{order.order_id}</Text>
-          <Text style={styles.orderDate}>{formatDate(order.created_at)}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={[styles.statusBadge, getStatusBadgeStyle(order.order_status)]}>
-            <Text style={styles.statusText}>{getStatusTextVi(order.order_status)}</Text>
-          </View>
-          <View style={[styles.paymentBadge, getPaymentBadgeStyle(order.payment_status)]}>
-            <Text style={styles.statusText}>{getPaymentTextVi(order.payment_status)}</Text>
-          </View>
-        </View>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => onPress(order)}
+      activeOpacity={0.9}
+    >
+      <Text style={styles.merchant}>{order.merchant_name}</Text>
+      <Text style={styles.address}>{order.merchant_address}</Text>
+
+      <Text style={styles.total}>
+        {order.total_amount.toLocaleString("vi-VN")} VND
+      </Text>
+
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: STATUS_COLOR[status] },
+        ]}
+      >
+        <Text style={styles.statusText}>
+          {STATUS_TEXT[status]}
+        </Text>
       </View>
 
-      <View style={styles.orderBody}>
-        {order.items.map((product, index) => (
-          <View key={index} style={styles.productRow}>
-            <Text style={styles.productName}>
-              {product.quantity}x {product.product_name}
-            </Text>
-            <Text style={styles.productPrice}>{formatCurrency(product.price)}</Text>
-          </View>
-        ))}
-      </View>
+      {showConfirmButton && (
+        <TouchableOpacity
+          style={styles.confirmBtn}
+          onPress={() => onConfirmReceived(order.order_id)}
+        >
+          <Text style={styles.confirmText}>Đã nhận</Text>
+        </TouchableOpacity>
+      )}
 
-      <View style={styles.orderFooter}>
-        <View>
-          <Text style={styles.totalLabel}>Tổng tiền</Text>
-          <Text style={styles.totalAmount}>{formatCurrency(order.total_amount)}</Text>
-        </View>
-        {(order.order_status === 'Chờ xử lý' || order.order_status === 'Đang xử lý') && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => onCancelOrder(order.order_id)}
-          >
-            <Text style={styles.cancelButtonText}>Hủy đơn</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
+      {showCancelButton && (
+        <TouchableOpacity
+          style={styles.cancelBtn}
+          onPress={() => onCancelOrder(order.order_id)}
+        >
+          <Text style={styles.cancelText}>Hủy đơn</Text>
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
   );
 };
 
+/* STYLES */
 const styles = StyleSheet.create({
-  orderCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
+  card: {
+    backgroundColor: "#FFF",
     padding: 16,
+    borderRadius: 16,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#EEE",
   },
-  orderHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  orderId: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.text.primary,
-    marginBottom: 4,
-  },
-  orderDate: {
-    fontSize: 13,
-    color: COLORS.text.secondary,
+  merchant: { fontSize: 16, fontWeight: "800" },
+  address: { marginTop: 4, color: "#777" },
+  total: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: COLORS.accent,
+    marginTop: 10,
   },
   statusBadge: {
+    alignSelf: "flex-start",
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 10,
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.white,
-  },
-  paymentBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  orderBody: {
-    marginBottom: 12,
-  },
-  productRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  productName: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.text.primary,
-  },
-  productPrice: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.text.primary,
-  },
-  orderFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-  },
-  totalLabel: {
-    fontSize: 13,
-    color: COLORS.text.secondary,
-    marginBottom: 4,
-  },
-  totalAmount: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.accent,
-  },
-  cancelButton: {
-    backgroundColor: "#EF5350",
-    paddingHorizontal: 20,
+  statusText: { color: "#FFF", fontWeight: "800" },
+  confirmBtn: {
+    backgroundColor: COLORS.accent,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: "center",
   },
-  cancelButtonText: {
+  confirmText: {
+    color: "#FFF",
     fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.white,
+    fontWeight: "800",
+  },
+  cancelBtn: {
+    backgroundColor: "#EF5350",
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  cancelText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
+
+export default OrderCard;

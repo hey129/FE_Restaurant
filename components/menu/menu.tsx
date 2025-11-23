@@ -1,69 +1,142 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Category, MenuItem } from "../../services/menuService";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { COLORS } from "../../constants/app";
 
-const CATEGORY_SIZE = 60;
-
-export const CategoryItem = ({
-  item,
-  selected = false,
-  onPress,
-}: {
-  item: Category;
-  selected?: boolean;
-  onPress?: () => void;
-}) => (
-  <TouchableOpacity style={styles.categoryItem} onPress={onPress} activeOpacity={0.8}>
-    <View style={[styles.categoryImageWrapper, selected ? styles.categoryImageWrapperSelected : undefined]}>
-      <Image source={{ uri: item.img }} style={styles.categoryImage} />
-    </View>
-    <Text style={[styles.categoryText, selected ? styles.categoryTextSelected : undefined]}>{item.name}</Text>
-  </TouchableOpacity>
-);
-
-export const MenuListItem = ({ item }: { item: MenuItem }) => {
-  const router = useRouter();
-  return (
-    <TouchableOpacity
-      onPress={() => router.push({ pathname: "/screen/productDetail", params: { id: String(item.id) } })}
-      style={styles.menuItemWrapper}
-      activeOpacity={0.8}
-    >
-      <Image source={{ uri: item.img }} style={styles.menuItemImage} resizeMode="cover" />
-      <View style={styles.menuItemContent}>
-        <Text style={styles.menuItemName}>{item.name}</Text>
-        <View style={styles.infoRow}>
-          <View style={styles.ratingListItem}>
-            <Text style={styles.ratingTextWhite}>⭐ {item.rating?.toFixed(1) ?? "4.5"}</Text>
-          </View>
-          <Text style={styles.menuItemPrice}>{item.price.toFixed(3)} VND</Text>
-        </View>
-        <Text style={styles.menuItemDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+export type MenuItem = {
+  readonly id: string | number;
+  readonly name: string;
+  readonly description?: string;
+  readonly price: number;
+  readonly img: string;
+  readonly categoryId?: number;
+  readonly categoryName?: string;
 };
 
+// Category Item
+export function CategoryItem({
+  item,
+  selected,
+  onPress,
+}: {
+  readonly item: { id: number; name: string; img?: string };
+  readonly selected: boolean;
+  readonly onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        styles.categoryWrapper,
+        selected && styles.categorySelected,
+      ]}
+    >
+      <Text
+        style={[
+          styles.categoryText,
+          selected && styles.categoryTextSelected,
+        ]}
+      >
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// Menu List Item
+export function MenuListItem({
+  item,
+  merchantId,
+  onPress,
+}: {
+  readonly item: MenuItem;
+  readonly merchantId: string;
+  readonly onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.card} onPress={onPress}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name}>{item.name}</Text>
+
+        {item.description ? (
+          <Text style={styles.desc} numberOfLines={2}>
+            {item.description}
+          </Text>
+        ) : null}
+
+        <Text style={styles.price}>
+          {item.price.toLocaleString("vi-VN")} VND
+        </Text>
+      </View>
+
+      <Image source={{ uri: item.img }} style={styles.image} />
+    </TouchableOpacity>
+  );
+}
+
+// Styles
 const styles = StyleSheet.create({
-  categoryItem: { alignItems: "center", marginRight: 16 },
-  categoryImageWrapper: { backgroundColor: "#F3E9B5", borderRadius: CATEGORY_SIZE / 2, padding: 12 },
-  categoryImageWrapperSelected: { backgroundColor: "#E95322" }, 
-  categoryImage: { width: CATEGORY_SIZE, height: CATEGORY_SIZE, borderRadius: CATEGORY_SIZE / 2, resizeMode: "cover" },
-  categoryText: { color: "#391713", fontSize: 12, marginTop: 6, textAlign: "center" },
-  categoryTextSelected: { color: "#fff" }, 
+  card: {
+    flexDirection: "row",
+    padding: 14,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    backgroundColor: "#FFF",
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
 
-  ratingTextWhite: { fontSize: 14, color: "#fff", fontWeight: "700" },
-  ratingListItem: { backgroundColor: "#E95322", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  name: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  desc: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    marginBottom: 6,
+  },
+  price: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.accent,
+  },
+  image: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginLeft: 12,
+  },
 
-  menuItemWrapper: { flexDirection: "row", marginBottom: 16, marginHorizontal: 20, backgroundColor: "#FFF", borderRadius: 15, overflow: "hidden", elevation: 2, height: 110 },
-  menuItemImage: { width: 100, height: "100%" },
-  menuItemContent: { flex: 1, padding: 12, justifyContent: "center" },
-  menuItemName: { fontSize: 16, color: "#391713", fontWeight: "bold", marginBottom: 6 },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  menuItemPrice: { fontSize: 14, color: "#E95322", fontWeight: "bold" },
-  menuItemDescription: { fontSize: 12, color: "#676767", lineHeight: 16 },
+  /* Category */
+  categoryWrapper: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: "#F3F3F3",
+    marginRight: 10,
+  },
+  categorySelected: {
+    backgroundColor: COLORS.accent,
+  },
+  categoryText: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+  },
+  categoryTextSelected: {
+    color: COLORS.text.primary,
+    fontWeight: "700",
+  },
 });
 
+export default styles;

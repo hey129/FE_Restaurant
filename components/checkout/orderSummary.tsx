@@ -4,22 +4,27 @@ import { COLORS, PRICING } from "../../constants/app";
 import { sharedStyles } from "../../constants/sharedStyles";
 
 interface CartItem {
-  id: string | number;
-  name: string;
-  price: number;
-  quantity: number;
-  img: string;
+  readonly id: string | number;
+  readonly name: string;
+  readonly price: number;
+  readonly quantity: number;
+  readonly img: string;
 }
 
 interface OrderSummaryProps {
-  cart: CartItem[];
-  subtotal: number;
-  total: number;
+  readonly cart: CartItem[];
+  readonly subtotal: number;
+  readonly total: number;
 }
 
-export default function OrderSummary({ cart, subtotal, total }: OrderSummaryProps) {
+export default function OrderSummary({
+  cart,
+  subtotal,
+  total,
+}: OrderSummaryProps) {
   return (
     <>
+      {/* Tóm tắt đơn */}
       <View style={sharedStyles.section}>
         <View style={sharedStyles.sectionHeader}>
           <Text style={sharedStyles.sectionTitle}>Tóm tắt đơn hàng</Text>
@@ -27,40 +32,65 @@ export default function OrderSummary({ cart, subtotal, total }: OrderSummaryProp
         </View>
 
         {cart.map((item) => (
-          <View key={item.id} style={styles.orderItem}>
-            <Image source={{ uri: item.img }} style={styles.itemImage} />
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.itemQuantity}>x{item.quantity}</Text>
+          <View key={item.id} style={styles.row}>
+            <Image source={{ uri: item.img }} style={styles.image} />
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={styles.qty}>x{item.quantity}</Text>
             </View>
-            <Text style={styles.itemPrice}>{item.price.toFixed(3)}</Text>
+
+            <Text style={styles.price}>
+              {(item.price * item.quantity).toLocaleString("vi-VN")} VND
+            </Text>
           </View>
         ))}
       </View>
 
+      {/* Chi tiết đơn */}
       <View style={sharedStyles.section}>
         <Text style={sharedStyles.sectionTitle}>Chi tiết đơn hàng</Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>Tạm tính</Text>
-          <Text style={styles.priceValue}>{subtotal.toFixed(3)}</Text>
-        </View>
-        <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>Thuế và phí</Text>
-          <Text style={styles.priceValue}>{PRICING.TAX.toFixed(3)}</Text>
-        </View>
-        <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>Phí giao hàng</Text>
-          <Text style={styles.priceValue}>{PRICING.DELIVERY.toFixed(3)}</Text>
-        </View>
-        <View style={[styles.priceRow, styles.totalRow]}>
+
+        <Row
+          label="Tạm tính"
+          value={`${subtotal.toLocaleString("vi-VN")} VND`}
+        />
+        <Row
+          label="Thuế và phí"
+          value={`${PRICING.TAX.toLocaleString("vi-VN")} VND`}
+        />
+        <Row
+          label="Phí giao hàng"
+          value={`${PRICING.DELIVERY.toLocaleString("vi-VN")} VND`}
+        />
+
+        <View style={styles.totalRow}>
           <Text style={sharedStyles.totalLabel}>Tổng cộng</Text>
-          <Text style={sharedStyles.totalValue}>{total.toFixed(3)} VND</Text>
+          <Text style={sharedStyles.totalValue}>
+            {total.toLocaleString("vi-VN")} VND
+          </Text>
         </View>
       </View>
     </>
   );
 }
 
+const Row = ({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) => (
+  <View style={styles.priceRow}>
+    <Text style={styles.label}>{label}</Text>
+    <Text style={styles.value}>{value}</Text>
+  </View>
+);
+
+// Styles
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 12,
@@ -71,33 +101,31 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.primary,
   },
-  orderItem: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#eee",
   },
-  itemImage: {
+  image: {
     width: 50,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 10,
     marginRight: 12,
+    backgroundColor: COLORS.background,
   },
-  itemInfo: {
-    flex: 1,
-  },
-  itemName: {
+  name: {
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.text.primary,
-    marginBottom: 4,
   },
-  itemQuantity: {
+  qty: {
     fontSize: 12,
     color: COLORS.text.secondary,
+    marginTop: 2,
   },
-  itemPrice: {
+  price: {
     fontSize: 14,
     fontWeight: "700",
     color: COLORS.text.primary,
@@ -105,22 +133,23 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     paddingVertical: 8,
   },
-  priceLabel: {
-    fontSize: 14,
+  label: {
     color: COLORS.text.secondary,
-  },
-  priceValue: {
     fontSize: 14,
-    fontWeight: "600",
+  },
+  value: {
+    fontWeight: "700",
+    fontSize: 14,
     color: COLORS.text.primary,
   },
   totalRow: {
-    marginTop: 8,
-    paddingTop: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: "#eee",
   },
 });

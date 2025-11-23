@@ -7,8 +7,8 @@ export const PAGINATION = {
 
 // Pricing
 export const PRICING = {
-  TAX: 5,
-  DELIVERY: 3,
+  TAX: 5000,
+  DELIVERY: 15000,
 } as const;
 
 // UI sizes

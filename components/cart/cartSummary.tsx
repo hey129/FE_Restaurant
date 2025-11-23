@@ -1,122 +1,113 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { COLORS as APP_COLORS, PRICING } from "../../constants/app";
+import { PRICING } from "../../constants/app";
 
-
-type CartSummaryProps = {
-  subtotal: number;
-  showDelivery?: boolean; 
-  showCheckoutButton?: boolean; 
-  onCheckout?: () => void;
-};
-
-
-const COLORS = {
-  accent: APP_COLORS.accentYellow,
-  white: APP_COLORS.white,
-  whiteLight: "rgba(255,255,255,0.4)",
-};
-
-
-const SummaryRow = ({ 
-  label, 
-  value, 
-  bold = false 
-}: { 
-  label: string; 
-  value: string; 
-  bold?: boolean;
-}) => (
-  <View style={styles.summaryRow}>
-    <Text style={[styles.summaryLabel, bold && { fontWeight: "700" }]}>
-      {label}
-    </Text>
-    <Text style={[styles.summaryValue, bold && { fontWeight: "700" }]}>
-      {value}
-    </Text>
-  </View>
-);
-
-
-export function CartSummary({ 
-  subtotal, 
+// Component
+export function CartSummary({
+  subtotal,
   showDelivery = true,
   showCheckoutButton = true,
   onCheckout,
-}: CartSummaryProps) {
+}: {
+  readonly subtotal: number;
+  readonly showDelivery?: boolean;
+  readonly showCheckoutButton?: boolean;
+  readonly onCheckout?: () => void;
+}) {
+  const tax = PRICING.TAX;
   const delivery = showDelivery ? PRICING.DELIVERY : 0;
-  const total = subtotal + PRICING.TAX + delivery;
+  const total = subtotal + tax + delivery;
 
   return (
     <View style={styles.container}>
-      <SummaryRow label="Tạm tính" value={`${subtotal.toFixed(3)}`} />
-      
-      <SummaryRow label="Thuế & phí" value={`${PRICING.TAX.toFixed(3)}`} />
-      
+      <Row label="Tạm tính" value={`${subtotal.toLocaleString("vi-VN")} VND`} />
+      <Row label="Thuế & phí" value={`${tax.toLocaleString("vi-VN")} VND`} />
       {showDelivery && (
-        <SummaryRow label="Phí giao hàng" value={`${delivery.toFixed(3)}`} />
+        <Row label="Phí giao hàng" value={`${delivery.toLocaleString("vi-VN")} VND`} />
       )}
 
-      <View style={styles.totalDivider} />
-      
-      <SummaryRow 
-        label="Tổng cộng" 
-        value={`${total.toFixed(3)} VND`} 
-        bold 
-      />
+      <View style={styles.divider} />
+
+      <Row label="Tổng cộng" value={`${total.toLocaleString("vi-VN")} VND`} bold />
 
       {showCheckoutButton && (
-        <TouchableOpacity 
-          style={styles.checkoutBtn}
-          onPress={onCheckout}
-        >
-          <Text style={styles.checkoutText}>Thanh toán</Text>
+        <TouchableOpacity style={styles.btn} onPress={onCheckout}>
+          <Text style={styles.btnText}>Thanh toán</Text>
         </TouchableOpacity>
       )}
     </View>
   );
 }
 
+// Row item
+const Row = ({
+  label,
+  value,
+  bold,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly bold?: boolean;
+}) => (
+  <View style={styles.row}>
+    <Text style={[styles.label, bold && styles.bold]}>{label}</Text>
+    <Text style={[styles.value, bold && styles.bold]}>{value}</Text>
+  </View>
+);
 
+// Styles
 const styles = StyleSheet.create({
-  container: { 
-    marginTop: 20 
-  },
-  
-  summaryRow: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    marginBottom: 8, 
-    alignItems: "center" 
-  },
-  summaryLabel: { 
-    color: COLORS.white, 
-    opacity: 0.95, 
-    fontSize: 17 
-  },
-  summaryValue: { 
-    color: COLORS.white, 
-    fontWeight: "700", 
-    fontSize: 16 
+  container: {
+    marginTop: 16,
+    backgroundColor: "#FFF",
+    padding: 16,
+    borderRadius: 12,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowColor: "#000",
+    elevation: 2,
   },
 
-  totalDivider: { 
-    borderTopWidth: 1, 
-    borderTopColor: COLORS.whiteLight, 
-    marginTop: 8, 
-    marginBottom: 8 
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
 
-  checkoutBtn: { 
-    marginTop: 14, 
-    backgroundColor: COLORS.accent, 
-    borderRadius: 25, 
-    paddingVertical: 12, 
-    alignItems: "center" 
+  label: {
+    fontSize: 15,
+    color: "#391713",
   },
-  checkoutText: { 
-    fontWeight: "700", 
-    fontSize: 16, 
-    color: "#391713" 
+
+  value: {
+    fontSize: 15,
+    color: "#E95322",
+    fontWeight: "600",
+  },
+
+  bold: {
+    fontWeight: "800",
+    fontSize: 17,
+    color: "#391713",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(0,0,0,0.08)",
+    marginVertical: 10,
+  },
+
+  btn: {
+    marginTop: 14,
+    backgroundColor: "#F5CB58",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  btnText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#391713",
   },
 });
