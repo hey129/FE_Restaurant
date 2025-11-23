@@ -20,7 +20,7 @@ export interface Order {
   order_id: number;
   created_at: string;
   total_amount: number;
-  order_status: string; // Pending | Completed | Canceled
+  order_status: "Pending" | "Shipping" | "Completed" | "Canceled";
   payment_status: string;
   merchant_name: string;
   merchant_address: string;
@@ -39,7 +39,7 @@ export default function OrdersTab() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<OrderStatus>("Tất cả");
 
-  /* LOAD ORDER FROM DB */
+  /* LOAD ORDERS */
   const loadOrders = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -60,11 +60,16 @@ export default function OrdersTab() {
 
   /* FILTER ORDERS */
   const filterOrders = () => {
-    if (activeTab === "Tất cả") return setFilteredOrders(orders);
+    if (activeTab === "Tất cả") {
+      return setFilteredOrders(orders);
+    }
 
     if (activeTab === "Đang xử lý") {
+      // Đang xử lý = Pending + Shipping
       return setFilteredOrders(
-        orders.filter((o) => o.order_status === "Pending")
+        orders.filter(
+          (o) => o.order_status === "Pending" || o.order_status === "Shipping"
+        )
       );
     }
 
@@ -81,7 +86,7 @@ export default function OrdersTab() {
     }
   };
 
-  /* HANDLE ACTIONS */
+  /* ACTIONS */
   const openOrderDetail = (order: Order) => {
     router.push({
       pathname: "/screen/myorderDetail",
@@ -117,7 +122,6 @@ export default function OrdersTab() {
             .from("orders")
             .update({
               order_status: "Completed",
-              payment_status: "Paid",
               delivery_updated_at: new Date().toISOString(),
             })
             .eq("order_id", orderId);
@@ -128,7 +132,7 @@ export default function OrdersTab() {
     ]);
   };
 
-  /* EFFECTS */
+  /* EFFECT */
   useEffect(() => {
     loadOrders();
   }, []);

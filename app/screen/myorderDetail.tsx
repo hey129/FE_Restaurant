@@ -15,7 +15,6 @@ import { supabase } from "../../services/supabaseClient";
 import DroneMap from "../../components/map/droneMap";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// IMPORT 2 HÀM QUAN TRỌNG
 import {
   updateDroneLocation,
   confirmOrderReceived,
@@ -35,7 +34,7 @@ type OrderType = {
   merchant_name: string;
   merchant_address: string;
   created_at: string;
-  order_status: "Pending" | "Completed" | "Canceled";
+  order_status: "Pending" | "Shipping" | "Completed" | "Canceled";
   payment_status: "Paid" | "Refunded";
   delivery_address?: string;
   total_amount: number;
@@ -44,12 +43,14 @@ type OrderType = {
 
 const STATUS_MAP = {
   Pending: "Đang xử lý",
+  Shipping: "Đang vận chuyển",
   Completed: "Hoàn thành",
   Canceled: "Đã hủy",
 };
 
 const STATUS_COLOR = {
   Pending: "#FFA726",
+  Shipping: "#29B6F6",
   Completed: "#66BB6A",
   Canceled: "#EF5350",
 };
@@ -97,12 +98,24 @@ export default function MyOrderDetail() {
     loadData();
   }, [order.order_id]);
 
-  const canShowButton = order.order_status === "Pending";
-  const buttonLabel = droneArrived ? "Đã nhận" : "Hủy đơn";
+  /* BUTTON LOGIC */
+  const canShowButton =
+    order.order_status === "Pending" || order.order_status === "Shipping";
 
-  /* Xử lý nút */
+  const buttonLabel =
+    order.order_status === "Pending"
+      ? "Hủy đơn"
+      : order.order_status === "Shipping" && !droneArrived
+      ? "Hủy đơn"
+      : "Đã nhận";
+
+  /* HÀM XỬ LÝ NÚT */
   const handleButtonPress = async () => {
-    if (buttonLabel === "Hủy đơn") {
+    // PENDING + SHIPPING (chưa nhận) → HỦY ĐƠN
+    if (
+      order.order_status === "Pending" ||
+      (order.order_status === "Shipping" && !droneArrived)
+    ) {
       Alert.alert("Xác nhận hủy", "Bạn có chắc muốn hủy đơn?", [
         { text: "Không", style: "cancel" },
         {
@@ -124,16 +137,19 @@ export default function MyOrderDetail() {
       return;
     }
 
-    Alert.alert("Xác nhận", "Bạn đã nhận được hàng từ drone?", [
-      { text: "Chưa", style: "cancel" },
-      {
-        text: "Đã nhận",
-        onPress: async () => {
-          await confirmOrderReceived(order.order_id);
-          router.replace("/(tabs)/orders");
+    // SHIPPING + DRONE ARRIVED → ĐÃ NHẬN
+    if (order.order_status === "Shipping" && droneArrived) {
+      Alert.alert("Xác nhận", "Bạn đã nhận được hàng từ drone?", [
+        { text: "Chưa", style: "cancel" },
+        {
+          text: "Đã nhận",
+          onPress: async () => {
+            await confirmOrderReceived(order.order_id);
+            router.replace("/(tabs)/orders");
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const restaurantGPS = { lat: 10.8231, lng: 106.6297 };
@@ -184,10 +200,10 @@ export default function MyOrderDetail() {
           </View>
         </View>
 
-        {/* MAP – khi Pending */}
-        {order.order_status === "Pending" && (
+        {/* DRONE — SHIPPING */}
+        {order.order_status === "Shipping" && (
           <>
-            <Text style={styles.section}>Vị trí drone hiện tại</Text>
+            <Text style={styles.section}>Drone đang giao hàng</Text>
 
             <DroneMap
               orderId={Number(order.order_id)}
@@ -213,7 +229,7 @@ export default function MyOrderDetail() {
           </>
         )}
 
-        {/* MAP WHEN COMPLETED */}
+        {/* COMPLETED */}
         {order.order_status === "Completed" && (
           <>
             <Text style={styles.section}>Vị trí cuối cùng của drone</Text>
@@ -266,7 +282,7 @@ export default function MyOrderDetail() {
         </View>
       </ScrollView>
 
-      {/* BUTTON */}
+      {/* ACTION BUTTON */}
       {canShowButton && (
         <View style={styles.footer}>
           <TouchableOpacity style={styles.cancelBtn} onPress={handleButtonPress}>

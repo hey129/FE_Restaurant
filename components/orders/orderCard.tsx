@@ -16,7 +16,6 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onCancelOrder,
   onConfirmReceived,
 }) => {
-
   const [droneArrived, setDroneArrived] = useState(false);
 
   /* Load trạng thái drone */
@@ -35,19 +34,23 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
   const STATUS_COLOR: Record<string, string> = {
     Pending: "#FFA726",
+    Shipping: "#29B6F6",
     Completed: "#66BB6A",
     Canceled: "#EF5350",
   };
 
   const STATUS_TEXT: Record<string, string> = {
     Pending: "Đang xử lý",
+    Shipping: "Đang vận chuyển",
     Completed: "Hoàn thành",
     Canceled: "Đã hủy",
   };
 
-  /* Logic nút */
-  const showConfirmButton = status === "Pending" && droneArrived;
-  const showCancelButton = status === "Pending" && !droneArrived;
+  /* Logic nút (chuẩn theo yêu cầu của bạn) */
+  const showCancelButton =
+    (status === "Pending" || status === "Shipping") && !droneArrived;
+
+  const showConfirmButton = status === "Shipping" && droneArrived;
 
   return (
     <TouchableOpacity
@@ -68,19 +71,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           { backgroundColor: STATUS_COLOR[status] },
         ]}
       >
-        <Text style={styles.statusText}>
-          {STATUS_TEXT[status]}
-        </Text>
+        <Text style={styles.statusText}>{STATUS_TEXT[status]}</Text>
       </View>
-
-      {showConfirmButton && (
-        <TouchableOpacity
-          style={styles.confirmBtn}
-          onPress={() => onConfirmReceived(order.order_id)}
-        >
-          <Text style={styles.confirmText}>Đã nhận</Text>
-        </TouchableOpacity>
-      )}
 
       {showCancelButton && (
         <TouchableOpacity
@@ -88,6 +80,15 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           onPress={() => onCancelOrder(order.order_id)}
         >
           <Text style={styles.cancelText}>Hủy đơn</Text>
+        </TouchableOpacity>
+      )}
+
+      {showConfirmButton && (
+        <TouchableOpacity
+          style={styles.confirmBtn}
+          onPress={() => onConfirmReceived(order.order_id)}
+        >
+          <Text style={styles.confirmText}>Đã nhận</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -120,18 +121,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   statusText: { color: "#FFF", fontWeight: "800" },
-  confirmBtn: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginTop: 12,
-    alignItems: "center",
-  },
-  confirmText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "800",
-  },
+
   cancelBtn: {
     backgroundColor: "#EF5350",
     paddingVertical: 10,
@@ -143,6 +133,19 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+
+  confirmBtn: {
+    backgroundColor: COLORS.accent,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  confirmText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });
 
