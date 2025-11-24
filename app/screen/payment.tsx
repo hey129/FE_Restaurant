@@ -21,7 +21,7 @@ import { useCart } from "../context/_cartContext";
 export default function PaymentScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { cart, clearCart } = useCart();
+  const { cart, markCartAsOrdered  } = useCart();
 
   const merchantId = params.merchantId as string;
   const merchantCart = cart[merchantId] || [];
@@ -91,7 +91,7 @@ export default function PaymentScreen() {
         }
       );
 
-      clearCart(merchantId);
+      markCartAsOrdered(merchantId);
 
       Alert.alert(
         "Thành công",

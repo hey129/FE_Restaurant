@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context"; // FIX S1874
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "../../components/header/appHeader";
 import { getMenuItems, MenuItem } from "../../services/menuService";
@@ -28,7 +28,7 @@ const TOAST_DURATION = 1500;
 
 function useToast() {
   const [msg, setMsg] = useState("");
-  const [opacity] = useState(new Animated.Value(0)); // FIX S6754
+  const [opacity] = useState(new Animated.Value(0));
 
   const showToast = (text: string) => {
     setMsg(text);
@@ -84,14 +84,17 @@ export default function ProductDetail() {
 
   const formattedPrice = `${item.price.toLocaleString("vi-VN")} VND`;
 
+  /* ======================= ADD TO CART ======================= */
   const handleAddToCart = () => {
     const payload: CartItem = {
-      id: String(item.id),
+      id: Number(item.id),   // FIX QUAN TRỌNG — LUÔN LÀ NUMBER
       name: item.name,
       price: item.price,
       img: item.img,
       quantity: qty,
     };
+
+    console.log("ADD TO CART PAYLOAD:", payload);
 
     addToCart(merchantId, payload, qty);
     showToast(`Đã thêm ${qty} món vào giỏ hàng`);

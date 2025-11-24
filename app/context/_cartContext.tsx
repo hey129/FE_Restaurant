@@ -8,21 +8,25 @@ import React, {
 import { supabase } from "../../services/supabaseClient";
 
 export type CartItem = {
-  id: string;      // product_id
+  id: number;      // product_id INT trong DB
   name: string;
   price: number;
   quantity: number;
   img: string;
 };
 
+/* ============================
+   CART CONTEXT TYPE
+=============================== */
 type CartContextType = {
   cart: Record<string, CartItem[]>;
   addToCart: (merchantId: string, item: CartItem, qty?: number) => void;
-  removeFromCart: (merchantId: string, id: string) => void;
-  changeQuantity: (merchantId: string, id: string, delta: number) => void;
+  removeFromCart: (merchantId: string, id: number) => void;
+  changeQuantity: (merchantId: string, id: number, delta: number) => void;
   clearCart: (merchantId: string) => void;
   clearAllCarts: () => void;
   getCart: (merchantId: string) => CartItem[];
+  markCartAsOrdered: (merchantId: string) => Promise<void>;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -41,25 +45,44 @@ async function saveMerchantCartToDB(
   merchantId: string,
   items: CartItem[]
 ) {
-  await supabase
-    .from("cart")
-    .delete()
-    .eq("customer_id", customerId)
-    .eq("merchant_id", merchantId)
-    .eq("status", "active");
+  for (const i of items) {
+    // CHECK EXISTING CART ROW
+    const { data: rows, error } = await supabase
+      .from("cart")
+      .select("cart_id, quantity")
+      .eq("customer_id", customerId)
+      .eq("merchant_id", merchantId)
+      .eq("product_id", Number(i.id))      // FIX QUAN TRỌNG
+      .eq("status", "active");
 
-  if (items.length === 0) return;
+    if (error) {
+      console.log("ERROR CHECKING EXISTING CART:", error);
+      continue;
+    }
 
-  const rows = items.map((i) => ({
-    customer_id: customerId,
-    merchant_id: merchantId,
-    product_id: Number(i.id),
-    quantity: i.quantity,
-    price: i.price,
-    status: "active",
-  }));
+    const existing = rows?.[0];
 
-  await supabase.from("cart").insert(rows);
+    if (existing) {
+      // UPDATE
+      await supabase
+        .from("cart")
+        .update({
+          quantity: i.quantity,
+          price: i.price,
+        })
+        .eq("cart_id", existing.cart_id);
+    } else {
+      // INSERT
+      await supabase.from("cart").insert({
+        customer_id: customerId,
+        merchant_id: merchantId,
+        product_id: Number(i.id),       // FIX QUAN TRỌNG
+        quantity: i.quantity,
+        price: i.price,
+        status: "active",
+      });
+    }
+  }
 }
 
 async function clearMerchantCartDB(customerId: string, merchantId: string) {
@@ -74,14 +97,14 @@ async function clearAllCartsDB(customerId: string) {
   await supabase.from("cart").delete().eq("customer_id", customerId);
 }
 
+/* LOAD CART */
 async function loadCartFromDB(): Promise<Record<string, CartItem[]>> {
   const customerId = await getCurrentUserId();
   if (!customerId) return {};
 
   const { data, error } = await supabase
     .from("cart")
-    .select(
-      `
+    .select(`
       merchant_id,
       product_id,
       quantity,
@@ -90,8 +113,7 @@ async function loadCartFromDB(): Promise<Record<string, CartItem[]>> {
         product_name,
         image
       )
-    `
-    )
+    `)
     .eq("customer_id", customerId)
     .eq("status", "active");
 
@@ -105,7 +127,7 @@ async function loadCartFromDB(): Promise<Record<string, CartItem[]>> {
     if (!map[merchantId]) map[merchantId] = [];
 
     map[merchantId].push({
-      id: String(row.product_id),
+      id: Number(row.product_id),                // FIX: trả về number
       name: row.product?.product_name ?? "",
       img: row.product?.image ?? "",
       price: Number(row.price),
@@ -144,9 +166,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       const updated = exists
         ? current.map((i) =>
-            i.id === item.id
-              ? { ...i, quantity: i.quantity + qty }
-              : i
+            i.id === item.id ? { ...i, quantity: i.quantity + qty } : i
           )
         : [...current, { ...item, quantity: qty }];
 
@@ -155,7 +175,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const removeFromCart = (merchantId: string, id: string) => {
+  const removeFromCart = (merchantId: string, id: number) => {
     setCart((prev) => {
       const updated = (prev[merchantId] || []).filter((i) => i.id !== id);
       syncDB(merchantId, updated);
@@ -163,11 +183,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const changeQuantity = (
-    merchantId: string,
-    id: string,
-    delta: number
-  ) => {
+  const changeQuantity = (merchantId: string, id: number, delta: number) => {
     setCart((prev) => {
       const updated = (prev[merchantId] || [])
         .map((i) =>
@@ -199,6 +215,26 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  /* ======================
+     MARK CART AS ORDERED
+  ======================= */
+  const markCartAsOrdered = async (merchantId: string) => {
+    const uid = await getCurrentUserId();
+    if (!uid) return;
+
+    await supabase
+      .from("cart")
+      .update({ status: "ordered" })
+      .eq("customer_id", uid)
+      .eq("merchant_id", merchantId)
+      .eq("status", "active");
+
+    setCart((prev) => ({
+      ...prev,
+      [merchantId]: [],
+    }));
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -209,6 +245,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         clearCart,
         clearAllCarts,
         getCart,
+        markCartAsOrdered,
       }}
     >
       {children}
