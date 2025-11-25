@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, View } from "react-native";
 
 import { EmptyOrders, OrderCard, OrderTabs } from "../../components/orders";
@@ -20,7 +20,7 @@ export interface Order {
   order_id: number;
   created_at: string;
   total_amount: number;
-  order_status: "Pending" | "Shipping" | "Completed" | "Canceled";
+  order_status: "Pending" | "Shipping" | "Completed" | Cancelled;
   payment_status: string;
   merchant_name: string;
   merchant_address: string;
@@ -42,7 +42,9 @@ export default function OrdersTab() {
   /* LOAD ORDERS */
   const loadOrders = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
         router.replace("/auth/_welcome");
@@ -81,7 +83,7 @@ export default function OrdersTab() {
 
     if (activeTab === "Đã hủy") {
       return setFilteredOrders(
-        orders.filter((o) => o.order_status === "Canceled")
+        orders.filter((o) => o.order_status === Cancelled)
       );
     }
   };
@@ -103,7 +105,7 @@ export default function OrdersTab() {
         onPress: async () => {
           await supabase
             .from("orders")
-            .update({ order_status: "Canceled", payment_status: "Refunded" })
+            .update({ order_status: Cancelled, payment_status: "Refunded" })
             .eq("order_id", orderId);
 
           loadOrders();

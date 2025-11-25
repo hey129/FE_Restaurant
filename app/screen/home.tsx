@@ -49,15 +49,15 @@ function RenderMerchant({
       activeOpacity={0.85}
       onPress={() => readonlyOnPress(readonlyItem.merchant_id)}
     >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initials}</Text>
-      </View>
-
       <View style={styles.cardContent}>
         <Text style={styles.merchantName}>{readonlyItem.merchant_name}</Text>
         <Text style={styles.merchantAddress}>
           {readonlyItem.address || "Chưa có địa chỉ"}
         </Text>
+      </View>
+
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{initials}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -176,7 +176,12 @@ export default function Home({ searchText }: HomeProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: "800",
@@ -189,7 +194,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.white,
-    marginHorizontal: 16,
     padding: 12,
     borderRadius: 12,
     shadowColor: "#000",
@@ -197,6 +201,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
+    marginBottom: 12, // tùy thích
   },
   avatar: {
     width: 64,
@@ -205,8 +210,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginLeft: 12, // avatar cách phần nội dung
+    marginRight: 0, // sát cạnh phải
   },
+
   avatarText: { color: COLORS.white, fontSize: 20, fontWeight: "800" },
   cardContent: { flex: 1 },
   merchantName: { fontSize: 16, fontWeight: "700", color: COLORS.text.primary },
