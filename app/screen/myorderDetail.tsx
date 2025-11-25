@@ -1,24 +1,24 @@
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DroneMap from "../../components/map/droneMap";
 import { COLORS } from "../../constants/app";
 import { supabase } from "../../services/supabaseClient";
+import DroneMap from "../../components/map/droneMap";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
+  updateDroneLocation,
   confirmOrderReceived,
   markOrderArrived,
-  updateDroneLocation,
 } from "../../services/orderService";
 
 /* TYPES */
@@ -34,7 +34,7 @@ type OrderType = {
   merchant_name: string;
   merchant_address: string;
   created_at: string;
-  order_status: "Pending" | "Shipping" | "Completed" | "Cancelled";
+  order_status: "Pending" | "Shipping" | "Completed" | "Canceled";
   payment_status: "Paid" | "Refunded";
   delivery_address?: string;
   total_amount: number;
@@ -45,14 +45,14 @@ const STATUS_MAP = {
   Pending: "Đang xử lý",
   Shipping: "Đang vận chuyển",
   Completed: "Hoàn thành",
-  Cancelled: "Đã hủy",
+  Canceled: "Đã hủy",
 };
 
 const STATUS_COLOR = {
   Pending: "#FFA726",
   Shipping: "#29B6F6",
   Completed: "#66BB6A",
-  Cancelled: "#EF5350",
+  Canceled: "#EF5350",
 };
 
 const PAYMENT_MAP = {
@@ -125,7 +125,7 @@ export default function MyOrderDetail() {
             await supabase
               .from("orders")
               .update({
-                order_status: "Cancelled",
+                order_status: "Canceled",
                 payment_status: "Refunded",
               })
               .eq("order_id", order.order_id);
@@ -285,10 +285,7 @@ export default function MyOrderDetail() {
       {/* ACTION BUTTON */}
       {canShowButton && (
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={handleButtonPress}
-          >
+          <TouchableOpacity style={styles.cancelBtn} onPress={handleButtonPress}>
             <Text style={styles.cancelText}>{buttonLabel}</Text>
           </TouchableOpacity>
         </View>

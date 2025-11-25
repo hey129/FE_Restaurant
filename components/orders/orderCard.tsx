@@ -1,6 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../../constants/app";
 
 interface OrderCardProps {
@@ -36,14 +36,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     Pending: "#FFA726",
     Shipping: "#29B6F6",
     Completed: "#66BB6A",
-    Cancelled: "#EF5350",
+    Canceled: "#EF5350",
   };
 
   const STATUS_TEXT: Record<string, string> = {
     Pending: "Đang xử lý",
     Shipping: "Đang vận chuyển",
     Completed: "Hoàn thành",
-    Cancelled: "Đã hủy",
+    Canceled: "Đã hủy",
   };
 
   /* Logic nút (chuẩn theo yêu cầu của bạn) */
@@ -66,7 +66,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       </Text>
 
       <View
-        style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[status] }]}
+        style={[
+          styles.statusBadge,
+          { backgroundColor: STATUS_COLOR[status] },
+        ]}
       >
         <Text style={styles.statusText}>{STATUS_TEXT[status]}</Text>
       </View>
