@@ -226,12 +226,7 @@ function ProductsTab() {
                 <h3 className={cx("merchant-title")}>
                   {merchant.merchant_name}
                 </h3>
-                <button
-                  className={cx("btn", "btn-sm", "btn-primary")}
-                  onClick={() => openProductModal(merchant)}
-                >
-                  + Add Product
-                </button>
+
               </div>
               <div className={cx("table-wrapper")}>
                 <table className={cx("data-table")}>

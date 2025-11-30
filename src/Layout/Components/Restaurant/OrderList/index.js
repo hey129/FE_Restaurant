@@ -2,7 +2,14 @@
 import { useEffect, useState } from "react";
 import classNames from "classnames/bind";
 import styles from "./OrderList.module.scss";
-import { getOrderItems, updateOrderStatus, useAuth, getAllOrders } from "~/Api";
+import {
+  getOrderItems,
+  updateOrderStatus,
+  useAuth,
+  getAllOrders,
+  assignAvailableDrone,
+  getAssignmentByOrderId,
+} from "~/Api";
 import toast, { Toaster } from "react-hot-toast";
 import { MapComponent } from "~/Layout/Components/GPS/MapComponent";
 
@@ -98,15 +105,41 @@ function OrderList({ merchant }) {
     }
   };
 
+  // Load delivery assignment
+  const loadDeliveryAssignment = async (orderId) => {
+    try {
+      const assignment = await getAssignmentByOrderId(orderId);
+      return assignment;
+    } catch (err) {
+      console.error("Load assignment error:", err);
+      return null;
+    }
+  };
+
   // Toggle order expansion
   const toggleOrderExpansion = async (orderId) => {
     if (expandedOrder === orderId) {
       setExpandedOrder(null);
     } else {
       const items = await loadOrderItems(orderId);
+
+      // Load assignment if shipping or completed
+      const order = orders.find(o => o.order_id === orderId);
+      let assignment = null;
+
+      console.log("Toggle Expansion - Order:", order);
+
+      if (order && (order.order_status === "Shipping" || order.order_status === "Completed")) {
+        console.log("Fetching assignment for order:", orderId);
+        assignment = await loadDeliveryAssignment(orderId);
+        console.log("Fetched assignment:", assignment);
+      } else {
+        console.log("Order status not Shipping/Completed, skipping assignment fetch");
+      }
+
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
-          order.order_id === orderId ? { ...order, items } : order
+          order.order_id === orderId ? { ...order, items, assignment } : order
         )
       );
       setExpandedOrder(orderId);
@@ -172,14 +205,13 @@ function OrderList({ merchant }) {
   const handleCancelOrder = async (order) => {
     const confirmCancel = window.confirm(
       `Are you sure you want to cancel order #${order.order_id}?\n\n` +
-        `Customer: ${order.customer?.customer_name || "N/A"}\n` +
-        `Total: ${formatVND(order.total_amount)}\n` +
-        `Payment Status: ${order.payment_status || "N/A"}\n\n` +
-        `${
-          order.payment_status === "Paid" || order.payment_status === "Paid"
-            ? "⚠️ Paid order will be marked as refunded."
-            : ""
-        }`
+      `Customer: ${order.customer?.customer_name || "N/A"}\n` +
+      `Total: ${formatVND(order.total_amount)}\n` +
+      `Payment Status: ${order.payment_status || "N/A"}\n\n` +
+      `${order.payment_status === "Paid" || order.payment_status === "Paid"
+        ? "⚠️ Paid order will be marked as refunded."
+        : ""
+      }`
     );
 
     if (!confirmCancel) return;
@@ -190,17 +222,41 @@ function OrderList({ merchant }) {
     await updateOrderStatusLocal(order.order_id, "Cancelled", needsRefund);
   };
 
-  // Handle Shipping order
+  // Handle Shipping order (Assign Drone)
   const handleCompletedOrder = async (order) => {
     const confirmShipping = window.confirm(
       `Confirm order #${order.order_id} for shipping?\n\n` +
-        `Customer: ${order.customer?.customer_name || "N/A"}\n` +
-        `Total: ${formatVND(order.total_amount)}`
+      `This will automatically assign an available drone.`
     );
 
     if (!confirmShipping) return;
 
-    await updateOrderStatusLocal(order.order_id, "Shipping");
+    try {
+      setProcessingAction(order.order_id);
+
+      // Assign drone
+      const { assignment, drone } = await assignAvailableDrone(order.order_id);
+
+      // Update local state
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.order_id === order.order_id
+            ? { ...o, order_status: "Shipping", assignment: { ...assignment, drone } }
+            : o
+        )
+      );
+
+      toast.success(`Drone ${drone.model} assigned to Order #${order.order_id}!`);
+    } catch (error) {
+      console.error("Assign drone error:", error);
+      if (error.message === "NO_DRONE_AVAILABLE") {
+        toast.error("No drones available right now. Please try again later.");
+      } else {
+        toast.error("Failed to assign drone");
+      }
+    } finally {
+      setProcessingAction(null);
+    }
   };
 
   // Get status badge class
@@ -374,6 +430,18 @@ function OrderList({ merchant }) {
                     <p>{order.delivery_address || "No address"}</p>
                   </div>
 
+                  {/* Drone Assignment Info */}
+                  {order.assignment && (
+                    <div className={cx("detail-section")}>
+                      <h4>Drone Delivery Info</h4>
+                      <div className={cx("drone-info")}>
+                        <p><strong>Drone Model:</strong> {order.assignment.drone?.model || "N/A"}</p>
+                        <p><strong>Status:</strong> {order.assignment.status}</p>
+                        <p><strong>Assigned At:</strong> {formatDate(order.assignment.assigned_at)}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Delivery Map */}
                   {order.delivery_address && (
                     <div className={cx("detail-section")}>
@@ -471,12 +539,12 @@ function OrderList({ merchant }) {
                   {(order.order_status === "Completed" ||
                     order.order_status === "Cancelled" ||
                     order.order_status === "Failed") && (
-                    <div className={cx("status-message")}>
-                      {order.order_status === "Completed"
-                        ? "Order Completed"
-                        : " Order Cancelled"}
-                    </div>
-                  )}
+                      <div className={cx("status-message")}>
+                        {order.order_status === "Completed"
+                          ? "Order Completed"
+                          : " Order Cancelled"}
+                      </div>
+                    )}
                 </div>
               )}
             </div>

@@ -43,14 +43,13 @@ export async function createOrder({
       order_status: "Pending",
       payment_status: "Paid",
       note: note || null,
-      delivery_updated_at: new Date().toISOString(),
-      delivery_started_at: null,
     })
     .select("order_id")
     .single();
 
   if (orderErr) throw orderErr;
   const orderId = orderRow.order_id;
+
 
   // 2) insert order_detail (bulk)
   const details = items.map((it) => ({
@@ -226,14 +225,8 @@ export async function updateOrderStatus({
 
   const updateData = {
     order_status: orderStatus,
-    delivery_updated_at: new Date().toISOString(),
   };
-
-  // Set delivery_started_at when status changes to "Shipping"
-  if (orderStatus === "Shipping") {
-    updateData.delivery_started_at = new Date().toISOString();
-  }
-
+  x
   if (paymentStatus) {
     updateData.payment_status = paymentStatus;
   }
@@ -445,26 +438,41 @@ export async function autoFailExpiredOrders() {
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-    const { data: expiredOrders, error: fetchErr } = await supabase
-      .from("orders")
-      .select("order_id, delivery_started_at")
-      .eq("order_status", "Shipping")
-      .lt("delivery_started_at", oneHourAgo);
+    // Find orders that are Shipping and have an assignment older than 1 hour
+    const { data: expiredAssignments, error: fetchErr } = await supabase
+      .from("delivery_assignment")
+      .select("order_id, assigned_at")
+      .eq("status", "assigned") // Assuming status stays 'assigned' while shipping
+      .lt("assigned_at", oneHourAgo);
 
     if (fetchErr) throw fetchErr;
 
-    if (!expiredOrders || expiredOrders.length === 0) {
+    if (!expiredAssignments || expiredAssignments.length === 0) {
       console.log("No expired orders to auto-fail");
       return [];
     }
 
+    // Filter orders that are still in Shipping status
+    const orderIds = expiredAssignments.map((a) => a.order_id);
+    const { data: shippingOrders, error: orderErr } = await supabase
+      .from("orders")
+      .select("order_id")
+      .in("order_id", orderIds)
+      .eq("order_status", "Shipping");
+
+    if (orderErr) throw orderErr;
+
+    if (!shippingOrders || shippingOrders.length === 0) {
+      return [];
+    }
+
+    const expiredOrderIds = shippingOrders.map((o) => o.order_id);
+
     // Update expired orders to Failed
-    const expiredOrderIds = expiredOrders.map((o) => o.order_id);
     const { data: updatedOrders, error: updateErr } = await supabase
       .from("orders")
       .update({
         order_status: "Failed",
-        delivery_updated_at: new Date().toISOString(),
       })
       .in("order_id", expiredOrderIds)
       .select();

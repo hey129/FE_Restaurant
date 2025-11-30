@@ -10,8 +10,8 @@ import MerchantsTab from "./MerchantsTab";
 import ProductsTab from "./ProductsTab";
 import CategoriesTab from "./CategoriesTab";
 import CustomersTab from "./CustomersTab";
+import DronesTab from "./DronesTab";
 import OrdersTab from "./OrdersTab";
-
 const cx = classNames.bind(styles);
 
 function AdminDashboard() {
@@ -62,6 +62,12 @@ function AdminDashboard() {
         >
           Orders
         </button>
+        <button
+          className={cx("tab", { active: activeTab === "drones" })}
+          onClick={() => setActiveTab("drones")}
+        >
+          Drones
+        </button>
       </div>
 
       {/* Content Area - Render Tab Components */}
@@ -72,6 +78,7 @@ function AdminDashboard() {
         {activeTab === "categories" && <CategoriesTab />}
         {activeTab === "customers" && <CustomersTab />}
         {activeTab === "orders" && <OrdersTab />}
+        {activeTab === "drones" && <DronesTab />}
       </div>
     </div>
   );

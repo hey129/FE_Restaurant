@@ -23,9 +23,9 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -86,8 +86,7 @@ export function MapComponent({ orderId, customerAddress }) {
             const simplifiedAddress = address.split(",")[0].trim();
             if (simplifiedAddress !== address) {
               console.log(
-                `🔄 Retry with simplified: "${simplifiedAddress}" (${
-                  retries - 1
+                `🔄 Retry with simplified: "${simplifiedAddress}" (${retries - 1
                 } attempts left)`
               );
               return geocodeAddress(simplifiedAddress, retries - 1);
@@ -111,7 +110,7 @@ export function MapComponent({ orderId, customerAddress }) {
         const { data: order, error: orderErr } = await supabase
           .from("orders")
           .select(
-            "order_id, merchant_id, delivery_address, order_status, delivery_started_at"
+            "order_id, merchant_id, delivery_address, order_status"
           )
           .eq("order_id", orderId)
           .single();
@@ -257,8 +256,7 @@ export function MapComponent({ orderId, customerAddress }) {
       })
         .addTo(mapInstance.current)
         .bindPopup(
-          `<strong>🚁 Drone</strong><br/>Distance to customer: ${
-            deliveryDistance?.toFixed(2) || "?"
+          `<strong>🚁 Drone</strong><br/>Distance to customer: ${deliveryDistance?.toFixed(2) || "?"
           }km`
         );
 

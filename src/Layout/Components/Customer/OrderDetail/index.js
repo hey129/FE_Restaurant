@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./OrderDetail.module.scss";
-import { useAuth, getOrderDetail, cancelOrder } from "~/Api";
+import { useAuth, getOrderDetail, cancelOrder, getAssignmentByOrderId } from "~/Api";
 import { supabase } from "~/Api/supabase";
 import toast from "react-hot-toast";
 import { MapComponent } from "~/Layout/Components/GPS/MapComponent";
@@ -82,6 +82,7 @@ function OrderDetail() {
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [assignment, setAssignment] = useState(null);
 
   // Get delivery status (distance and arrival detection)
   const { droneArrived } = useDeliveryStatus(id);
@@ -119,6 +120,21 @@ function OrderDetail() {
         }
 
         setOrder(data);
+        console.log("Loaded Order Detail:", data);
+
+        // Fetch assignment if shipping or completed
+        if (data.order_status === "Shipping" || data.order_status === "Completed") {
+          console.log("Order is Shipping/Completed, fetching assignment...");
+          try {
+            const assignData = await getAssignmentByOrderId(Number(id));
+            console.log("Fetched Assignment Data:", assignData);
+            if (active) setAssignment(assignData);
+          } catch (err) {
+            console.error("Error fetching assignment:", err);
+          }
+        } else {
+          console.log("Order status is not Shipping/Completed, skipping assignment fetch");
+        }
       } catch (err) {
         if (!active) return;
         console.error("Load order detail error:", err);
@@ -380,6 +396,31 @@ function OrderDetail() {
             )}
           </div>
         </div>
+
+        {/* Drone Delivery Info */}
+        {assignment && (
+          <div className={cx("card")}>
+            <div className={cx("card-header")}>
+              <h3>Drone Delivery Info</h3>
+            </div>
+            <div className={cx("card-body")}>
+              <div className={cx("info-row")}>
+                <span className={cx("label")}>Drone Model:</span>
+                <span className={cx("value")}>{assignment.drone?.model || "N/A"}</span>
+              </div>
+              <div className={cx("info-row")}>
+                <span className={cx("label")}>Status:</span>
+                <span className={cx("value")}>
+                  {assignment.status === "assigned" ? "Shipping" : assignment.status}
+                </span>
+              </div>
+              <div className={cx("info-row")}>
+                <span className={cx("label")}>Assigned At:</span>
+                <span className={cx("value")}>{formatDate(assignment.assigned_at)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delivery Info Card */}
         <div className={cx("card")}>

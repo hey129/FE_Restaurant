@@ -9,9 +9,9 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -93,7 +93,7 @@ export function useDeliveryStatus(orderId) {
         const { data: order, error: orderErr } = await supabase
           .from("orders")
           .select(
-            "order_id, order_status, delivery_address, merchant_id, delivery_started_at, delivery_updated_at"
+            "order_id, order_status, delivery_address, merchant_id"
           )
           .eq("order_id", orderId)
           .single();
@@ -102,15 +102,29 @@ export function useDeliveryStatus(orderId) {
 
         setOrderStatus(order.order_status);
 
-        // Auto-fail check: if order is Shipping and delivery_updated_at > 1 hour ago
+        // Get delivery assignment if shipping
+        let assignment = null;
         if (order.order_status === "Shipping") {
-          const deliveryUpdateTime = new Date(order.delivery_updated_at);
-          const timeSinceLastUpdate =
-            (new Date() - deliveryUpdateTime) / 1000 / 60; // minutes
+          const { data: assignData, error: assignErr } = await supabase
+            .from("delivery_assignment")
+            .select("assigned_at")
+            .eq("order_id", orderId)
+            .single();
 
-          if (timeSinceLastUpdate > 60) {
+          if (!assignErr) {
+            assignment = assignData;
+          }
+        }
+
+        // Auto-fail check: if order is Shipping and assigned_at > 1 hour ago
+        if (order.order_status === "Shipping" && assignment?.assigned_at) {
+          const assignedTime = new Date(assignment.assigned_at);
+          const timeSinceAssignment =
+            (new Date() - assignedTime) / 1000 / 60; // minutes
+
+          if (timeSinceAssignment > 60) {
             console.warn(
-              `⏰ Order #${orderId} has no update for ${timeSinceLastUpdate.toFixed(
+              `⏰ Order #${orderId} has been shipping for ${timeSinceAssignment.toFixed(
                 1
               )} min (> 1 hour) - auto-failing order`
             );
@@ -119,7 +133,6 @@ export function useDeliveryStatus(orderId) {
               .from("orders")
               .update({
                 order_status: "Failed",
-                delivery_updated_at: new Date().toISOString(),
               })
               .eq("order_id", orderId);
 
@@ -136,7 +149,7 @@ export function useDeliveryStatus(orderId) {
         }
 
         // Only calculate distance if order is Shipping
-        if (order.order_status === "Shipping" && order.delivery_address) {
+        if (order.order_status === "Shipping" && order.delivery_address && assignment?.assigned_at) {
           // Get merchant address
           const { data: merchant, error: merchantErr } = await supabase
             .from("merchant")
@@ -161,12 +174,12 @@ export function useDeliveryStatus(orderId) {
               customerCoords.lng
             );
 
-            // Calculate elapsed time based on delivery_updated_at
+            // Calculate elapsed time based on assigned_at
             // This is updated every 2 minutes, each update = drone moved 2km closer
-            const deliveryStartTime = new Date(order.delivery_started_at);
-            const deliveryUpdateTime = new Date(order.delivery_updated_at);
+            const deliveryStartTime = new Date(assignment.assigned_at);
+            const currentTime = new Date();
             const elapsedSeconds =
-              (deliveryUpdateTime - deliveryStartTime) / 1000;
+              (currentTime - deliveryStartTime) / 1000;
 
             // Number of 2-minute intervals that have passed
             const twoMinuteIntervals = Math.floor(elapsedSeconds / 120);
@@ -197,13 +210,13 @@ export function useDeliveryStatus(orderId) {
 
             // If drone reached 100% distance but customer hasn't received, auto-fail after 1 hour
             if (travelRatio === 1.0) {
-              // Check from delivery_updated_at (last update time) + 1 hour
-              const timeSinceLastUpdate =
-                (new Date() - deliveryUpdateTime) / 1000 / 60; // minutes
+              // Check from assigned_at + 1 hour
+              const timeSinceAssignment =
+                (new Date() - deliveryStartTime) / 1000 / 60; // minutes
 
-              if (timeSinceLastUpdate > 60) {
+              if (timeSinceAssignment > 60) {
                 console.warn(
-                  `⏰ Order #${orderId} reached destination but no completion for ${timeSinceLastUpdate.toFixed(
+                  `⏰ Order #${orderId} reached destination but no completion for ${timeSinceAssignment.toFixed(
                     1
                   )} min (> 1 hour) - auto-failing order`
                 );
@@ -212,7 +225,6 @@ export function useDeliveryStatus(orderId) {
                   .from("orders")
                   .update({
                     order_status: "Failed",
-                    delivery_updated_at: new Date().toISOString(),
                   })
                   .eq("order_id", orderId);
 
@@ -253,14 +265,12 @@ export function useDeliveryStatus(orderId) {
               )}, ${customerCoords.lng.toFixed(4)}]`
             );
             console.log(
-              `   Remaining: ${remainingDistance.toFixed(2)} km | Arrived: ${
-                arrived ? "✅ YES" : "❌ NO"
+              `   Remaining: ${remainingDistance.toFixed(2)} km | Arrived: ${arrived ? "✅ YES" : "❌ NO"
               }`
             );
           } else {
             console.warn(
-              `⚠️ Could not geocode for order #${orderId} - merchant: ${
-                merchantCoords ? "✅" : "❌"
+              `⚠️ Could not geocode for order #${orderId} - merchant: ${merchantCoords ? "✅" : "❌"
               }, customer: ${customerCoords ? "✅" : "❌"}`
             );
           }
@@ -298,7 +308,7 @@ export function useDeliveryStatus(orderId) {
       )
       .subscribe();
 
-    // Poll every 2 minutes (120000ms) to update delivery_updated_at
+    // Poll every 2 minutes (120000ms) to update drone position
     const interval = setInterval(fetchDeliveryStatus, 120000);
 
     console.log(
