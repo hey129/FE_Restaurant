@@ -436,7 +436,6 @@ function OrderList({ merchant }) {
                       <h4>Drone Delivery Info</h4>
                       <div className={cx("drone-info")}>
                         <p><strong>Drone Model:</strong> {order.assignment.drone?.model || "N/A"}</p>
-                        <p><strong>Status:</strong> {order.assignment.status}</p>
                         <p><strong>Assigned At:</strong> {formatDate(order.assignment.assigned_at)}</p>
                       </div>
                     </div>
@@ -449,6 +448,7 @@ function OrderList({ merchant }) {
                       <MapComponent
                         orderId={order.order_id}
                         customerAddress={order.delivery_address}
+                        isSimulator={true}
                       />
                     </div>
                   )}

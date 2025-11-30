@@ -408,12 +408,7 @@ function OrderDetail() {
                 <span className={cx("label")}>Drone Model:</span>
                 <span className={cx("value")}>{assignment.drone?.model || "N/A"}</span>
               </div>
-              <div className={cx("info-row")}>
-                <span className={cx("label")}>Status:</span>
-                <span className={cx("value")}>
-                  {assignment.status === "assigned" ? "Shipping" : assignment.status}
-                </span>
-              </div>
+
               <div className={cx("info-row")}>
                 <span className={cx("label")}>Assigned At:</span>
                 <span className={cx("value")}>{formatDate(assignment.assigned_at)}</span>

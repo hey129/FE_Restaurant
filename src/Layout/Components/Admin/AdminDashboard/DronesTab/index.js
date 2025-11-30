@@ -110,57 +110,61 @@ function DronesTab() {
                 </button>
             </div>
 
-            <div className={cx("table-container")}>
-                <table className={cx("table")}>
+
+
+            <div className={cx("table-wrapper")}>
+                <table className={cx("data-table")}>
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Model</th>
                             <th>Status</th>
                             <th>Battery</th>
-                            <th>Max Speed (km/h)</th>
-                            <th>Payload (kg)</th>
+                            <th>Max Speed</th>
+                            <th>Payload</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {drones.map((drone) => (
                             <tr key={drone.drone_id}>
-                                <td>{drone.model}</td>
+                                <td>{drone.drone_id}</td>
+                                <td className={cx("product-name")}>{drone.model}</td>
                                 <td>
                                     <span
-                                        className={cx("badge", {
-                                            success: drone.status === "idle",
-                                            warning: drone.status === "delivering" || drone.status === "busy",
-                                            danger: drone.status === "maintenance",
+                                        className={cx("status-badge", {
+                                            active: drone.status === "idle",
+                                            inactive: drone.status === "maintenance",
                                         })}
+                                        style={
+                                            drone.status === "delivering" || drone.status === "busy"
+                                                ? { backgroundColor: "#fef3c7", color: "#92400e" }
+                                                : {}
+                                        }
                                     >
-                                        {drone.status}
+                                        {drone.status === "idle"
+                                            ? "Sẵn sàng"
+                                            : drone.status === "delivering"
+                                                ? "Đang giao"
+                                                : drone.status === "maintenance"
+                                                    ? "Bảo trì"
+                                                    : drone.status}
                                     </span>
                                 </td>
                                 <td>
-                                    <div className={cx("battery-indicator")}>
-                                        <div
-                                            className={cx("battery-level", {
-                                                low: drone.battery < 20,
-                                                medium: drone.battery >= 20 && drone.battery < 60,
-                                                high: drone.battery >= 60,
-                                            })}
-                                            style={{ width: `${drone.battery}%` }}
-                                        ></div>
-                                        <span>{drone.battery}%</span>
-                                    </div>
+                                    <span className={cx("rating")}>{drone.battery}%</span>
                                 </td>
-                                <td>{drone.max_speed}</td>
-                                <td>{drone.payload_limit}</td>
+                                <td>{drone.max_speed} km/h</td>
+                                <td>{drone.payload_limit} kg</td>
                                 <td>
                                     <button
-                                        className={cx("btn-icon", "edit")}
+                                        className={cx("btn", "btn-sm", "btn-edit")}
                                         onClick={() => openEditModal(drone)}
                                     >
                                         Edit
                                     </button>
                                     <button
-                                        className={cx("btn-icon", "delete")}
+                                        className={cx("btn", "btn-sm", "btn-delete")}
                                         onClick={() => handleDelete(drone.drone_id)}
                                     >
                                         Delete
@@ -173,20 +177,20 @@ function DronesTab() {
             </div>
 
             {showModal && (
-                <div className={cx("modal-overlay")}>
-                    <div className={cx("modal")}>
+                <div className={cx("modal-overlay")} onClick={() => setShowModal(false)}>
+                    <div className={cx("modal")} onClick={(e) => e.stopPropagation()}>
                         <div className={cx("modal-header")}>
                             <h3>{editingDrone ? "Edit Drone" : "Add New Drone"}</h3>
                             <button
-                                className={cx("close-btn")}
+                                className={cx("modal-close")}
                                 onClick={() => setShowModal(false)}
                             >
-                                &times;
+                                ✕
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit}>
+                        <div className={cx("modal-body")}>
                             <div className={cx("form-group")}>
-                                <label>Model Name</label>
+                                <label>Model Name *</label>
                                 <input
                                     type="text"
                                     required
@@ -194,70 +198,82 @@ function DronesTab() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, model: e.target.value })
                                     }
+                                    placeholder="Enter model name"
                                 />
                             </div>
-                            <div className={cx("form-group")}>
-                                <label>Battery (%)</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    required
-                                    value={formData.battery}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, battery: e.target.value })
-                                    }
-                                />
+                            <div className={cx("form-row")}>
+                                <div className={cx("form-group")}>
+                                    <label>Battery (%) *</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        required
+                                        value={formData.battery}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, battery: e.target.value })
+                                        }
+                                        placeholder="100"
+                                    />
+                                </div>
+                                <div className={cx("form-group")}>
+                                    <label>Max Speed (km/h) *</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={formData.max_speed}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, max_speed: e.target.value })
+                                        }
+                                        placeholder="60"
+                                    />
+                                </div>
                             </div>
-                            <div className={cx("form-group")}>
-                                <label>Max Speed (km/h)</label>
-                                <input
-                                    type="number"
-                                    required
-                                    value={formData.max_speed}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, max_speed: e.target.value })
-                                    }
-                                />
+                            <div className={cx("form-row")}>
+                                <div className={cx("form-group")}>
+                                    <label>Payload Limit (kg) *</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={formData.payload_limit}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, payload_limit: e.target.value })
+                                        }
+                                        placeholder="5"
+                                    />
+                                </div>
+                                <div className={cx("form-group")}>
+                                    <label>Status</label>
+                                    <select
+                                        value={formData.status}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, status: e.target.value })
+                                        }
+                                    >
+                                        <option value="idle">Idle</option>
+                                        <option value="delivering">Delivering</option>
+                                        <option value="maintenance">Maintenance</option>
+                                        <option value="charging">Charging</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div className={cx("form-group")}>
-                                <label>Payload Limit (kg)</label>
-                                <input
-                                    type="number"
-                                    required
-                                    value={formData.payload_limit}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, payload_limit: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className={cx("form-group")}>
-                                <label>Status</label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, status: e.target.value })
-                                    }
-                                >
-                                    <option value="idle">Idle</option>
-                                    <option value="delivering">Delivering</option>
-                                    <option value="maintenance">Maintenance</option>
-                                    <option value="charging">Charging</option>
-                                </select>
-                            </div>
-                            <div className={cx("modal-actions")}>
-                                <button
-                                    type="button"
-                                    className={cx("btn", "btn-secondary")}
-                                    onClick={() => setShowModal(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className={cx("btn", "btn-primary")}>
-                                    Save
-                                </button>
-                            </div>
-                        </form>
+                        </div>
+                        <div className={cx("modal-footer")}>
+                            <button
+                                type="button"
+                                className={cx("btn", "btn-secondary")}
+                                onClick={() => setShowModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className={cx("btn", "btn-primary")}
+                                onClick={handleSubmit}
+                            >
+                                {editingDrone ? "Update" : "Create"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

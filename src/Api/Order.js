@@ -226,7 +226,7 @@ export async function updateOrderStatus({
   const updateData = {
     order_status: orderStatus,
   };
-  x
+
   if (paymentStatus) {
     updateData.payment_status = paymentStatus;
   }

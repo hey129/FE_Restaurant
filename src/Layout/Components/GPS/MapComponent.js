@@ -37,7 +37,7 @@ const estimateDeliveryTime = (distanceKm) => {
   return Math.ceil(timeMinutes);
 };
 
-export function MapComponent({ orderId, customerAddress }) {
+export function MapComponent({ orderId, customerAddress, isSimulator = false }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const [restaurantLocation, setRestaurantLocation] = useState(null);
@@ -48,7 +48,7 @@ export function MapComponent({ orderId, customerAddress }) {
 
   // Get drone location from delivery status hook
   const { droneLocation, distance: deliveryDistance } =
-    useDeliveryStatus(orderId);
+    useDeliveryStatus(orderId, isSimulator);
 
   // Fetch order and merchant details
   useEffect(() => {

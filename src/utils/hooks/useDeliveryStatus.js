@@ -65,7 +65,7 @@ const geocodeAddress = async (address, retries = 3) => {
   }
 };
 
-export function useDeliveryStatus(orderId) {
+export function useDeliveryStatus(orderId, isSimulator = false) {
   const [distance, setDistance] = useState(null);
   const [droneArrived, setDroneArrived] = useState(false);
   const [orderStatus, setOrderStatus] = useState(null);
@@ -107,7 +107,7 @@ export function useDeliveryStatus(orderId) {
         if (order.order_status === "Shipping") {
           const { data: assignData, error: assignErr } = await supabase
             .from("delivery_assignment")
-            .select("assigned_at")
+            .select("assigned_at, drone_id, pickup_lat, pickup_lng, drop_lat, drop_lng")
             .eq("order_id", orderId)
             .single();
 
@@ -149,130 +149,83 @@ export function useDeliveryStatus(orderId) {
         }
 
         // Only calculate distance if order is Shipping
-        if (order.order_status === "Shipping" && order.delivery_address && assignment?.assigned_at) {
-          // Get merchant address
-          const { data: merchant, error: merchantErr } = await supabase
-            .from("merchant")
-            .select("address")
-            .eq("merchant_id", order.merchant_id)
-            .single();
+        if (order.order_status === "Shipping" && assignment?.assigned_at) {
+          // Use coordinates from assignment if available, otherwise geocode (fallback)
+          let startLat = assignment.pickup_lat;
+          let startLng = assignment.pickup_lng;
+          let endLat = assignment.drop_lat;
+          let endLng = assignment.drop_lng;
 
-          if (merchantErr) throw merchantErr;
+          // If coordinates are missing in DB (legacy orders), fallback to geocoding
+          if (!startLat || !endLat) {
+            // Get merchant address
+            const { data: merchant, error: merchantErr } = await supabase
+              .from("merchant")
+              .select("address")
+              .eq("merchant_id", order.merchant_id)
+              .single();
 
-          // Geocode both addresses
-          const [merchantCoords, customerCoords] = await Promise.all([
-            geocodeAddress(merchant.address),
-            geocodeAddress(order.delivery_address),
-          ]);
+            if (merchantErr) throw merchantErr;
 
-          if (merchantCoords && customerCoords) {
-            // Calculate total distance from restaurant to customer
+            // Geocode both addresses
+            const [merchantCoords, customerCoords] = await Promise.all([
+              geocodeAddress(merchant.address),
+              geocodeAddress(order.delivery_address),
+            ]);
+
+            if (merchantCoords) {
+              startLat = merchantCoords.lat;
+              startLng = merchantCoords.lng;
+            }
+            if (customerCoords) {
+              endLat = customerCoords.lat;
+              endLng = customerCoords.lng;
+            }
+          }
+
+          if (startLat && endLat) {
+            // Calculate total distance
             const totalDistance = calculateDistance(
-              merchantCoords.lat,
-              merchantCoords.lng,
-              customerCoords.lat,
-              customerCoords.lng
+              startLat,
+              startLng,
+              endLat,
+              endLng
             );
-
             // Calculate elapsed time based on assigned_at
-            // This is updated every 2 minutes, each update = drone moved 2km closer
             const deliveryStartTime = new Date(assignment.assigned_at);
             const currentTime = new Date();
-            const elapsedSeconds =
-              (currentTime - deliveryStartTime) / 1000;
+            const elapsedSeconds = (currentTime - deliveryStartTime) / 1000;
 
-            // Number of 2-minute intervals that have passed
-            const twoMinuteIntervals = Math.floor(elapsedSeconds / 120);
+            // Calculate speed to complete delivery in exactly 1 minute (60 seconds)
+            const simulationDurationSeconds = 60;
+            const speedKmPerSec = totalDistance / simulationDurationSeconds;
 
-            // Distance traveled by drone: 2km per 2-minute interval
-            const distanceTraveled = twoMinuteIntervals * 2;
+            const distanceTraveled = elapsedSeconds * speedKmPerSec;
 
-            // Remaining distance to customer
+            // Remaining distance
             let remainingDistance = totalDistance - distanceTraveled;
-            if (remainingDistance < 0) remainingDistance = 0; // Can't go past customer
+            if (remainingDistance < 0) remainingDistance = 0;
 
-            // Calculate drone position along the path
-            // Ratio of distance traveled / total distance
-            const travelRatio = Math.min(distanceTraveled / totalDistance, 1);
-            const currentDroneLat =
-              merchantCoords.lat +
-              (customerCoords.lat - merchantCoords.lat) * travelRatio;
-            const currentDroneLng =
-              merchantCoords.lng +
-              (customerCoords.lng - merchantCoords.lng) * travelRatio;
+            // Calculate drone position
+            const travelRatio = totalDistance > 0 ? Math.min(distanceTraveled / totalDistance, 1) : 1;
+            const currentDroneLat = startLat + (endLat - startLat) * travelRatio;
+            const currentDroneLng = startLng + (endLng - startLng) * travelRatio;
 
             setDistance(remainingDistance);
             setDroneLocation({ lat: currentDroneLat, lng: currentDroneLng });
 
-            // Drone arrived if distance < 0.5 km (500m)
-            const arrived = remainingDistance < 0.5;
+            // Drone arrived if distance < 0.1 km (100m)
+            const arrived = remainingDistance < 0.1;
             setDroneArrived(arrived);
 
-            // If drone reached 100% distance but customer hasn't received, auto-fail after 1 hour
-            if (travelRatio === 1.0) {
-              // Check from assigned_at + 1 hour
-              const timeSinceAssignment =
-                (new Date() - deliveryStartTime) / 1000 / 60; // minutes
-
-              if (timeSinceAssignment > 60) {
-                console.warn(
-                  `⏰ Order #${orderId} reached destination but no completion for ${timeSinceAssignment.toFixed(
-                    1
-                  )} min (> 1 hour) - auto-failing order`
-                );
-                // Auto-fail the order
-                const { error } = await supabase
-                  .from("orders")
-                  .update({
-                    order_status: "Failed",
-                  })
-                  .eq("order_id", orderId);
-
-                if (error) {
-                  console.error(
-                    `❌ Error auto-failing order #${orderId}:`,
-                    error
-                  );
-                } else {
-                  console.log(`✅ Order #${orderId} auto-failed after 1 hour`);
-                  setOrderStatus("Failed");
-                }
-              }
+            // SIMULATION: Update DB if isSimulator is true
+            if (isSimulator && assignment.drone_id) {
+              await supabase.from("drone").update({
+                current_lat: currentDroneLat,
+                current_lng: currentDroneLng,
+                status: arrived ? "idle" : "delivering" // Optional: free up drone when arrived?
+              }).eq("drone_id", assignment.drone_id);
             }
-
-            console.log(
-              `[${new Date().toLocaleTimeString()}] 📍 Order #${orderId}:`
-            );
-            console.log(
-              `   Elapsed: ${(elapsedSeconds / 60).toFixed(
-                1
-              )} min | Intervals: ${twoMinuteIntervals}`
-            );
-            console.log(`   Total distance: ${totalDistance.toFixed(2)} km`);
-            console.log(
-              `   Distance traveled: ${distanceTraveled.toFixed(2)} km (${(
-                travelRatio * 100
-              ).toFixed(1)}%)`
-            );
-            console.log(
-              `   Drone: [${currentDroneLat.toFixed(
-                4
-              )}, ${currentDroneLng.toFixed(4)}]`
-            );
-            console.log(
-              `   Customer: [${customerCoords.lat.toFixed(
-                4
-              )}, ${customerCoords.lng.toFixed(4)}]`
-            );
-            console.log(
-              `   Remaining: ${remainingDistance.toFixed(2)} km | Arrived: ${arrived ? "✅ YES" : "❌ NO"
-              }`
-            );
-          } else {
-            console.warn(
-              `⚠️ Could not geocode for order #${orderId} - merchant: ${merchantCoords ? "✅" : "❌"
-              }, customer: ${customerCoords ? "✅" : "❌"}`
-            );
           }
         }
 
@@ -308,8 +261,8 @@ export function useDeliveryStatus(orderId) {
       )
       .subscribe();
 
-    // Poll every 2 minutes (120000ms) to update drone position
-    const interval = setInterval(fetchDeliveryStatus, 120000);
+    // Poll every 1 second to update drone position
+    const interval = setInterval(fetchDeliveryStatus, 1000);
 
     console.log(
       `[${new Date().toLocaleTimeString()}] 🎯 Started tracking order #${orderId}`
@@ -323,7 +276,7 @@ export function useDeliveryStatus(orderId) {
         `[${new Date().toLocaleTimeString()}] ❌ Stopped tracking order #${orderId}`
       );
     };
-  }, [orderId, orderStatus]);
+  }, [orderId, orderStatus, isSimulator]);
 
   return { distance, droneArrived, orderStatus, loading, droneLocation };
 }
