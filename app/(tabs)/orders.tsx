@@ -6,7 +6,7 @@ import { EmptyOrders, OrderCard, OrderTabs } from "../../components/orders";
 import { ProfileHeader } from "../../components/profile";
 import { COLORS } from "../../constants/app";
 import { sharedStyles } from "../../constants/sharedStyles";
-import { getCustomerOrders } from "../../services/orderService";
+import { cancelOrder, confirmOrderReceived, getCustomerOrders } from "../../services/orderService";
 import { supabase } from "../../services/supabaseClient";
 
 /* ==================== TYPES ==================== */
@@ -16,16 +16,40 @@ export interface OrderItem {
   price: number;
 }
 
+export interface DroneInfo {
+  drone_id: number;
+  model: string;
+  status: "idle" | "delivering";
+  battery: number;
+  current_lat: number | null;
+  current_lng: number | null;
+  updated_at: string;
+}
+
+export interface DeliveryAssignment {
+  assignment_id: number;
+  drone_id: number | null;
+  pickup_lat: number;
+  pickup_lng: number;
+  drop_lat: number;
+  drop_lng: number;
+  status: "assigned" | "in_transit" | "arrived" | "completed";
+  assigned_at: string;
+  completed_at: string | null;
+  drone?: DroneInfo;
+}
+
 export interface Order {
   order_id: number;
   created_at: string;
   total_amount: number;
-  order_status: "Pending" | "Shipping" | "Completed" | "Canceled";
+  order_status: string; // Pending | Shipping | Completed | Canceled
   payment_status: string;
   merchant_name: string;
   merchant_address: string;
   items: OrderItem[];
   delivery_address: string;
+  delivery_assignment?: DeliveryAssignment | null;
 }
 
 export type OrderStatus = "Tất cả" | "Đang xử lý" | "Hoàn thành" | "Đã hủy";
@@ -39,7 +63,7 @@ export default function OrdersTab() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<OrderStatus>("Tất cả");
 
-  /* LOAD ORDERS */
+  /* LOAD ORDER FROM DB */
   const loadOrders = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -60,16 +84,11 @@ export default function OrdersTab() {
 
   /* FILTER ORDERS */
   const filterOrders = () => {
-    if (activeTab === "Tất cả") {
-      return setFilteredOrders(orders);
-    }
+    if (activeTab === "Tất cả") return setFilteredOrders(orders);
 
     if (activeTab === "Đang xử lý") {
-      // Đang xử lý = Pending + Shipping
       return setFilteredOrders(
-        orders.filter(
-          (o) => o.order_status === "Pending" || o.order_status === "Shipping"
-        )
+        orders.filter((o) => o.order_status === "Pending" || o.order_status === "Shipping")
       );
     }
 
@@ -86,7 +105,7 @@ export default function OrdersTab() {
     }
   };
 
-  /* ACTIONS */
+  /* HANDLE ACTIONS */
   const openOrderDetail = (order: Order) => {
     router.push({
       pathname: "/screen/myorderDetail",
@@ -101,11 +120,7 @@ export default function OrdersTab() {
         text: "Hủy",
         style: "destructive",
         onPress: async () => {
-          await supabase
-            .from("orders")
-            .update({ order_status: "Canceled", payment_status: "Refunded" })
-            .eq("order_id", orderId);
-
+          await cancelOrder(orderId);
           loadOrders();
         },
       },
@@ -118,21 +133,14 @@ export default function OrdersTab() {
       {
         text: "Đã nhận",
         onPress: async () => {
-          await supabase
-            .from("orders")
-            .update({
-              order_status: "Completed",
-              delivery_updated_at: new Date().toISOString(),
-            })
-            .eq("order_id", orderId);
-
+          await confirmOrderReceived(orderId);
           loadOrders();
         },
       },
     ]);
   };
 
-  /* EFFECT */
+  /* EFFECTS */
   useEffect(() => {
     loadOrders();
   }, []);

@@ -1,23 +1,24 @@
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "../../constants/app";
-import { supabase } from "../../services/supabaseClient";
 import DroneMap from "../../components/map/droneMap";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { COLORS } from "../../constants/app";
 
+// IMPORT HÀM GET DELIVERY STATUS
 import {
-  updateDroneLocation,
+  cancelOrder,
   confirmOrderReceived,
+  getDeliveryStatus,
   markOrderArrived,
 } from "../../services/orderService";
 
@@ -27,6 +28,29 @@ type OrderItem = {
   product_name: string;
   price: number;
   quantity: number;
+};
+
+type DroneInfo = {
+  drone_id: number;
+  model: string;
+  status: string;
+  battery: number;
+  current_lat: number | null;
+  current_lng: number | null;
+  updated_at: string;
+};
+
+type DeliveryAssignment = {
+  assignment_id: number;
+  drone_id: number;
+  pickup_lat: number;
+  pickup_lng: number;
+  drop_lat: number;
+  drop_lng: number;
+  status: string;
+  assigned_at: string;
+  completed_at: string | null;
+  drone?: DroneInfo;
 };
 
 type OrderType = {
@@ -39,11 +63,12 @@ type OrderType = {
   delivery_address?: string;
   total_amount: number;
   items: OrderItem[];
+  delivery_assignment?: DeliveryAssignment | null;
 };
 
 const STATUS_MAP = {
   Pending: "Đang xử lý",
-  Shipping: "Đang vận chuyển",
+  Shipping: "Đang giao hàng",
   Completed: "Hoàn thành",
   Canceled: "Đã hủy",
 };
@@ -82,12 +107,15 @@ export default function MyOrderDetail() {
 
   const [lastPos, setLastPos] = useState<{ lat: number; lng: number }>();
   const [droneArrived, setDroneArrived] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryAssignment | null>(null);
 
-  /* Load vị trí + trạng thái drone */
+  /* Load delivery info và trạng thái arrived */
   useEffect(() => {
     const loadData = async () => {
-      const saved = await AsyncStorage.getItem(`drone-pos-${order.order_id}`);
-      if (saved) setLastPos(JSON.parse(saved));
+      const delivery = await getDeliveryStatus(order.order_id);
+      if (delivery) {
+        setDeliveryInfo(delivery);
+      }
 
       const arrived = await AsyncStorage.getItem(
         `drone-arrived-${order.order_id}`
@@ -98,38 +126,57 @@ export default function MyOrderDetail() {
     loadData();
   }, [order.order_id]);
 
-  /* BUTTON LOGIC */
-  const canShowButton =
-    order.order_status === "Pending" || order.order_status === "Shipping";
+  /* Polling delivery status mỗi 3s khi đang Shipping */
+  useEffect(() => {
+    if (order.order_status !== "Shipping") return;
 
-  const buttonLabel =
-    order.order_status === "Pending"
-      ? "Hủy đơn"
-      : order.order_status === "Shipping" && !droneArrived
-      ? "Hủy đơn"
-      : "Đã nhận";
+    const interval = setInterval(async () => {
+      const delivery = await getDeliveryStatus(order.order_id);
+      
+      if (delivery) {
+        setDeliveryInfo(delivery);
 
-  /* HÀM XỬ LÝ NÚT */
+        // Check nếu drone arrived từ DB
+        if (delivery.delivery_status === "arrived" && !droneArrived) {
+          setDroneArrived(true);
+          await AsyncStorage.setItem(
+            `drone-arrived-${order.order_id}`,
+            "true"
+          );
+        }
+      }
+    }, 3000); // 3s
+
+    return () => clearInterval(interval);
+  }, [order.order_id, order.order_status, droneArrived]);  // Hiển thị nút cho Pending (Hủy đơn) và Shipping (Hủy đơn hoặc Đã nhận khi drone arrived)
+  const canShowButton = order.order_status === "Pending" || order.order_status === "Shipping";
+  
+  let buttonLabel = "";
+  if (order.order_status === "Shipping" && droneArrived) {
+    buttonLabel = "Đã nhận";
+  } else if (order.order_status === "Pending" || (order.order_status === "Shipping" && !droneArrived)) {
+    buttonLabel = "Hủy đơn";
+  }
+
+  // Lấy GPS từ delivery_assignment (nếu có), nếu không thì dùng fake
+  const restaurantGPS = deliveryInfo
+    ? { lat: deliveryInfo.pickup_lat, lng: deliveryInfo.pickup_lng }
+    : { lat: 10.8231, lng: 106.6297 }; // Fallback
+
+  const destinationGPS = deliveryInfo
+    ? { lat: deliveryInfo.drop_lat, lng: deliveryInfo.drop_lng }
+    : { lat: 10.795, lng: 106.68 }; // Fallback
+
+  /* Xử lý nút */
   const handleButtonPress = async () => {
-    // PENDING + SHIPPING (chưa nhận) → HỦY ĐƠN
-    if (
-      order.order_status === "Pending" ||
-      (order.order_status === "Shipping" && !droneArrived)
-    ) {
+    if (buttonLabel === "Hủy đơn") {
       Alert.alert("Xác nhận hủy", "Bạn có chắc muốn hủy đơn?", [
         { text: "Không", style: "cancel" },
         {
           text: "Hủy",
           style: "destructive",
           onPress: async () => {
-            await supabase
-              .from("orders")
-              .update({
-                order_status: "Canceled",
-                payment_status: "Refunded",
-              })
-              .eq("order_id", order.order_id);
-
+            await cancelOrder(order.order_id);
             router.replace("/(tabs)/orders");
           },
         },
@@ -137,23 +184,17 @@ export default function MyOrderDetail() {
       return;
     }
 
-    // SHIPPING + DRONE ARRIVED → ĐÃ NHẬN
-    if (order.order_status === "Shipping" && droneArrived) {
-      Alert.alert("Xác nhận", "Bạn đã nhận được hàng từ drone?", [
-        { text: "Chưa", style: "cancel" },
-        {
-          text: "Đã nhận",
-          onPress: async () => {
-            await confirmOrderReceived(order.order_id);
-            router.replace("/(tabs)/orders");
-          },
+    Alert.alert("Xác nhận", "Bạn đã nhận được hàng từ drone?", [
+      { text: "Chưa", style: "cancel" },
+      {
+        text: "Đã nhận",
+        onPress: async () => {
+          await confirmOrderReceived(order.order_id);
+          router.replace("/(tabs)/orders");
         },
-      ]);
-    }
+      },
+    ]);
   };
-
-  const restaurantGPS = { lat: 10.8231, lng: 106.6297 };
-  const destinationGPS = { lat: 10.795, lng: 106.68 };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -200,18 +241,21 @@ export default function MyOrderDetail() {
           </View>
         </View>
 
-        {/* DRONE — SHIPPING */}
+        {/* MAP – khi Shipping (drone đang giao) */}
         {order.order_status === "Shipping" && (
           <>
-            <Text style={styles.section}>Drone đang giao hàng</Text>
+            <Text style={styles.section}>Vị trí drone hiện tại</Text>
 
             <DroneMap
               orderId={Number(order.order_id)}
               restaurant={restaurantGPS}
               destination={destinationGPS}
               lastPosition={lastPos}
-              onProgress={async () => {
-                await updateDroneLocation(order.order_id);
+              dronePosition={lastPos}
+              assignedAt={deliveryInfo?.assigned_at}
+              onProgress={async (d) => {
+                // Update vị trí hiện tại để hiển thị đúng khi quay lại tab
+                setLastPos({ lat: d.lat, lng: d.lng });
               }}
               onArrived={async (d) => {
                 setLastPos({ lat: d.lat, lng: d.lng });
@@ -229,7 +273,7 @@ export default function MyOrderDetail() {
           </>
         )}
 
-        {/* COMPLETED */}
+        {/* MAP WHEN COMPLETED */}
         {order.order_status === "Completed" && (
           <>
             <Text style={styles.section}>Vị trí cuối cùng của drone</Text>
@@ -282,7 +326,7 @@ export default function MyOrderDetail() {
         </View>
       </ScrollView>
 
-      {/* ACTION BUTTON */}
+      {/* BUTTON */}
       {canShowButton && (
         <View style={styles.footer}>
           <TouchableOpacity style={styles.cancelBtn} onPress={handleButtonPress}>

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useRef } from "react";
+import { View } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
 
 export interface DroneMapProps {
@@ -8,6 +8,8 @@ export interface DroneMapProps {
   restaurant: { lat: number; lng: number };
   destination: { lat: number; lng: number };
   lastPosition?: { lat: number; lng: number };
+  dronePosition?: { lat: number; lng: number } | null; // GPS thật từ drone
+  assignedAt?: string; // Thời gian assign để tính animation
   onProgress?: (d: { type: string; lat: number; lng: number }) => void;
   onArrived?: (d: { type: string; lat: number; lng: number }) => void;
 }
@@ -17,12 +19,14 @@ const DroneMap: React.FC<DroneMapProps> = ({
   restaurant,
   destination,
   lastPosition,
+  dronePosition,
+  assignedAt,
   onProgress,
   onArrived,
 }) => {
   const webviewRef = useRef<WebView>(null);
 
-  const start = lastPosition ?? restaurant;
+  // Animation tự động chạy trong WebView từ restaurant đến destination
 
   const html = `
     <!DOCTYPE html>
@@ -43,11 +47,11 @@ const DroneMap: React.FC<DroneMapProps> = ({
       <div id="map"></div>
 
       <script>
-        const startPos = [${start.lat}, ${start.lng}];
         const restaurant = [${restaurant.lat}, ${restaurant.lng}];
         const destination = [${destination.lat}, ${destination.lng}];
+        const assignedAt = ${assignedAt ? `"${assignedAt}"` : "null"};
 
-        const map = L.map('map').setView(startPos, 14);
+        const map = L.map('map').setView(restaurant, 14);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -78,38 +82,84 @@ const DroneMap: React.FC<DroneMapProps> = ({
         L.marker(restaurant, { icon: restaurantIcon }).addTo(map);
         L.marker(destination, { icon: destinationIcon }).addTo(map);
 
-        const marker = L.marker(startPos, { icon: droneIcon }).addTo(map);
-
-        let t = 0;
-        const duration = 30000;
-        const fps = 30;
-
-        const animate = () => {
-          t += 1000 / fps;
-          const k = Math.min(t / duration, 1);
-
-          const lat = startPos[0] + (destination[0] - startPos[0]) * k;
-          const lng = startPos[1] + (destination[1] - startPos[1]) * k;
-
+        // Tạo marker drone
+        var marker = L.marker(restaurant, { icon: droneIcon }).addTo(map);
+        
+        // Tính thời gian đã bay (nếu có assignedAt)
+        var duration = 30000; // 30s
+        var elapsed = 0;
+        
+        if (assignedAt) {
+          var assignedTime = new Date(assignedAt).getTime();
+          elapsed = Math.min(Date.now() - assignedTime, duration);
+        }
+        
+        // startTime được điều chỉnh dựa trên thời gian đã bay
+        var startTime = Date.now() - elapsed;
+        var animationId = null;
+        var arrivedSent = false;
+        
+        function autoAnimate() {
+          var currentElapsed = Date.now() - startTime;
+          var progress = Math.min(currentElapsed / duration, 1);
+          
+          var lat = restaurant[0] + (destination[0] - restaurant[0]) * progress;
+          var lng = restaurant[1] + (destination[1] - restaurant[1]) * progress;
+          
           marker.setLatLng([lat, lng]);
-
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: "DRONE_PROGRESS",
-            lat, lng
-          }));
-
-          if (k >= 1) {
+          
+          // Gửi progress mỗi 500ms
+          if (Math.floor(currentElapsed / 500) !== Math.floor((currentElapsed - 16) / 500)) {
             window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: "DRONE_ARRIVED",
-              lat, lng
+              type: "DRONE_PROGRESS",
+              lat: lat,
+              lng: lng
             }));
-            return;
           }
-
-          setTimeout(animate, 1000 / fps);
-        };
-
-        animate();
+          
+          if (progress < 1) {
+            animationId = requestAnimationFrame(autoAnimate);
+          } else {
+            // Đã đến nơi
+            marker.setLatLng(destination);
+            if (!arrivedSent) {
+              arrivedSent = true;
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: "DRONE_ARRIVED",
+                lat: destination[0],
+                lng: destination[1]
+              }));
+            }
+          }
+        }
+        
+        // Bắt đầu animation
+        autoAnimate();
+        
+        // Function để update vị trí drone từ bên ngoài (nếu cần)
+        function updateDronePosition(lat, lng) {
+          // Nếu đã arrived thì không update nữa
+          if (arrivedSent) return;
+          
+          // Cancel animation tự động
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          // Reset startTime dựa trên vị trí mới
+          var totalDist = Math.sqrt(
+            Math.pow(destination[0] - restaurant[0], 2) + 
+            Math.pow(destination[1] - restaurant[1], 2)
+          );
+          var currentDist = Math.sqrt(
+            Math.pow(destination[0] - lat, 2) + 
+            Math.pow(destination[1] - lng, 2)
+          );
+          var newProgress = 1 - (currentDist / totalDist);
+          startTime = Date.now() - (newProgress * duration);
+          marker.setLatLng([lat, lng]);
+          autoAnimate();
+        }
       </script>
     </body>
     </html>
